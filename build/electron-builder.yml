@@ -1,0 +1,56 @@
+appId: com.m3uplayer.app
+productName: M3U Player
+copyright: Copyright © 2024 M3U Player
+
+directories:
+  output: dist
+
+files:
+  - main.js
+  - preload.js
+  - index.html
+  - styles.css
+  - script.js
+  - assets/**/*
+  - "!node_modules/**/*"
+  - "node_modules/hls.js/**/*"
+  - "node_modules/electron-store/**/*"
+
+extraResources:
+  - basic-test.m3u
+  - test-streams.m3u
+  - sample.m3u
+  - m3u/
+
+mac:
+  category: public.app-category.video
+  icon: assets/icon.icns
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+
+win:
+  target: 
+    - target: nsis
+      arch: [x64, ia32]
+  icon: assets/icon.ico
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+  icon: assets/icon.png
+  category: AudioVideo
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+
+dmg:
+  title: M3U Player
+  icon: assets/icon.icns
+
+snap:
+  summary: Reproductor M3U/IPTV sin limitaciones CORS

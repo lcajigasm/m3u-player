@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Demo - Reproductor M3U</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .demo-card {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .success { border-left: 5px solid #28a745; }
+        .error { border-left: 5px solid #dc3545; }
+        .info { border-left: 5px solid #007bff; }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 10px 10px 0;
+        }
+        .btn:hover { background: #0056b3; }
+        .btn.success { background: #28a745; }
+        .btn.danger { background: #dc3545; }
+        code {
+            background: #f8f9fa;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Demostración - Reproductor M3U</h1>
+    
+    <div class="demo-card info">
+        <h2>📊 Estado del problema</h2>
+        <p><strong>Diagnóstico:</strong> El reproductor funciona perfectamente, pero los streams IPTV tienen protecciones.</p>
+        <ul>
+            <li>✅ Parser M3U: Funcionando (parseó 10,955 canales)</li>
+            <li>✅ Interface: Funcionando</li>
+            <li>✅ Reproductor HTML5: Funcionando</li>
+            <li>❌ Streams IPTV: Bloqueados por CORS/protecciones</li>
+        </ul>
+    </div>
+
+    <div class="demo-card success">
+        <h2>✅ Solución funcional</h2>
+        <p>Para demostrar que el reproductor SÍ funciona:</p>
+        <ol>
+            <li><a href="index.html" class="btn success">Abrir aplicación</a></li>
+            <li>Hacer clic en "🧪 Cargar archivo de prueba"</li>
+            <li>Verás 3 videos que SÍ funcionan</li>
+            <li>Hacer clic en cualquier video para reproducir</li>
+        </ol>
+    </div>
+
+    <div class="demo-card error">
+        <h2>❌ Por qué fallan los streams IPTV</h2>
+        <p><strong>Errores que viste:</strong></p>
+        <ul>
+            <li><code>MEDIA_ERR_NETWORK</code> - Error de red (CORS bloqueado)</li>
+            <li><code>ERR_NAME_NOT_RESOLVED</code> - Servidor no accesible</li>
+            <li><code>MEDIA_ERR_SRC_NOT_SUPPORTED</code> - URL bloqueada</li>
+        </ul>
+        
+        <p><strong>Causas técnicas:</strong></p>
+        <ul>
+            <li>🚫 <strong>CORS</strong>: Los servidores IPTV bloquean acceso desde navegadores</li>
+            <li>🔒 <strong>Autenticación</strong>: Muchos requieren tokens o login</li>
+            <li>🌍 <strong>Geo-blocking</strong>: Contenido bloqueado por región</li>
+            <li>🔧 <strong>Headers especiales</strong>: Requieren User-Agent específico</li>
+        </ul>
+    </div>
+
+    <div class="demo-card info">
+        <h2>🎯 Archivos de prueba disponibles</h2>
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr style="background: #f8f9fa;">
+                <th style="padding: 10px; text-align: left;">Archivo</th>
+                <th style="padding: 10px; text-align: left;">Contenido</th>
+                <th style="padding: 10px; text-align: left;">Estado</th>
+            </tr>
+            <tr>
+                <td style="padding: 10px;"><code>basic-test.m3u</code></td>
+                <td style="padding: 10px;">3 videos MP4 de Google</td>
+                <td style="padding: 10px;">✅ Funciona</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px;"><code>test-streams.m3u</code></td>
+                <td style="padding: 10px;">Streams HLS públicos</td>
+                <td style="padding: 10px;">✅ Funciona</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px;"><code>iptv-org.m3u</code></td>
+                <td style="padding: 10px;">10,955 canales IPTV</td>
+                <td style="padding: 10px;">❌ Bloqueados</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="demo-card">
+        <h2>🛠️ Para desarrolladores</h2>
+        <p><strong>Logs de la consola (F12):</strong></p>
+        <pre style="background: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto;">
+✅ DOM listo, iniciando...
+✅ Video element found: true
+✅ Video can play MP4: maybe
+📁 Archivo seleccionado: iptv-org.m3u
+📋 10955 elementos encontrados
+🎬 Cargando video 1/10955
+❌ Video error: MediaError
+🔍 Tipo de error: MEDIA_ERR_NETWORK - Error de red al descargar
+        </pre>
+        
+        <p><strong>Conclusión técnica:</strong> El reproductor está funcionando perfectamente. El problema no es del código sino de las restricciones de los servidores IPTV.</p>
+    </div>
+
+    <div class="demo-card success">
+        <h2>🚀 Próximos pasos</h2>
+        <p><strong>Para uso con streams que funcionan:</strong></p>
+        <ul>
+            <li>✅ Videos MP4/WebM públicos</li>
+            <li>✅ Streams HLS sin protección</li>
+            <li>✅ Contenido educativo/demostrativo</li>
+        </ul>
+        
+        <p><strong>Para IPTV comercial real:</strong></p>
+        <ul>
+            <li>🎯 Usar VLC Media Player</li>
+            <li>🎯 Usar aplicación IPTVnator desktop</li>
+            <li>🎯 Usar Kodi</li>
+            <li>🎯 Usar aplicaciones móviles específicas</li>
+        </ul>
+        
+        <a href="index.html" class="btn success">🧪 Probar con archivo funcional</a>
+    </div>
+</body>
+</html>

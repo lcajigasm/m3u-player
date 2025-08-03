@@ -1,0 +1,11 @@
+#EXTM3U
+#EXTINF:120,Big Buck Bunny (Blender Foundation)
+https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4
+#EXTINF:60,Sample Video 1
+https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4
+#EXTINF:90,Demo Video - Flower
+https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4
+#EXTINF:30,Big Buck Bunny Short
+https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4
+#EXTINF:15,Test Stream
+https://www.w3schools.com/html/mov_bbb.mp4
