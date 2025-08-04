@@ -22,7 +22,14 @@ A modern, professional IPTV player built with Electron that bypasses CORS limita
 
 ## 🚀 Quick Start
 
-### Option 1: Automatic Setup (Recommended)
+### Option 1: Download Executable (Recommended)
+Download the latest installer for your operating system from [Releases](../../releases):
+
+- 🪟 **Windows**: `M3U-Player-Setup-x.x.x.exe`
+- 🍎 **macOS**: `M3U-Player-x.x.x.dmg` 
+- 🐧 **Linux**: `M3U-Player-x.x.x.AppImage`
+
+### Option 2: Automatic Setup (Development)
 ```bash
 # Clone the repository
 git clone https://github.com/yourusername/m3u-player.git
@@ -32,7 +39,7 @@ cd m3u-player
 ./scripts/start.sh
 ```
 
-### Option 2: Manual Setup
+### Option 3: Manual Setup (Development)
 ```bash
 # Install dependencies
 npm install
@@ -41,7 +48,7 @@ npm install
 npm start
 ```
 
-### Option 3: Development Mode
+### Option 4: Development Mode
 ```bash
 # Development mode with DevTools
 npm run dev
@@ -134,7 +141,20 @@ m3u-player/
 
 ## 🔧 Building for Distribution
 
-### Create executables:
+### Automated Builds (GitHub Actions)
+Executables are automatically generated for all platforms:
+
+```bash
+# Create a new release
+./scripts/release.sh 1.0.0
+```
+
+This will automatically generate:
+- 🪟 **Windows**: `.exe` (installer) and portable
+- 🍎 **macOS**: `.dmg` and `.zip` (Intel + Apple Silicon)
+- 🐧 **Linux**: `.AppImage`, `.deb`, and `.rpm`
+
+### Manual Build (Local)
 ```bash
 # For all platforms
 npm run build
@@ -146,10 +166,7 @@ npm run pack
 npm run dist
 ```
 
-### Supported platforms:
-- 🍎 **macOS** - .dmg and .app
-- 🪟 **Windows** - .exe and NSIS installer
-- 🐧 **Linux** - AppImage and .deb
+📖 **Complete tutorial**: See [docs/BUILD-GUIDE.md](docs/BUILD-GUIDE.md)
 
 ## 🛠️ Development
 
@@ -231,11 +248,19 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Electron](https://www.electronjs.org/) for desktop application framework
 - Sample videos from [Google Cloud Storage](https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/)
 
+## 📚 Documentation
+
+- 📖 **[Build Guide](docs/BUILD-GUIDE.md)** - Complete guide for building executables
+- 🚀 **[Release Tutorial](docs/RELEASE-TUTORIAL.md)** - Step-by-step release process
+- 🔧 **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+- 🤝 **[Contributing](CONTRIBUTING.md)** - How to contribute to the project
+- 📝 **[Changelog](CHANGELOG.md)** - Version history and changes
+
 ## 📞 Support
 
-- 📖 **Documentation**: Check the [docs/](docs/) folder
 - 🐛 **Issues**: Report bugs via GitHub Issues
 - 💬 **Discussions**: Use GitHub Discussions for questions
+- 📧 **Contact**: [contact@m3uplayer.com](mailto:contact@m3uplayer.com)
 
 ---
 

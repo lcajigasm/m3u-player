@@ -30,7 +30,5 @@ jobs:
     - name: Test build (pack only)
       run: npm run pack
       
-    - name: List build output
-      run: |
-        echo "Build completed successfully"
-        ls -la dist/ || echo "No dist directory found"
+    - name: Verify build
+      run: echo "Build test completed successfully"

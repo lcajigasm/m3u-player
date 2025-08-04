@@ -48,7 +48,7 @@
   },
   "build": {
     "appId": "com.m3uplayer.app",
-    "productName": "M3U Player",
+    "productName": "m3u-player",
     "directories": {
       "output": "dist"
     },
@@ -61,6 +61,7 @@
     ],
     "mac": {
       "category": "public.app-category.video",
+      "icon": "assets/icon.icns",
       "target": [
         {
           "target": "dmg",
@@ -73,6 +74,7 @@
       ]
     },
     "win": {
+      "icon": "assets/icon.ico",
       "target": [
         {
           "target": "nsis",
@@ -85,6 +87,7 @@
       ]
     },
     "linux": {
+      "icon": "assets/icon.png",
       "target": [
         {
           "target": "AppImage",
