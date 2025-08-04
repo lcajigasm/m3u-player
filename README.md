@@ -142,14 +142,24 @@ m3u-player/
 ## 🔧 Building for Distribution
 
 ### Automated Builds (GitHub Actions)
-Executables are automatically generated for all platforms:
+
+#### Option 1: Auto-Release (Recommended)
+Create releases by pushing to a release branch:
 
 ```bash
-# Create a new release
+# Create release branch and trigger auto-build
+./scripts/auto-release-helper.sh 0.2.0
+```
+
+#### Option 2: Manual Tag Release
+Create releases using traditional tags:
+
+```bash
+# Create tag and trigger build
 ./scripts/release.sh 1.0.0
 ```
 
-This will automatically generate:
+Both methods automatically generate:
 - 🪟 **Windows**: `.exe` (installer) and portable
 - 🍎 **macOS**: `.dmg` and `.zip` (Intel + Apple Silicon)
 - 🐧 **Linux**: `.AppImage`, `.deb`, and `.rpm`
@@ -251,7 +261,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📚 Documentation
 
 - 📖 **[Build Guide](docs/BUILD-GUIDE.md)** - Complete guide for building executables
-- 🚀 **[Release Tutorial](docs/RELEASE-TUTORIAL.md)** - Step-by-step release process
+- 🚀 **[Release Tutorial](docs/RELEASE-TUTORIAL.md)** - Step-by-step manual release process
+- 🤖 **[Auto-Release Guide](docs/AUTO-RELEASE-GUIDE.md)** - Automatic releases from branch pushes
 - 🔧 **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
 - 📋 **[Release Notes v0.1.0](docs/RELEASE-NOTES-v0.1.0.md)** - What's new in this version
 - 🤝 **[Contributing](CONTRIBUTING.md)** - How to contribute to the project
