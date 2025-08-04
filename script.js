@@ -1,5 +1,5 @@
-// M3U Player Electron - Script Principal
-// Reproductor IPTV sin limitaciones CORS
+// M3U Player Electron - Main Script
+// IPTV Player without CORS limitations
 
 class M3UPlayer {
     constructor() {
@@ -13,42 +13,42 @@ class M3UPlayer {
         this.setupEventListeners();
         this.loadConfiguration();
 
-        console.log('🎬 Iniciando reproductor M3U...');
-        console.log(`📱 Plataforma: ${this.isElectron ? 'Electron' : 'Web'}`);
+        console.log('🎬 Starting M3U player...');
+        console.log(`📱 Platform: ${this.isElectron ? 'Electron' : 'Web'}`);
 
-        // Forzar recarga de estilos para evitar problemas de caché
+        // Force style refresh to avoid cache issues
         this.forceStyleRefresh();
 
-        // Ocultar overlay al inicializar
+        // Hide overlay on initialization
         this.hideOverlay();
 
         // Verificar soporte de PiP
         this.checkPiPSupport();
 
-        // Inicializar estado de ordenación
+        // Initialize sorting state
         this.sortAscending = false;
 
-        // Configurar debouncing para búsqueda
+        // Configure debouncing for search
         this.searchTimeout = null;
     }
 
-    // Búsqueda con debouncing para mejor rendimiento
+    // Search with debouncing for better performance
     debouncedSearch() {
         clearTimeout(this.searchTimeout);
         this.searchTimeout = setTimeout(() => {
             this.handleSearch();
-        }, 150); // 150ms de delay para evitar búsquedas excesivas
+        }, 150); // 150ms delay to avoid excessive searches
     }
 
     checkPiPSupport() {
         if (this.pipBtn) {
             if (!document.pictureInPictureEnabled) {
                 this.pipBtn.disabled = true;
-                this.pipBtn.title = 'Picture-in-Picture no soportado en este navegador';
+                this.pipBtn.title = 'Picture-in-Picture not supported in this browser';
                 this.pipBtn.style.opacity = '0.5';
-                console.warn('⚠️ Picture-in-Picture no soportado');
+                console.warn('⚠️ Picture-in-Picture not supported');
             } else {
-                console.log('✅ Picture-in-Picture soportado');
+                console.log('✅ Picture-in-Picture supported');
             }
         }
     }
@@ -57,12 +57,12 @@ class M3UPlayer {
         if (this.videoOverlay) {
             this.videoOverlay.classList.remove('show');
             this.videoOverlay.style.display = 'none';
-            console.log('🔧 Overlay ocultado al inicializar');
+            console.log('🔧 Overlay hidden on initialization');
         }
     }
 
     forceStyleRefresh() {
-        // Agregar timestamp a los estilos para evitar caché
+        // Add timestamp to styles to avoid cache
         const timestamp = Date.now();
         const links = document.querySelectorAll('link[rel="stylesheet"]');
 
@@ -71,23 +71,23 @@ class M3UPlayer {
             link.href = `${href}?v=${timestamp}`;
         });
 
-        console.log('🔄 Estilos actualizados para evitar caché');
+        console.log('🔄 Styles updated to avoid cache');
     }
 
     forceRefresh() {
-        console.log('🔄 Forzando recarga completa...');
+        console.log('🔄 Forcing complete reload...');
 
         if (this.isElectron && window.electronAPI) {
-            // En Electron, recargar la ventana
+            // In Electron, reload window
             location.reload();
         } else {
-            // En navegador, recarga forzada
+            // In browser, forced reload
             window.location.reload(true);
         }
     }
 
     forceHideOverlay() {
-        console.log('👁️ Forzando ocultación del overlay...');
+        console.log('👁️ Forcing overlay hide...');
 
         const overlay = document.getElementById('videoOverlay');
         if (overlay) {
@@ -97,10 +97,10 @@ class M3UPlayer {
             overlay.style.opacity = '0';
             overlay.style.pointerEvents = 'none';
             overlay.style.zIndex = '-1';
-            console.log('✅ Overlay ocultado forzadamente');
+            console.log('✅ Overlay forcefully hidden');
         }
 
-        // También forzar visibilidad de controles
+        // Also force controls visibility
         forceControlsVisibility();
     }
 
@@ -109,7 +109,7 @@ class M3UPlayer {
         this.fileBtn = document.getElementById('fileBtn');
         this.urlBtn = document.getElementById('urlBtn');
         this.testBtn = document.getElementById('testBtn');
-        // Elementos que solo existen en la interfaz inicial
+        // Elements that only exist in the initial interface
         this.refreshBtn = document.getElementById('refreshBtn');
         this.hideOverlayBtn = document.getElementById('hideOverlayBtn');
 
@@ -119,15 +119,15 @@ class M3UPlayer {
         this.loadUrlBtn = document.getElementById('loadUrlBtn');
         this.cancelUrlBtn = document.getElementById('cancelUrlBtn');
 
-        // Información de archivo
+        // File information
         this.fileInfo = document.getElementById('fileInfo');
 
-        // Sección del reproductor
+        // Player section
         this.playerSection = document.getElementById('playerSection');
         this.videoPlayer = document.getElementById('videoPlayer');
         this.playlist = document.getElementById('playlist');
 
-        // Controles
+        // Controls
         this.prevBtn = document.getElementById('prevBtn');
         this.playPauseBtn = document.getElementById('playPauseBtn');
         this.nextBtn = document.getElementById('nextBtn');
@@ -147,7 +147,7 @@ class M3UPlayer {
         this.currentUrl = document.getElementById('currentUrl');
         this.streamInfo = document.getElementById('streamInfo');
 
-        // Búsqueda y exportar
+        // Search and export
         this.searchInput = document.getElementById('searchInput');
         this.clearSearchBtn = document.getElementById('clearSearchBtn');
         this.groupFilter = document.getElementById('groupFilter');
@@ -157,11 +157,11 @@ class M3UPlayer {
         this.exportBtn = document.getElementById('exportBtn');
         this.refreshPlaylistBtn = document.getElementById('refreshPlaylistBtn');
 
-        // Modales
+        // Modals
         this.settingsModal = document.getElementById('settingsModal');
         this.aboutModal = document.getElementById('aboutModal');
 
-        // Overlay de video
+        // Video overlay
         this.videoOverlay = document.getElementById('videoOverlay');
         this.loadingSpinner = document.getElementById('loadingSpinner');
         this.errorMessage = document.getElementById('errorMessage');
@@ -184,7 +184,7 @@ class M3UPlayer {
             if (e.key === 'Enter') this.loadFromUrl();
         });
 
-        // Controles del reproductor
+        // Player controls
         this.prevBtn?.addEventListener('click', () => this.playPrevious());
         this.playPauseBtn?.addEventListener('click', () => this.togglePlayPause());
         this.nextBtn?.addEventListener('click', () => this.playNext());
@@ -250,7 +250,7 @@ class M3UPlayer {
         // Retry button
         this.retryBtn?.addEventListener('click', () => this.retryCurrentStream());
 
-        // Eventos de Electron (si está disponible)
+        // Electron events (if available)
         if (this.isElectron && window.electronAPI) {
             this.setupElectronEvents();
         }
@@ -265,12 +265,12 @@ class M3UPlayer {
     }
 
     setupElectronEvents() {
-        // Archivo cargado desde el main process
+        // File loaded from main process
         window.electronAPI.onFileLoaded((data) => {
             this.processM3UContent(data.content, data.filename);
         });
 
-        // Mostrar diálogos
+        // Show dialogs
         window.electronAPI.onShowUrlDialog(() => this.showUrlInput());
         window.electronAPI.onShowSettings(() => this.showSettings());
         window.electronAPI.onShowAbout(() => this.showAbout());
@@ -314,7 +314,7 @@ class M3UPlayer {
                 this.config = await window.electronAPI.loadConfig();
                 this.applyConfiguration();
             } catch (error) {
-                console.error('Error cargando configuración:', error);
+                console.error('Error loading configuration:', error);
                 this.config = this.getDefaultConfig();
             }
         } else {
@@ -397,7 +397,7 @@ class M3UPlayer {
     async loadFromUrl() {
         const url = this.m3uUrl?.value?.trim();
         if (!url) {
-            this.showError('Por favor ingresa una URL válida');
+            this.showError('Please enter a valid URL');
             return;
         }
 
@@ -429,13 +429,13 @@ class M3UPlayer {
             this.hideUrlInput();
 
         } catch (error) {
-            console.error('Error cargando URL:', error);
-            this.showError(`Error cargando URL: ${error.message}`);
+            console.error('Error loading URL:', error);
+            this.showError(`Error loading URL: ${error.message}`);
         }
     }
 
     loadTestFile() {
-        // Cargar archivo de prueba con logos
+        // Load test file with logos
         const testContent = `#EXTM3U
 #EXTINF:-1 tvg-id="bbc1" tvg-name="BBC One" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/BBC_One_logo_%282021%29.svg/512px-BBC_One_logo_%282021%29.svg.png" group-title="UK",BBC One
 https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4
@@ -449,17 +449,17 @@ https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
 
     processM3UContent(content, filename) {
         try {
-            console.log(`📁 Procesando archivo: ${filename}`);
+            console.log(`📁 Processing file: ${filename}`);
 
             this.playlistData = this.parseM3U(content);
-            console.log(`📋 ${this.playlistData.length} elementos en la playlist`);
+            console.log(`📋 ${this.playlistData.length} elements in playlist`);
 
             if (this.playlistData.length === 0) {
-                this.showError('No se encontraron elementos válidos en el archivo M3U');
+                this.showError('No valid elements found in M3U file');
                 return;
             }
 
-            this.showFileInfo(`✅ ${filename} - ${this.playlistData.length} elementos cargados`, 'success');
+            this.showFileInfo(`✅ ${filename} - ${this.playlistData.length} elements loaded`, 'success');
             this.renderPlaylist();
             this.showPlayerSection();
 
@@ -550,9 +550,9 @@ https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
     renderPlaylist() {
         if (!this.playlist || !this.playlistData) return;
 
-        console.log(`📋 Renderizando ${this.playlistData.length} elementos...`);
+        console.log(`📋 Rendering ${this.playlistData.length} elements...`);
 
-        // Usar fragment para mejor rendimiento
+        // Use fragment for better performance
         const fragment = document.createDocumentFragment();
 
         // Renderizar en lotes para no bloquear la UI
@@ -572,32 +572,32 @@ https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
             currentBatch++;
 
             if (end < this.playlistData.length) {
-                // Continuar con el siguiente lote
+                // Continue with next batch
                 requestAnimationFrame(renderBatch);
             } else {
-                // Insertar todo de una vez al final
+                // Insert everything at once at the end
                 this.playlist.innerHTML = '';
                 this.playlist.appendChild(fragment);
 
-                // Configurar filtros y contador
+                // Configure filters and counter
                 this.populateGroupFilter();
                 this.updateChannelCount(this.playlistData.length, this.playlistData.length);
 
-                console.log(`✅ Playlist renderizada completamente`);
+                console.log(`✅ Playlist rendered completely`);
             }
         };
 
         // Iniciar renderizado
         renderBatch();
 
-        // Precargar logos en segundo plano
+        // Preload logos in background
         setTimeout(() => this.preloadLogos(), 100);
     }
 
     preloadLogos() {
         const logosToPreload = this.playlistData
             .filter(item => item.logo)
-            .slice(0, 20) // Solo precargar los primeros 20 para no sobrecargar
+            .slice(0, 20) // Only preload first 20 to avoid overload
             .map(item => item.logo);
 
         logosToPreload.forEach(logoUrl => {
@@ -607,7 +607,7 @@ https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
         });
 
         if (logosToPreload.length > 0) {
-            console.log(`🖼️ Precargando ${logosToPreload.length} logos...`);
+            console.log(`🖼️ Preloading ${logosToPreload.length} logos...`);
         }
     }
 

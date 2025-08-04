@@ -5,14 +5,14 @@ const https = require('https');
 const http = require('http');
 const { URL } = require('url');
 
-// Configuración de la ventana principal
+// Main window configuration
 let mainWindow;
 
-// Crear directorio para configuraciones si no existe
+// Create configuration directory if it doesn't exist
 const userDataPath = app.getPath('userData');
 const configPath = path.join(userDataPath, 'config.json');
 
-// Configuración por defecto
+// Default configuration
 const defaultConfig = {
   windowSize: { width: 1200, height: 800 },
   playerSettings: {
@@ -25,7 +25,7 @@ const defaultConfig = {
   recentFiles: []
 };
 
-// Cargar configuración
+// Load configuration
 function loadConfig() {
   try {
     if (fs.existsSync(configPath)) {
@@ -33,56 +33,60 @@ function loadConfig() {
       return { ...defaultConfig, ...JSON.parse(data) };
     }
   } catch (error) {
-    console.error('Error cargando configuración:', error);
+    console.error('Error loading configuration:', error);
   }
   return defaultConfig;
 }
 
-// Guardar configuración
+// Save configuration
 function saveConfig(config) {
   try {
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
   } catch (error) {
-    console.error('Error guardando configuración:', error);
+    console.error('Error saving configuration:', error);
   }
 }
 
 function createWindow() {
   const config = loadConfig();
   
-  // Crear la ventana del navegador
+  // Create the browser window
+  const iconPath = path.join(__dirname, 'assets', process.platform === 'darwin' ? 'icon.icns' : process.platform === 'win32' ? 'icon.ico' : 'icon.png');
+  console.log('Using icon path:', iconPath);
+  
   mainWindow = new BrowserWindow({
     width: config.windowSize.width,
     height: config.windowSize.height,
     minWidth: 800,
     minHeight: 600,
-    icon: path.join(__dirname, 'assets', 'icon.png'),
+    icon: iconPath,
+    title: 'M3U Player',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
       enableRemoteModule: false,
       preload: path.join(__dirname, 'preload.js'),
-      webSecurity: false, // Necesario para cargar streams IPTV
-      cache: false // Desactivar caché para desarrollo
+      webSecurity: false, // Required for loading IPTV streams
+      cache: false // Disable cache for development
     },
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     show: false
   });
 
-  // Cargar la aplicación
-  mainWindow.loadFile('src/index.html');
+  // Load the application
+  mainWindow.loadFile('index.html');
 
-  // Mostrar ventana cuando esté lista
+  // Show window when ready
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
     
-    // Abrir DevTools en modo desarrollo
+    // Open DevTools in development mode
     if (process.argv.includes('--dev')) {
       mainWindow.webContents.openDevTools();
     }
   });
 
-  // Guardar tamaño de ventana al cerrar
+  // Save window size on close
   mainWindow.on('close', () => {
     const bounds = mainWindow.getBounds();
     const config = loadConfig();
@@ -90,30 +94,30 @@ function createWindow() {
     saveConfig(config);
   });
 
-  // Manejar enlaces externos
+  // Handle external links
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: 'deny' };
   });
 
-  // Crear menú de aplicación
+  // Create application menu
   createMenu();
 }
 
 function createMenu() {
   const template = [
     {
-      label: 'Archivo',
+      label: 'File',
       submenu: [
         {
-          label: 'Abrir archivo M3U...',
+          label: 'Open M3U File...',
           accelerator: 'CmdOrCtrl+O',
           click: () => {
             openFileDialog();
           }
         },
         {
-          label: 'Abrir URL...',
+          label: 'Open URL...',
           accelerator: 'CmdOrCtrl+U',
           click: () => {
             mainWindow.webContents.send('show-url-dialog');
@@ -121,7 +125,7 @@ function createMenu() {
         },
         { type: 'separator' },
         {
-          label: 'Configuración...',
+          label: 'Settings...',
           accelerator: 'CmdOrCtrl+,',
           click: () => {
             mainWindow.webContents.send('show-settings');
@@ -129,7 +133,7 @@ function createMenu() {
         },
         { type: 'separator' },
         {
-          label: process.platform === 'darwin' ? 'Salir' : 'Salir',
+          label: process.platform === 'darwin' ? 'Quit' : 'Exit',
           accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
           click: () => {
             app.quit();
@@ -138,17 +142,17 @@ function createMenu() {
       ]
     },
     {
-      label: 'Reproducción',
+      label: 'Playback',
       submenu: [
         {
-          label: 'Reproducir/Pausar',
+          label: 'Play/Pause',
           accelerator: 'Space',
           click: () => {
             mainWindow.webContents.send('toggle-playback');
           }
         },
         {
-          label: 'Detener',
+          label: 'Stop',
           accelerator: 'Escape',
           click: () => {
             mainWindow.webContents.send('stop-playback');
@@ -156,21 +160,21 @@ function createMenu() {
         },
         { type: 'separator' },
         {
-          label: 'Volumen +',
+          label: 'Volume Up',
           accelerator: 'Up',
           click: () => {
             mainWindow.webContents.send('volume-up');
           }
         },
         {
-          label: 'Volumen -',
+          label: 'Volume Down',
           accelerator: 'Down',
           click: () => {
             mainWindow.webContents.send('volume-down');
           }
         },
         {
-          label: 'Silenciar',
+          label: 'Mute',
           accelerator: 'M',
           click: () => {
             mainWindow.webContents.send('toggle-mute');
@@ -179,31 +183,31 @@ function createMenu() {
       ]
     },
     {
-      label: 'Ver',
+      label: 'View',
       submenu: [
         {
-          label: 'Pantalla completa',
+          label: 'Fullscreen',
           accelerator: process.platform === 'darwin' ? 'Ctrl+Cmd+F' : 'F11',
           click: () => {
             mainWindow.setFullScreen(!mainWindow.isFullScreen());
           }
         },
         {
-          label: 'Actualizar',
+          label: 'Reload',
           accelerator: 'CmdOrCtrl+R',
           click: () => {
             mainWindow.reload();
           }
         },
         {
-          label: 'Recarga forzada (sin caché)',
+          label: 'Force Reload (no cache)',
           accelerator: 'CmdOrCtrl+Shift+R',
           click: () => {
             mainWindow.webContents.reloadIgnoringCache();
           }
         },
         {
-          label: 'Limpiar caché',
+          label: 'Clear Cache',
           click: async () => {
             const session = mainWindow.webContents.session;
             await session.clearCache();
@@ -212,7 +216,7 @@ function createMenu() {
         },
         { type: 'separator' },
         {
-          label: 'Herramientas de desarrollador',
+          label: 'Developer Tools',
           accelerator: process.platform === 'darwin' ? 'Alt+Cmd+I' : 'Ctrl+Shift+I',
           click: () => {
             mainWindow.webContents.toggleDevTools();
@@ -221,10 +225,10 @@ function createMenu() {
       ]
     },
     {
-      label: 'Ayuda',
+      label: 'Help',
       submenu: [
         {
-          label: 'Acerca de',
+          label: 'About',
           click: () => {
             mainWindow.webContents.send('show-about');
           }
@@ -239,10 +243,10 @@ function createMenu() {
 
 async function openFileDialog() {
   const result = await dialog.showOpenDialog(mainWindow, {
-    title: 'Seleccionar archivo M3U',
+    title: 'Select M3U File',
     filters: [
-      { name: 'Archivos M3U', extensions: ['m3u', 'm3u8'] },
-      { name: 'Todos los archivos', extensions: ['*'] }
+      { name: 'M3U Files', extensions: ['m3u', 'm3u8'] },
+      { name: 'All Files', extensions: ['*'] }
     ],
     properties: ['openFile']
   });
@@ -252,7 +256,7 @@ async function openFileDialog() {
     try {
       const content = fs.readFileSync(filePath, 'utf8');
       
-      // Agregar a archivos recientes
+      // Add to recent files
       const config = loadConfig();
       const recentFile = {
         path: filePath,
@@ -262,7 +266,7 @@ async function openFileDialog() {
       
       config.recentFiles = config.recentFiles.filter(f => f.path !== filePath);
       config.recentFiles.unshift(recentFile);
-      config.recentFiles = config.recentFiles.slice(0, 10); // Mantener solo los últimos 10
+      config.recentFiles = config.recentFiles.slice(0, 10); // Keep only the last 10
       
       saveConfig(config);
       
@@ -272,13 +276,13 @@ async function openFileDialog() {
         fullPath: filePath
       });
     } catch (error) {
-      console.error('Error leyendo archivo:', error);
-      dialog.showErrorBox('Error', `No se pudo leer el archivo: ${error.message}`);
+      console.error('Error reading file:', error);
+      dialog.showErrorBox('Error', `Could not read file: ${error.message}`);
     }
   }
 }
 
-// Función para hacer peticiones HTTP/HTTPS con headers personalizados
+// Function to make HTTP/HTTPS requests with custom headers
 function fetchUrl(url, options = {}) {
   return new Promise((resolve, reject) => {
     const urlObj = new URL(url);
@@ -396,8 +400,15 @@ ipcMain.handle('get-app-version', () => {
   return app.getVersion();
 });
 
-// Event handlers de la aplicación
-app.whenReady().then(createWindow);
+// Application event handlers
+app.whenReady().then(() => {
+  // Set dock icon on macOS
+  if (process.platform === 'darwin') {
+    const iconPath = path.join(__dirname, 'assets', 'icon.png');
+    app.dock.setIcon(iconPath);
+  }
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -411,13 +422,13 @@ app.on('activate', () => {
   }
 });
 
-// Manejar protocolo personalizado para archivos M3U
+// Handle custom protocol for M3U files
 app.setAsDefaultProtocolClient('m3u');
 
 app.on('open-file', (event, filePath) => {
   event.preventDefault();
   if (mainWindow) {
-    // La ventana ya está abierta, cargar el archivo
+    // Window is already open, load the file
     try {
       const content = fs.readFileSync(filePath, 'utf8');
       mainWindow.webContents.send('file-loaded', {
@@ -426,15 +437,15 @@ app.on('open-file', (event, filePath) => {
         fullPath: filePath
       });
     } catch (error) {
-      console.error('Error leyendo archivo:', error);
+      console.error('Error reading file:', error);
     }
   } else {
-    // Guardar el archivo para cargar cuando la ventana esté lista
+    // Save the file to load when window is ready
     app.commandLine.appendArgument(filePath);
   }
 });
 
-// Manejo de argumentos de línea de comandos
+// Command line arguments handling
 process.argv.forEach((arg, index) => {
   if (arg.endsWith('.m3u') || arg.endsWith('.m3u8')) {
     app.on('ready', () => {
@@ -447,7 +458,7 @@ process.argv.forEach((arg, index) => {
             fullPath: arg
           });
         } catch (error) {
-          console.error('Error leyendo archivo desde argumentos:', error);
+          console.error('Error reading file from arguments:', error);
         }
       }, 1000);
     });

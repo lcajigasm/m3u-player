@@ -13,16 +13,19 @@ This guide will walk you through step-by-step to generate executables of your M3
 The project includes three main workflows:
 
 ### 1. CI Workflow (`ci.yml`)
+
 - **Purpose**: Verify that code compiles correctly
 - **Runs on**: Every push and pull request
 - **Function**: Quick test without generating executables
 
 ### 2. Release Workflow (`release.yml`)
+
 - **Purpose**: Generate executables for distribution
 - **Runs on**: When creating tags or manually
 - **Function**: Creates installers for Windows, macOS, and Linux
 
 ### 3. Test Workflow (`test.yml`)
+
 - **Purpose**: Quick build verification for PRs
 - **Runs on**: Pull requests only
 - **Function**: Fast compilation test
@@ -37,6 +40,7 @@ The project includes three main workflows:
 ```
 
 This script:
+
 1. Updates version in `package.json`
 2. Creates a commit with the change
 3. Creates and pushes the tag
@@ -68,15 +72,18 @@ git push origin v1.0.0
 ## 📦 Output Formats by Operating System
 
 ### Windows
+
 - **`.exe`** - NSIS installer (recommended for distribution)
 - **Portable** - Executable without installation
 
 ### macOS
+
 - **`.dmg`** - Disk image (macOS standard format)
 - **`.zip`** - Compressed file
 - **Architectures**: x64 (Intel) and ARM64 (Apple Silicon)
 
 ### Linux
+
 - **`.AppImage`** - Portable executable (works on all distributions)
 - **`.deb`** - Package for Debian/Ubuntu
 - **`.rpm`** - Package for Red Hat/Fedora/SUSE
@@ -84,35 +91,43 @@ git push origin v1.0.0
 ## 🔍 Monitor the Process
 
 ### 1. View Progress
+
 - Go to **Actions** in your GitHub repository
 - Click on the "Build and Release" workflow
 - Watch the progress of each job (Windows, macOS, Linux)
 
 ### 2. Estimated Times
+
 - **Windows**: ~5-8 minutes
-- **macOS**: ~6-10 minutes  
+- **macOS**: ~6-10 minutes
 - **Linux**: ~4-6 minutes
 - **Release**: ~1-2 additional minutes
 
 ### 3. Download Artifacts
+
 During development, you can download executables from:
+
 - **Actions** → **Workflow run** → **Artifacts** (bottom section)
 
 ## 📥 Access the Executables
 
 ### For Releases (Tags)
+
 1. Go to the **Releases** section of your repository
 2. Find your version (e.g., `v1.0.0`)
 3. Download files from **Assets**
 
 ### For Testing (No Tag)
+
 1. Go to **Actions** → **Workflow run**
 2. Download from **Artifacts** section
 
 ## 🛠️ Advanced Customization
 
 ### Add Icons
+
 Place these files in the `assets/` folder:
+
 ```
 assets/
 ├── icon.icns    # macOS (512x512 px)
@@ -121,6 +136,7 @@ assets/
 ```
 
 Then update `package.json`:
+
 ```json
 {
   "build": {
@@ -138,6 +154,7 @@ Then update `package.json`:
 ```
 
 ### Modify Output Formats
+
 Edit the `build` section in `package.json`:
 
 ```json
@@ -156,19 +173,23 @@ Edit the `build` section in `package.json`:
 ## 🐛 Common Troubleshooting
 
 ### Error: "Cannot find electron-builder"
+
 ```bash
 npm install --save-dev electron-builder
 ```
 
 ### Error: "Permission denied" on macOS
+
 - Ensure repository has correct permissions
 - Verify `GITHUB_TOKEN` is configured
 
 ### Build fails on Windows
+
 - Check for special characters in paths
 - Verify all dependencies are in `package.json`
 
 ### Very large files
+
 - Electron executables are large (~100-200MB) by nature
 - Consider additional compression for distribution
 

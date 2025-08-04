@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8" />
@@ -7,41 +7,41 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    <title>M3U Player - Reproductor IPTV Electron</title>
+    <title>M3U Player - IPTV Player for Electron</title>
     <link rel="stylesheet" href="styles.css?v=1.1.0" />
 </head>
 
 <body>
     <div class="container">
         <header>
-            <h1>🎬 M3U Player Electron</h1>
-            <p>Reproductor IPTV sin limitaciones CORS</p>
+            <h1>🎬 M3U Player</h1>
+            <p>IPTV Player without CORS limitations</p>
         </header>
 
         <div class="upload-section" id="uploadSection">
             <div class="upload-intro">
                 <div class="upload-icon">📺</div>
-                <h2>Cargar Lista M3U</h2>
-                <p>Selecciona un archivo local o ingresa una URL para comenzar</p>
+                <h2>Load M3U Playlist</h2>
+                <p>Select a local file or enter a URL to get started</p>
             </div>
             
             <div class="upload-buttons">
                 <button id="fileBtn" class="upload-btn primary">
-                    📁 Abrir Archivo Local
+                    📁 Open Local File
                 </button>
                 <button id="urlBtn" class="upload-btn secondary">
-                    🌐 Cargar desde URL
+                    🌐 Load from URL
                 </button>
                 <button id="testBtn" class="upload-btn tertiary">
-                    🧪 Archivo de Prueba
+                    🧪 Test File
                 </button>
             </div>
 
             <div id="urlInput" class="url-input" style="display: none">
-                <input type="url" id="m3uUrl" placeholder="https://ejemplo.com/playlist.m3u" />
+                <input type="url" id="m3uUrl" placeholder="https://example.com/playlist.m3u" />
                 <div class="url-actions">
-                    <button id="loadUrlBtn" class="upload-btn primary">Cargar</button>
-                    <button id="cancelUrlBtn" class="upload-btn secondary">Cancelar</button>
+                    <button id="loadUrlBtn" class="upload-btn primary">Load</button>
+                    <button id="cancelUrlBtn" class="upload-btn secondary">Cancel</button>
                 </div>
             </div>
 
@@ -51,48 +51,48 @@
         <div class="player-section" id="playerSection" style="display: none">
             <div class="video-container">
                 <video id="videoPlayer" controls preload="none" controlsList="nodownload">
-                    Tu navegador no soporta el elemento video.
+                    Your browser does not support the video element.
                 </video>
                 <div class="video-overlay" id="videoOverlay">
                     <div class="loading-spinner" id="loadingSpinner" style="display: none">
                         <div class="spinner"></div>
-                        <p>Cargando stream...</p>
+                        <p>Loading stream...</p>
                     </div>
                     <div class="error-message" id="errorMessage" style="display: none">
-                        <h3>❌ Error de reproducción</h3>
+                        <h3>❌ Playback Error</h3>
                         <p id="errorText"></p>
-                        <button id="retryBtn" class="upload-btn">🔄 Reintentar</button>
+                        <button id="retryBtn" class="upload-btn">🔄 Retry</button>
                     </div>
                 </div>
             </div>
 
             <div class="playlist-container">
                 <div class="playlist-header">
-                    <h3>📺 Lista de canales</h3>
+                    <h3>📺 Channel List</h3>
                     <div class="playlist-controls">
                         <div class="search-container">
                             <div class="search-input-wrapper">
-                                <input type="text" id="searchInput" placeholder="Buscar por nombre, grupo o tipo..." />
-                                <button id="clearSearchBtn" class="clear-search-btn" title="Limpiar búsqueda">✕</button>
+                                <input type="text" id="searchInput" placeholder="Search by name, group or type..." />
+                                <button id="clearSearchBtn" class="clear-search-btn" title="Clear search">✕</button>
                             </div>
                             <div class="search-filters">
                                 <select id="groupFilter" class="filter-select">
-                                    <option value="">Todos los grupos</option>
+                                    <option value="">All groups</option>
                                 </select>
                                 <select id="typeFilter" class="filter-select">
-                                    <option value="">Todos los tipos</option>
+                                    <option value="">All types</option>
                                     <option value="HLS">HLS</option>
-                                    <option value="Direct">Directo</option>
+                                    <option value="Direct">Direct</option>
                                     <option value="Stream">Stream</option>
                                 </select>
-                                <button id="sortBtn" class="sort-btn" title="Ordenar lista">⇅</button>
+                                <button id="sortBtn" class="sort-btn" title="Sort list">⇅</button>
                             </div>
                         </div>
                         <div class="playlist-actions">
-                            <span id="channelCount" class="channel-count">0 canales</span>
+                            <span id="channelCount" class="channel-count">0 channels</span>
                             <div class="action-buttons">
-                                <button id="exportBtn" class="action-btn">💾 Exportar</button>
-                                <button id="refreshPlaylistBtn" class="action-btn">🔄 Actualizar</button>
+                                <button id="exportBtn" class="action-btn">💾 Export</button>
+                                <button id="refreshPlaylistBtn" class="action-btn">🔄 Refresh</button>
                             </div>
                         </div>
                     </div>
@@ -101,24 +101,24 @@
             </div>
 
             <div class="controls">
-                <button id="prevBtn" class="control-btn">⏮️ Anterior</button>
+                <button id="prevBtn" class="control-btn">⏮️ Previous</button>
                 <button id="playPauseBtn" class="control-btn">⏯️ Play/Pause</button>
-                <button id="nextBtn" class="control-btn">⏭️ Siguiente</button>
-                <button id="stopBtn" class="control-btn">⏹️ Detener</button>
+                <button id="nextBtn" class="control-btn">⏭️ Next</button>
+                <button id="stopBtn" class="control-btn">⏹️ Stop</button>
                 <button id="pipBtn" class="control-btn" title="Picture-in-Picture">
                     📺 PiP
                 </button>
-                <button id="fullscreenBtn" class="control-btn" title="Pantalla completa">
-                    ⛶ Pantalla
+                <button id="fullscreenBtn" class="control-btn" title="Fullscreen">
+                    ⛶ Fullscreen
                 </button>
                 <div class="video-controls">
                     <label for="brightnessSlider">☀️</label>
                     <input type="range" id="brightnessSlider" min="50" max="150" value="100" class="video-slider"
-                        title="Brillo" />
+                        title="Brightness" />
                     <label for="contrastSlider">🔆</label>
                     <input type="range" id="contrastSlider" min="50" max="150" value="100" class="video-slider"
-                        title="Contraste" />
-                    <button id="resetFiltersBtn" class="control-btn small" title="Resetear filtros">
+                        title="Contrast" />
+                    <button id="resetFiltersBtn" class="control-btn small" title="Reset filters">
                         🔄
                     </button>
                 </div>
@@ -134,18 +134,18 @@
 
             <div class="current-info">
                 <div class="current-title" id="currentTitle">
-                    No hay video seleccionado
+                    No video selected
                 </div>
                 <div class="current-url" id="currentUrl"></div>
                 <div class="stream-info" id="streamInfo"></div>
             </div>
         </div>
 
-        <!-- Modal de configuración -->
+        <!-- Settings Modal -->
         <div id="settingsModal" class="modal" style="display: none">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>⚙️ Configuración</h2>
+                    <h2>⚙️ Settings</h2>
                     <button id="closeSettings" class="close-btn">&times;</button>
                 </div>
                 <div class="modal-body">
@@ -164,42 +164,42 @@
                     <div class="setting-group">
                         <label>
                             <input type="checkbox" id="autoplayCheck" />
-                            Reproducción automática
+                            Autoplay
                         </label>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button id="saveSettings" class="upload-btn">💾 Guardar</button>
+                    <button id="saveSettings" class="upload-btn">💾 Save</button>
                     <button id="resetSettings" class="upload-btn secondary">
-                        🔄 Restaurar
+                        🔄 Reset
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Modal de información -->
+        <!-- About Modal -->
         <div id="aboutModal" class="modal" style="display: none">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>ℹ️ Acerca de</h2>
+                    <h2>ℹ️ About</h2>
                     <button id="closeAbout" class="close-btn">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <p><strong>M3U Player Electron</strong></p>
-                    <p>Versión: <span id="appVersion">1.0.0</span></p>
-                    <p>Reproductor IPTV sin limitaciones CORS</p>
-                    <p>Soporte para archivos M3U/M3U8 y streams HLS</p>
+                    <p><strong>M3U Player</strong></p>
+                    <p>Version: <span id="appVersion">1.0.0</span></p>
+                    <p>IPTV Player without CORS limitations</p>
+                    <p>Support for M3U/M3U8 files and HLS streams</p>
                     <br />
-                    <p><strong>Plataforma:</strong> <span id="platformInfo"></span></p>
+                    <p><strong>Platform:</strong> <span id="platformInfo"></span></p>
                     <p><strong>Electron:</strong> <span id="electronVersion"></span></p>
                     <p>
-                        <strong>Caché:</strong>
-                        <span id="cacheInfo">Desactivada en desarrollo</span>
+                        <strong>Cache:</strong>
+                        <span id="cacheInfo">Disabled in development</span>
                     </p>
                     <br />
                     <p>
-                        <small>💡 Si no ves cambios, usa Ctrl+Shift+R o el botón "🔄
-                            Actualizar"</small>
+                        <small>💡 If you don't see changes, use Ctrl+Shift+R or the "🔄
+                            Refresh" button</small>
                     </p>
                 </div>
             </div>

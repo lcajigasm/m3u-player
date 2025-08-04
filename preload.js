@@ -1,21 +1,21 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-// API segura para el renderer process
+// Safe API for the renderer process
 contextBridge.exposeInMainWorld('electronAPI', {
-  // Configuración
+  // Configuration
   loadConfig: () => ipcRenderer.invoke('load-config'),
   saveConfig: (config) => ipcRenderer.invoke('save-config', config),
   
-  // Archivos
+  // Files
   openFileDialog: () => ipcRenderer.invoke('open-file-dialog'),
   showSaveDialog: (options) => ipcRenderer.invoke('show-save-dialog', options),
   writeFile: (filePath, content) => ipcRenderer.invoke('write-file', filePath, content),
   readFile: (filePath) => ipcRenderer.invoke('read-file', filePath),
   
-  // Red (sin restricciones CORS)
+  // Network (without CORS restrictions)
   fetchUrl: (url, options) => ipcRenderer.invoke('fetch-url', url, options),
   
-  // Información de la app
+  // App information
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   
   // Eventos del main process
