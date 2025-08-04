@@ -49,13 +49,8 @@
   "build": {
     "appId": "com.m3uplayer.app",
     "productName": "m3u-player",
-    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "directories": {
       "output": "dist"
-    },
-    "extraMetadata": {
-      "name": "m3u-player",
-      "productName": "M3U Player"
     },
     "files": [
       "main.js",
@@ -67,66 +62,33 @@
     "mac": {
       "category": "public.app-category.video",
       "icon": "assets/icon.icns",
-      "hardenedRuntime": true,
-      "gatekeeperAssess": false,
       "target": [
         {
           "target": "dmg",
-          "arch": ["universal"]
+          "arch": ["x64", "arm64"]
         },
         {
           "target": "zip",
-          "arch": ["universal"]
+          "arch": ["x64", "arm64"]
         }
-      ],
-      "dmg": {
-        "title": "M3U Player ${version}",
-        "icon": "assets/icon.icns",
-        "background": null,
-        "contents": [
-          {
-            "x": 130,
-            "y": 220
-          },
-          {
-            "x": 410,
-            "y": 220,
-            "type": "link",
-            "path": "/Applications"
-          }
-        ]
-      }
+      ]
     },
     "win": {
       "icon": "assets/icon.ico",
-      "publisherName": "M3U Player Team",
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64", "ia32"]
+          "arch": ["x64"]
         },
         {
-          "target": "zip",
-          "arch": ["x64", "ia32"]
+          "target": "portable",
+          "arch": ["x64"]
         }
-      ],
-      "nsis": {
-        "oneClick": false,
-        "allowToChangeInstallationDirectory": true,
-        "createDesktopShortcut": true,
-        "createStartMenuShortcut": true,
-        "shortcutName": "M3U Player"
-      }
+      ]
     },
     "linux": {
       "icon": "assets/icon.png",
       "category": "AudioVideo",
-      "desktop": {
-        "Name": "M3U Player",
-        "Comment": "Modern IPTV player with CORS bypass",
-        "Keywords": "m3u;iptv;player;streaming;video",
-        "StartupWMClass": "m3u-player"
-      },
       "target": [
         {
           "target": "AppImage",
@@ -138,10 +100,6 @@
         },
         {
           "target": "rpm",
-          "arch": ["x64"]
-        },
-        {
-          "target": "tar.gz",
           "arch": ["x64"]
         }
       ]

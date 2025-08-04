@@ -1,0 +1,50 @@
+name: Debug Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - debug-build
+
+jobs:
+  debug-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Debug package.json
+      run: |
+        echo "📋 Package.json build config:"
+        cat package.json | jq '.build'
+    
+    - name: Test pack (quick build)
+      run: npm run pack
+    
+    - name: List pack output
+      run: |
+        echo "📁 Pack output:"
+        ls -la dist/
+    
+    - name: Test dist (full build)
+      run: npm run dist
+    
+    - name: List dist output
+      run: |
+        echo "📁 Dist output:"
+        find dist -type f -name "*" | sort
+        echo ""
+        echo "📊 File sizes:"
+        find dist -type f -name "*" -exec ls -lah {} \;
+    
+    - name: Upload debug artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: debug-linux-build
+        path: dist/
