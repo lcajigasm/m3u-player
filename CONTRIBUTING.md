@@ -32,7 +32,7 @@ Thank you for your interest in contributing to M3U Player! This document provide
 #### Development Setup
 ```bash
 # Fork and clone the repository
-git clone https://github.com/yourusername/m3u-player.git
+git clone https://github.com/m3u-player-eu/m3u-player.git
 cd m3u-player
 
 # Install dependencies
@@ -204,7 +204,7 @@ We follow [Semantic Versioning](https://semver.org/):
 
 ### Reporting Security Issues
 - **Do not** create public issues for security vulnerabilities
-- Email security concerns to: security@m3uplayer.com
+- Email security concerns to: security@m3u-player.eu
 - Include detailed information about the vulnerability
 - Allow time for investigation before public disclosure
 

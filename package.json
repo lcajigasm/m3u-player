@@ -3,13 +3,13 @@
   "version": "0.1.4",
   "description": "Modern IPTV player built with Electron that bypasses CORS limitations",
   "main": "main.js",
-  "homepage": ".",
+  "homepage": "https://m3u-player.eu",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/m3u-player.git"
+    "url": "https://github.com/m3u-player-eu/m3u-player.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/m3u-player/issues"
+    "url": "https://github.com/m3u-player-eu/m3u-player/issues"
   },
   "scripts": {
     "start": "electron .",
@@ -35,7 +35,7 @@
   ],
   "author": {
     "name": "M3U Player Team",
-    "email": "contact@m3uplayer.com"
+    "email": "contact@m3u-player.eu"
   },
   "license": "MIT",
   "devDependencies": {
@@ -51,7 +51,7 @@
     "hls.js": "^1.4.12"
   },
   "build": {
-    "appId": "com.m3uplayer.app",
+    "appId": "eu.m3u-player.app",
     "productName": "m3u-player",
     "directories": {
       "output": "dist"

@@ -32,7 +32,7 @@ Download the latest installer for your operating system from [Releases](../../re
 ### Option 2: Automatic Setup (Development)
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/m3u-player.git
+git clone https://github.com/m3u-player-eu/m3u-player.git
 cd m3u-player
 
 # Run automatic setup script
@@ -78,8 +78,8 @@ npm run dev
 The application automatically supports channel logos defined in M3U files:
 
 ```m3u
-#EXTINF:-1 tvg-logo="https://example.com/logo.png" group-title="News",News Channel
-https://example.com/stream.m3u8
+#EXTINF:-1 tvg-logo="https://m3u-player.eu/logo.png" group-title="News",News Channel
+https://m3u-player.eu/stream.m3u8
 ```
 
 **Logo features:**
@@ -273,7 +273,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - 🐛 **Issues**: Report bugs via GitHub Issues
 - 💬 **Discussions**: Use GitHub Discussions for questions
-- 📧 **Contact**: [contact@m3uplayer.com](mailto:contact@m3uplayer.com)
+- 📧 **Contact**: [contact@m3u-player.eu](mailto:contact@m3u-player.eu)
 
 ---
 

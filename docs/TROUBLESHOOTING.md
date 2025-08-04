@@ -111,11 +111,11 @@ else if (line.startsWith('#EXTVLCOPT:')) {
 ```javascript
 // Test a specific stream
 const player = new M3UPlayer();
-await player.testStreamConnectivity("https://example.com/stream.m3u8");
+await player.testStreamConnectivity("https://m3u-player.eu/stream.m3u8");
 
 // Load with multiple strategies
 await player.loadVideoWithFallback({
-  url: "https://example.com/video.mp4",
+  url: "https://m3u-player.eu/video.mp4",
   title: "Test Video",
   isHLS: false,
 });

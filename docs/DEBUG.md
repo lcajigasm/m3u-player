@@ -116,7 +116,7 @@ const player = window.player; // If exposed globally
 console.log(player.playlistData);
 
 // Test stream manually
-await player.loadHLSStream('https://example.com/stream.m3u8');
+await player.loadHLSStream('https://m3u-player.eu/stream.m3u8');
 
 // View HLS state
 console.log(player.hls);
