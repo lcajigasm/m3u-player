@@ -89,10 +89,22 @@ The workflow triggers on these branch patterns:
 - `release/*` - Version-specific branches (e.g., `release/0.2.0`, `release/1.0.0`)
 
 ### Generated Assets
-Each release includes executables for all platforms:
-- **Windows**: `.exe` installer and portable version
-- **macOS**: `.dmg` disk image and `.zip` archive (Intel + Apple Silicon)
-- **Linux**: `.AppImage`, `.deb`, and `.rpm` packages
+Each release includes optimized executables for all platforms following GitHub best practices:
+
+#### 🪟 Windows
+- **`.exe`** - NSIS installer with desktop shortcuts
+- **`.zip`** - Portable version (no installation required)
+
+#### 🍎 macOS  
+- **`.dmg`** - Disk image with drag-to-Applications installer
+- **`.zip`** - ZIP archive for direct extraction
+- **Universal builds** - Single files supporting both Intel and Apple Silicon
+
+#### 🐧 Linux
+- **`.AppImage`** - Universal portable executable (recommended)
+- **`.deb`** - Debian/Ubuntu package
+- **`.rpm`** - Red Hat/Fedora/SUSE package  
+- **`.tar.gz`** - Compressed archive with binaries
 
 ### Automatic Features
 - **Tag creation**: Creates `v0.2.0` style tags automatically

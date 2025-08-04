@@ -263,6 +263,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - 📖 **[Build Guide](docs/BUILD-GUIDE.md)** - Complete guide for building executables
 - 🚀 **[Release Tutorial](docs/RELEASE-TUTORIAL.md)** - Step-by-step manual release process
 - 🤖 **[Auto-Release Guide](docs/AUTO-RELEASE-GUIDE.md)** - Automatic releases from branch pushes
+- 📦 **[Release Formats](docs/RELEASE-FORMATS.md)** - Download formats and installation guide
 - 🔧 **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
 - 📋 **[Release Notes v0.1.0](docs/RELEASE-NOTES-v0.1.0.md)** - What's new in this version
 - 🤝 **[Contributing](CONTRIBUTING.md)** - How to contribute to the project
