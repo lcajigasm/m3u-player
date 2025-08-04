@@ -1,0 +1,80 @@
+name: Simple Release
+
+on:
+  push:
+    branches:
+      - simple-release
+      - simple-release/*
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Get version from package.json
+      id: version
+      run: |
+        VERSION=$(node -p "require('./package.json').version")
+        echo "version=v$VERSION" >> $GITHUB_OUTPUT
+        echo "Version: v$VERSION"
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build Linux executables
+      run: npm run dist
+      
+    - name: List build output
+      run: |
+        echo "Build output:"
+        find dist -type f -name "*" | sort
+        
+    - name: Create release with GitHub CLI
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        
+        # Check if release already exists
+        if gh release view "$VERSION" >/dev/null 2>&1; then
+          echo "Release $VERSION already exists, skipping..."
+          exit 0
+        fi
+        
+        # Create release
+        gh release create "$VERSION" \
+          --title "m3u-player $VERSION" \
+          --notes "🎉 **m3u-player $VERSION**
+
+        A modern IPTV player built with Electron that bypasses CORS limitations.
+
+        ## 📦 Downloads
+
+        - 🐧 **Linux**: Download \`.AppImage\`, \`.deb\`, or \`.rpm\` files
+
+        ## 🚀 Quick Install
+
+        - **Linux**: Make \`.AppImage\` executable and run
+
+        ---
+        🤖 *Auto-generated release*" \
+          dist/*.AppImage \
+          dist/*.deb \
+          dist/*.rpm \
+          --draft=false \
+          --prerelease=false
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -7,6 +7,10 @@ on:
       - release/*
   workflow_dispatch:
 
+permissions:
+  contents: write
+  actions: read
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -113,13 +117,22 @@ jobs:
     - name: Check if release exists
       id: check_release
       run: |
+        # Check if tag exists locally
         if git tag -l "${{ steps.version.outputs.version }}" | grep -q "${{ steps.version.outputs.version }}"; then
           echo "exists=true" >> $GITHUB_OUTPUT
-          echo "Release ${{ steps.version.outputs.version }} already exists"
+          echo "Release ${{ steps.version.outputs.version }} already exists locally"
         else
-          echo "exists=false" >> $GITHUB_OUTPUT
-          echo "Release ${{ steps.version.outputs.version }} does not exist"
+          # Check if release exists on GitHub
+          if gh release view "${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Release ${{ steps.version.outputs.version }} already exists on GitHub"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Release ${{ steps.version.outputs.version }} does not exist"
+          fi
         fi
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Download all artifacts
       if: steps.check_release.outputs.exists == 'false'
