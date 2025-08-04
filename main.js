@@ -74,7 +74,7 @@ function createWindow() {
   });
 
   // Load the application
-  mainWindow.loadFile('index.html');
+  mainWindow.loadFile('src/index.html');
 
   // Show window when ready
   mainWindow.once('ready-to-show', () => {

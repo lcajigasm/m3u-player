@@ -1,13 +1,20 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+/* ========================================
+   🎨 M3U Player - Modern UI Styles
+   Version 2.0 - Complete Redesign
+======================================== */
+
+@import 'variables.css';
+@import 'components.css';
+
+/* ===== Global Styles ===== */
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-    min-height: 100vh;
+  overflow-x: hidden;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  min-height: 100vh;
     color: #e2e8f0;
     font-weight: 400;
     line-height: 1.6;

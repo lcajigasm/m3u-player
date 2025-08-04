@@ -113,6 +113,22 @@ https://m3u-player.eu/stream.m3u8
 - **Sorting** - Alphabetical sorting (A-Z, Z-A)
 - **Channel counter** - Shows filtered/total channels
 
+## 📚 Documentation
+
+The project includes comprehensive documentation organized by category:
+
+- **📖 [Documentation Index](docs/INDEX.md)** - Master navigation for all documentation
+- **🎨 [UI Improvements](docs/improvements/)** - Interface enhancement details
+- **⚙️ [Development Guides](docs/development/)** - Technical documentation for developers  
+- **📋 [User Guides](docs/user-guides/)** - Troubleshooting and how-to guides
+- **🚀 [Release Documentation](docs/releases/)** - Version management and release processes
+
+### Quick Links:
+- **Getting Help**: [User Guides](docs/user-guides/TROUBLESHOOTING.md)
+- **Building the Project**: [Build Guide](docs/development/BUILD-GUIDE.md)
+- **Latest Improvements**: [Channel List Improvements](docs/improvements/CHANNEL-LIST-IMPROVEMENTS.md)
+- **Release Process**: [Release Tutorial](docs/releases/RELEASE-TUTORIAL.md)
+
 ## 🏗️ Project Structure
 
 ```
@@ -127,13 +143,15 @@ m3u-player/
 │   ├── basic-test.m3u     # Basic test videos
 │   ├── test-streams.m3u   # HLS test streams
 │   └── sample.m3u         # Additional samples
-├── docs/                  # Documentation
-│   ├── README.md          # User guide
-│   ├── DEBUG.md           # Debugging guide
-│   └── TROUBLESHOOTING.md # Technical troubleshooting
+├── docs/                  # Organized documentation
+│   ├── INDEX.md           # Documentation master index
+│   ├── improvements/      # UI/UX enhancement docs
+│   ├── development/       # Developer guides
+│   ├── user-guides/       # User troubleshooting
+│   └── releases/          # Release management
 ├── scripts/               # Build and utility scripts
 ├── build/                 # Build configuration
-├── assets/                # Static assets
+├── assets/                # Static assets (icons, etc.)
 ├── main.js                # Electron main process
 ├── preload.js             # Electron preload script
 └── package.json           # Project configuration

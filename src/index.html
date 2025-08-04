@@ -8,7 +8,7 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>M3U Player - IPTV Player for Electron</title>
-    <link rel="stylesheet" href="styles/main.css" />
+    <link rel="stylesheet" href="styles.css?v=1.2.0" />
 </head>
 
 <body>
@@ -105,26 +105,37 @@
                 <button id="playPauseBtn" class="control-btn">⏯️ Play/Pause</button>
                 <button id="nextBtn" class="control-btn">⏭️ Next</button>
                 <button id="stopBtn" class="control-btn">⏹️ Stop</button>
-                <button id="pipBtn" class="control-btn" title="Picture-in-Picture">📺 PiP</button>
-                <button id="fullscreenBtn" class="control-btn" title="Fullscreen">⛶ Fullscreen</button>
+                <button id="pipBtn" class="control-btn" title="Picture-in-Picture">
+                    📺 PiP
+                </button>
+                <button id="fullscreenBtn" class="control-btn" title="Fullscreen">
+                    ⛶ Fullscreen
+                </button>
                 <div class="video-controls">
                     <label for="brightnessSlider">☀️</label>
-                    <input type="range" id="brightnessSlider" min="50" max="150" value="100" class="video-slider" title="Brightness" />
+                    <input type="range" id="brightnessSlider" min="50" max="150" value="100" class="video-slider"
+                        title="Brightness" />
                     <label for="contrastSlider">🔆</label>
-                    <input type="range" id="contrastSlider" min="50" max="150" value="100" class="video-slider" title="Contrast" />
-                    <button id="resetFiltersBtn" class="control-btn small" title="Reset filters">🔄</button>
+                    <input type="range" id="contrastSlider" min="50" max="150" value="100" class="video-slider"
+                        title="Contrast" />
+                    <button id="resetFiltersBtn" class="control-btn small" title="Reset filters">
+                        🔄
+                    </button>
                 </div>
                 <div class="volume-controls">
                     <input type="range" id="volumeSlider" min="0" max="100" value="80" class="volume-slider" />
                     <span id="volumeLabel">🔊 80%</span>
                 </div>
                 <div class="time-display">
-                    <span id="currentTime">00:00</span> / <span id="duration">00:00</span>
+                    <span id="currentTime">00:00</span> /
+                    <span id="duration">00:00</span>
                 </div>
             </div>
 
             <div class="current-info">
-                <div class="current-title" id="currentTitle">No video selected</div>
+                <div class="current-title" id="currentTitle">
+                    No video selected
+                </div>
                 <div class="current-url" id="currentUrl"></div>
                 <div class="stream-info" id="streamInfo"></div>
             </div>
@@ -144,11 +155,11 @@
                     </div>
                     <div class="setting-group">
                         <label for="refererInput">Referer:</label>
-                        <input type="text" id="refererInput" placeholder="https://m3u-player.eu" />
+                        <input type="text" id="refererInput" placeholder="https://ejemplo.com" />
                     </div>
                     <div class="setting-group">
                         <label for="originInput">Origin:</label>
-                        <input type="text" id="originInput" placeholder="https://m3u-player.eu" />
+                        <input type="text" id="originInput" placeholder="https://ejemplo.com" />
                     </div>
                     <div class="setting-group">
                         <label>
@@ -159,7 +170,9 @@
                 </div>
                 <div class="modal-footer">
                     <button id="saveSettings" class="upload-btn">💾 Save</button>
-                    <button id="resetSettings" class="upload-btn secondary">🔄 Reset</button>
+                    <button id="resetSettings" class="upload-btn secondary">
+                        🔄 Reset
+                    </button>
                 </div>
             </div>
         </div>
@@ -176,18 +189,25 @@
                     <p>Version: <span id="appVersion">1.0.0</span></p>
                     <p>IPTV Player without CORS limitations</p>
                     <p>Support for M3U/M3U8 files and HLS streams</p>
-                    <br>
+                    <br />
                     <p><strong>Platform:</strong> <span id="platformInfo"></span></p>
                     <p><strong>Electron:</strong> <span id="electronVersion"></span></p>
-                    <p><strong>Cache:</strong> <span id="cacheInfo">Disabled in development</span></p>
-                    <br>
-                    <p><small>💡 If you don't see changes, use Ctrl+Shift+R or the "🔄 Update" button</small></p>
+                    <p>
+                        <strong>Cache:</strong>
+                        <span id="cacheInfo">Disabled in development</span>
+                    </p>
+                    <br />
+                    <p>
+                        <small>💡 If you don't see changes, use Ctrl+Shift+R or the "🔄
+                            Refresh" button</small>
+                    </p>
                 </div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.12/dist/hls.min.js"></script>
-    <script src="js/main.js"></script>
+    <script src="js/script.js?v=1.2.0"></script>
 </body>
+
 </html>

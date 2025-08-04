@@ -1224,26 +1224,25 @@ https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
         playlistItem.className = 'playlist-item';
         playlistItem.dataset.index = index;
 
-        const typeIcon = item.type === 'HLS' ? '📡' : item.type === 'Direct' ? '🎥' : '📺';
-        const durationText = item.duration === '-1' ? '🔴 LIVE' : item.duration ? `⏱️ ${item.duration}s` : '';
+        // Determinar tipo de stream
+        const streamType = this.getStreamType(item.url);
+        const typeClass = streamType.toLowerCase();
 
         playlistItem.innerHTML = `
             <div class="playlist-item-number">${index + 1}</div>
             <div class="playlist-item-logo">
-                ${item.logo ?
-                `<img src="${this.escapeHtml(item.logo)}" alt="Logo" 
-                         onerror="this.parentElement.innerHTML='<div class=\\"logo-placeholder\\">${typeIcon}</div>'" />` :
-                `<div class="logo-placeholder">${typeIcon}</div>`
-            }
+                ${item.logo && item.logo.trim() !== '' ?
+                    `<img src="${this.escapeHtml(item.logo)}" alt="Logo" onerror="this.parentElement.innerHTML='<div class=&quot;logo-placeholder&quot;>📺</div>'" />` :
+                    `<div class="logo-placeholder">📺</div>`
+                }
             </div>
             <div class="playlist-item-content">
                 <div class="playlist-item-title" title="${this.escapeHtml(item.title)}">
                     ${this.escapeHtml(item.title)}
                 </div>
                 <div class="playlist-item-meta">
-                    <span class="stream-type">${typeIcon} ${item.type}</span>
-                    ${item.group ? `<span class="group-tag">📂 ${this.escapeHtml(item.group)}</span>` : ''}
-                    ${durationText ? `<span class="playlist-item-duration">${durationText}</span>` : ''}
+                    <span class="stream-type ${typeClass}">${streamType}</span>
+                    ${item.group && item.group !== 'Unknown' ? `<span class="group-tag">${this.escapeHtml(item.group)}</span>` : ''}
                 </div>
             </div>
             <div class="playlist-item-actions">
@@ -1267,6 +1266,14 @@ https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
         });
 
         return playlistItem;
+    }
+
+    getStreamType(url) {
+        if (url.includes('.m3u8')) return 'HLS';
+        if (url.includes('.mpd')) return 'DASH';
+        if (url.includes('rtmp://')) return 'RTMP';
+        if (url.includes('rtsp://')) return 'RTSP';
+        return 'Direct';
     }
 
     createNoResultsItem() {
