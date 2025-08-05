@@ -181,6 +181,23 @@ class M3UPlayer {
         this.currentTitle = document.getElementById('currentTitle');
         this.currentUrl = document.getElementById('currentUrl');
         this.streamInfo = document.getElementById('streamInfo');
+        
+        // Bandwidth monitoring elements
+        this.bandwidthInfo = document.getElementById('bandwidthInfo');
+        this.currentBandwidth = document.getElementById('currentBandwidth');
+        this.peakBandwidth = document.getElementById('peakBandwidth');
+        this.averageBandwidth = document.getElementById('averageBandwidth');
+        this.streamQuality = document.getElementById('streamQuality');
+        
+        // Bandwidth monitoring stats
+        this.bandwidthStats = {
+            current: 0,
+            peak: 0,
+            average: 0,
+            samples: [],
+            maxSamples: 30,
+            monitoring: false
+        };
 
         // Search and export
         this.searchInput = document.getElementById('searchInput');
@@ -2235,6 +2252,9 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         this.showLoading();
         this.hideError();
 
+        // Stop previous bandwidth monitoring
+        this.stopBandwidthMonitoring();
+
         // Limpiar HLS anterior si existe
         if (this.hls) {
             this.hls.destroy();
@@ -2307,6 +2327,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             this.hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
                 console.log('✅ Stream HLS cargado correctamente');
                 this.hideLoading();
+                this.startBandwidthMonitoring();
 
                 if (this.config.playerSettings?.autoplay) {
                     this.videoPlayer.play().catch(e => {
@@ -2333,6 +2354,15 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
                             break;
                     }
                 }
+            });
+
+            // Add bandwidth monitoring events
+            this.hls.on(window.Hls.Events.FRAG_LOADED, (event, data) => {
+                this.updateBandwidthStats(data);
+            });
+
+            this.hls.on(window.Hls.Events.LEVEL_SWITCHED, (event, data) => {
+                this.updateStreamQuality(data);
             });
 
             // Timeout para HLS
@@ -2971,6 +3001,9 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             this.hls.destroy();
             this.hls = null;
         }
+        
+        // Stop bandwidth monitoring
+        this.stopBandwidthMonitoring();
 
         this.hideLoading();
         this.hideError();
@@ -3838,22 +3871,44 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             item.group.toLowerCase().includes('radio') ||
             item.url.includes('audio')
         ).length;
+        
+        // Calculate HD channels (premium feature)
+        const hdChannels = this.playlistData.filter(item => 
+            item.title?.toLowerCase().includes('hd') || 
+            item.title?.match(/\b(720p|1080p|4k|uhd)\b/i)
+        ).length;
 
         if (this.totalChannelsCount) {
             this.totalChannelsCount.textContent = totalChannels.toLocaleString();
+            // Add elegant animation for large numbers
+            if (totalChannels > 100) {
+                this.totalChannelsCount.style.animation = 'elegantGlow 2s ease-in-out infinite';
+            }
         }
         
         if (this.audioChannelsCount) {
             this.audioChannelsCount.textContent = audioChannels.toLocaleString();
         }
         
-        if (this.connectionStatus) {
-            this.connectionStatus.textContent = '●';
-            this.connectionStatus.style.color = '#10b981'; // Green for connected
-        }
         
         if (this.favoritesCount) {
             this.favoritesCount.textContent = this.favoriteChannels.length.toLocaleString();
+        }
+        
+        // Update application watermark with channel count
+        const watermark = document.getElementById('appWatermark');
+        if (watermark && totalChannels > 0) {
+            const watermarkText = watermark.querySelector('.watermark-text');
+            if (watermarkText) {
+                watermarkText.textContent = `M3U Player • ${totalChannels} channels`;
+            }
+        }
+        
+        // Update playlist stats in player section
+        const playlistChannelCount = document.getElementById('playlistChannelCount');
+        
+        if (playlistChannelCount) {
+            playlistChannelCount.textContent = totalChannels.toLocaleString();
         }
 
         // Show/hide widgets based on data availability
@@ -4738,6 +4793,129 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 1000);
 });
+
+// Bandwidth monitoring methods for M3UPlayer class
+M3UPlayer.prototype.startBandwidthMonitoring = function() {
+    console.log('📊 Starting bandwidth monitoring...');
+    this.bandwidthStats.monitoring = true;
+    this.bandwidthStats.samples = [];
+    this.bandwidthStats.peak = 0;
+    this.bandwidthStats.average = 0;
+    
+    // Show bandwidth info panel
+    if (this.bandwidthInfo) {
+        this.bandwidthInfo.style.display = 'grid';
+    }
+    
+    // Start monitoring interval
+    this.bandwidthInterval = setInterval(() => {
+        this.updateBandwidthDisplay();
+    }, 2000);
+};
+
+M3UPlayer.prototype.stopBandwidthMonitoring = function() {
+    console.log('📊 Stopping bandwidth monitoring...');
+    this.bandwidthStats.monitoring = false;
+    
+    if (this.bandwidthInterval) {
+        clearInterval(this.bandwidthInterval);
+        this.bandwidthInterval = null;
+    }
+    
+    // Hide bandwidth info panel
+    if (this.bandwidthInfo) {
+        this.bandwidthInfo.style.display = 'none';
+    }
+};
+
+M3UPlayer.prototype.updateBandwidthStats = function(data) {
+    if (!this.bandwidthStats.monitoring || !data.stats) return;
+    
+    const bytesLoaded = data.stats.total;
+    const loadingTime = data.stats.loading.end - data.stats.loading.start;
+    
+    if (bytesLoaded && loadingTime > 0) {
+        // Calculate bandwidth in Mbps
+        const bandwidth = (bytesLoaded * 8) / (loadingTime * 1000000);
+        
+        // Add to samples
+        this.bandwidthStats.samples.push(bandwidth);
+        if (this.bandwidthStats.samples.length > this.bandwidthStats.maxSamples) {
+            this.bandwidthStats.samples.shift();
+        }
+        
+        // Update current
+        this.bandwidthStats.current = bandwidth;
+        
+        // Update peak
+        if (bandwidth > this.bandwidthStats.peak) {
+            this.bandwidthStats.peak = bandwidth;
+        }
+        
+        // Calculate average
+        const sum = this.bandwidthStats.samples.reduce((a, b) => a + b, 0);
+        this.bandwidthStats.average = sum / this.bandwidthStats.samples.length;
+        
+        console.log(`📊 Bandwidth: ${bandwidth.toFixed(2)} Mbps`);
+    }
+};
+
+M3UPlayer.prototype.updateStreamQuality = function(data) {
+    if (!this.streamQuality) return;
+    
+    const level = data.level;
+    let quality = 'Unknown';
+    let qualityClass = 'unknown';
+    
+    if (this.hls && this.hls.levels && this.hls.levels[level]) {
+        const levelInfo = this.hls.levels[level];
+        const bitrate = levelInfo.bitrate / 1000; // Convert to kbps
+        
+        if (bitrate >= 3000) {
+            quality = 'Excellent';
+            qualityClass = 'excellent';
+        } else if (bitrate >= 1500) {
+            quality = 'Good';
+            qualityClass = 'good';
+        } else if (bitrate >= 800) {
+            quality = 'Fair';
+            qualityClass = 'fair';
+        } else {
+            quality = 'Poor';
+            qualityClass = 'poor';
+        }
+        
+        this.streamQuality.textContent = `${quality} (${bitrate.toFixed(0)}k)`;
+        this.streamQuality.setAttribute('data-quality', qualityClass);
+    }
+};
+
+M3UPlayer.prototype.updateBandwidthDisplay = function() {
+    if (!this.bandwidthStats.monitoring) return;
+    
+    // Update current bandwidth
+    if (this.currentBandwidth) {
+        const current = this.bandwidthStats.current;
+        this.currentBandwidth.textContent = `${current.toFixed(2)} Mbps`;
+        
+        // Set status color
+        let status = 'low';
+        if (current >= 5) status = 'high';
+        else if (current >= 2) status = 'medium';
+        
+        this.currentBandwidth.setAttribute('data-status', status);
+    }
+    
+    // Update peak bandwidth
+    if (this.peakBandwidth) {
+        this.peakBandwidth.textContent = `${this.bandwidthStats.peak.toFixed(2)} Mbps`;
+    }
+    
+    // Update average bandwidth
+    if (this.averageBandwidth) {
+        this.averageBandwidth.textContent = `${this.bandwidthStats.average.toFixed(2)} Mbps`;
+    }
+};
 
 // Manejar errores globales
 window.addEventListener('error', (e) => {

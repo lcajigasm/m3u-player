@@ -7,7 +7,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    <title>M3U Player - IPTV Player for Electron</title>
+    <title>M3U Player - Professional IPTV Streaming Platform</title>
     <link rel="stylesheet" href="styles.css?v=1.2.0" />
 </head>
 
@@ -16,26 +16,27 @@
         <header class="app-header">
             <div class="app-title-bar">
                 <div class="app-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
-                        <path d="M8 21l4-4 4 4" stroke="currentColor" stroke-width="2"/>
-                        <circle cx="8" cy="8" r="1" fill="currentColor"/>
-                        <circle cx="12" cy="8" r="1" fill="currentColor"/>
-                        <circle cx="16" cy="8" r="1" fill="currentColor"/>
-                    </svg>
+                    <div class="app-logo">
+                        <div class="logo-symbol">📡</div>
+                        <div class="logo-waves">
+                            <div class="wave wave-1"></div>
+                            <div class="wave wave-2"></div>
+                            <div class="wave wave-3"></div>
+                        </div>
+                    </div>
                 </div>
                 <div class="app-title">
                     <h1>M3U Player</h1>
-                    <span class="app-subtitle">Professional IPTV Player</span>
+                    <span class="app-subtitle">Professional IPTV Streaming Platform</span>
                 </div>
                 <div class="app-actions">
-                    <button class="header-btn" id="settingsHeaderBtn" title="Settings">
+                    <button class="header-btn premium" id="settingsHeaderBtn" title="Settings">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
                             <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" stroke="currentColor" stroke-width="2"/>
                         </svg>
                     </button>
-                    <button class="header-btn" id="aboutHeaderBtn" title="About">
+                    <button class="header-btn premium" id="aboutHeaderBtn" title="About">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
                             <path d="M12 16v-4m0-4h.01" stroke="currentColor" stroke-width="2"/>
@@ -145,8 +146,8 @@
             <div class="language-selector">
                 <label for="languageSelect" data-i18n="language_setting">Language</label>
                 <select id="languageSelect" class="language-select">
-                    <option value="es">Español</option>
-                    <option value="en">English</option>
+                    <option value="es">🇪🇸 Español</option>
+                    <option value="en">🇺🇸 English</option>
                 </select>
             </div>
 
@@ -257,12 +258,18 @@
             <div class="playlist-container">
                 <div class="playlist-header">
                     <div class="playlist-title-section">
-                        <button id="backToDashboardBtn" class="back-btn" title="Back to Dashboard">
-                            ← Back
+                        <button id="backToDashboardBtn" class="back-btn premium" title="Back to Dashboard">
+                            <span class="btn-icon">←</span>
+                            <span class="btn-text">Dashboard</span>
                         </button>
-                        <h3>📺 Channel List</h3>
-                        <div class="playlist-info">
-                            <span id="playlistTitle">Loaded Playlist</span>
+                        <div class="playlist-title-container">
+                            <h3>📺 <span class="gradient-text">Channel Library</span></h3>
+                            <div class="playlist-info">
+                                <span id="playlistTitle" class="playlist-name">Professional Playlist</span>
+                                <div class="playlist-stats">
+                                    <span class="stat-item">🎯 <span id="playlistChannelCount">0</span> Channels</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="playlist-controls">
@@ -424,20 +431,35 @@
                 <div class="playlist" id="playlist"></div>
             </div>
 
-            <div class="controls">
+            <div class="controls premium-controls">
                 <div class="controls-row main-controls">
-                    <button id="prevBtn" class="control-btn">⏮ Previous</button>
-                    <button id="playPauseBtn" class="control-btn">▶ Play</button>
-                    <button id="nextBtn" class="control-btn">⏭ Next</button>
-                    <button id="stopBtn" class="control-btn">⏹ Stop</button>
-                    <button id="pipBtn" class="control-btn" title="Picture-in-Picture">
-                        ⧉ PiP
+                    <button id="prevBtn" class="control-btn premium">
+                        <span class="btn-icon">⏮</span>
+                        <span class="btn-text">Previous</span>
                     </button>
-                    <button id="fullscreenBtn" class="control-btn" title="Fullscreen">
-                        ⛶ Fullscreen
+                    <button id="playPauseBtn" class="control-btn premium primary">
+                        <span class="btn-icon">▶</span>
+                        <span class="btn-text">Play</span>
                     </button>
-                    <button id="epgBtn" class="control-btn" title="Electronic Program Guide">
-                        📺 EPG
+                    <button id="nextBtn" class="control-btn premium">
+                        <span class="btn-icon">⏭</span>
+                        <span class="btn-text">Next</span>
+                    </button>
+                    <button id="stopBtn" class="control-btn premium">
+                        <span class="btn-icon">⏹</span>
+                        <span class="btn-text">Stop</span>
+                    </button>
+                    <button id="pipBtn" class="control-btn premium" title="Picture-in-Picture">
+                        <span class="btn-icon">⧉</span>
+                        <span class="btn-text">PiP</span>
+                    </button>
+                    <button id="fullscreenBtn" class="control-btn premium" title="Fullscreen">
+                        <span class="btn-icon">⛶</span>
+                        <span class="btn-text">Fullscreen</span>
+                    </button>
+                    <button id="epgBtn" class="control-btn premium" title="Electronic Program Guide">
+                        <span class="btn-icon">📺</span>
+                        <span class="btn-text">EPG</span>
                     </button>
                 </div>
                 
@@ -487,16 +509,41 @@
                     </div>
                 </div>
                 <div class="current-url" id="currentUrl"></div>
-                <div class="stream-info" id="streamInfo"></div>
+                <div class="stream-info" id="streamInfo">
+                    <div class="bandwidth-info" id="bandwidthInfo" style="display: none;">
+                        <div class="bandwidth-item">
+                            <label>📊 Bandwidth:</label>
+                            <span id="currentBandwidth">-- Mbps</span>
+                        </div>
+                        <div class="bandwidth-item">
+                            <label>📈 Peak:</label>
+                            <span id="peakBandwidth">-- Mbps</span>
+                        </div>
+                        <div class="bandwidth-item">
+                            <label>📉 Average:</label>
+                            <span id="averageBandwidth">-- Mbps</span>
+                        </div>
+                        <div class="bandwidth-item">
+                            <label>🔗 Quality:</label>
+                            <span id="streamQuality">--</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Settings Modal -->
-        <div id="settingsModal" class="modal" style="display: none">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>⚙️ Settings</h2>
-                    <button id="closeSettings" class="close-btn">&times;</button>
+        <div id="settingsModal" class="modal premium-modal" style="display: none">
+            <div class="modal-content premium">
+                <div class="modal-header premium">
+                    <div class="modal-title-container">
+                        <h2>⚙️ <span class="gradient-text">Settings</span></h2>
+                        <div class="settings-badge">
+                            <span class="settings-icon">🔧</span>
+                            <span class="settings-text">Configuration</span>
+                        </div>
+                    </div>
+                    <button id="closeSettings" class="close-btn premium">&times;</button>
                 </div>
                 <div class="modal-body">
                     <div class="setting-group">
@@ -708,30 +755,86 @@
         </div>
 
         <!-- About Modal -->
-        <div id="aboutModal" class="modal" style="display: none">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>ℹ️ About</h2>
-                    <button id="closeAbout" class="close-btn">&times;</button>
+        <div id="aboutModal" class="modal premium-modal" style="display: none">
+            <div class="modal-content premium">
+                <div class="modal-header premium">
+                    <div class="modal-title-container">
+                        <h2>🚀 <span class="gradient-text">M3U Player</span></h2>
+                        <div class="version-badge">
+                            <span class="version-text">v2.0.0</span>
+                        </div>
+                    </div>
+                    <button id="closeAbout" class="close-btn premium">&times;</button>
                 </div>
-                <div class="modal-body">
-                    <p><strong>M3U Player</strong></p>
-                    <p>Version: <span id="appVersion">1.0.0</span></p>
-                    <p>IPTV Player without CORS limitations</p>
-                    <p>Support for M3U/M3U8 files and HLS streams</p>
-                    <br />
-                    <p><strong>Platform:</strong> <span id="platformInfo"></span></p>
-                    <p><strong>Electron:</strong> <span id="electronVersion"></span></p>
-                    <p>
-                        <strong>Cache:</strong>
-                        <span id="cacheInfo">Disabled in development</span>
-                    </p>
-                    <br />
-                    <p>
-                        <small>💡 If you don't see changes, use Ctrl+Shift+R or the "🔄
-                            Refresh" button</small>
-                    </p>
+                <div class="modal-body premium">
+                    <div class="about-section">
+                        <div class="about-icon">🎯</div>
+                        <h3>Professional IPTV Streaming Platform</h3>
+                        <p>Advanced streaming technology with modern features and professional-grade performance.</p>
+                    </div>
+                    
+                    <div class="features-grid">
+                        <div class="feature-item">
+                            <div class="feature-icon">⚡</div>
+                            <div class="feature-text">
+                                <strong>Lightning Fast</strong>
+                                <span>Optimized streaming engine</span>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🔒</div>
+                            <div class="feature-text">
+                                <strong>Secure</strong>
+                                <span>Advanced security features</span>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🎨</div>
+                            <div class="feature-text">
+                                <strong>Modern UI</strong>
+                                <span>Professional interface design</span>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">📡</div>
+                            <div class="feature-text">
+                                <strong>Multi-Protocol</strong>
+                                <span>HLS, DASH, WebRTC support</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="system-info">
+                        <div class="info-row">
+                            <span class="info-label">Version:</span>
+                            <span class="info-value"><span id="appVersion">2.0.0</span></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Platform:</span>
+                            <span class="info-value" id="platformInfo">Electron Desktop</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Engine:</span>
+                            <span class="info-value" id="electronVersion">Latest</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">License:</span>
+                            <span class="info-value">Open Source</span>
+                        </div>
+                    </div>
+                    
+                    <div class="copyright">
+                        <p>© 2024 M3U Player. Open source IPTV solution.</p>
+                        <p class="subtitle">Professional IPTV streaming platform for everyone</p>
+                    </div>
                 </div>
+            </div>
+        </div>
+        <!-- Application Watermark -->
+        <div class="app-watermark" id="appWatermark">
+            <div class="watermark-content">
+                <span class="watermark-text">M3U Player</span>
+                <div class="watermark-pulse"></div>
             </div>
         </div>
     </div>

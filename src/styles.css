@@ -1,3 +1,6 @@
+/* Import Professional Styles */
+@import url('styles/professional.css');
+
 /* Import EPG Styles */
 @import url('styles/epg.css');
 
