@@ -8,6 +8,9 @@ const { URL } = require('url');
 // Main window configuration
 let mainWindow;
 
+// Proxy server for IPTV streams
+let proxyServer = null;
+
 // Create configuration directory if it doesn't exist
 const userDataPath = app.getPath('userData');
 const configPath = path.join(userDataPath, 'config.json');
@@ -429,6 +432,19 @@ function fetchUrl(url, options = {}) {
     }
 
     const req = client.request(requestOptions, (res) => {
+      // Handle redirects
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        console.log(`Following redirect from ${url} to ${res.headers.location}`);
+        fetchUrl(res.headers.location, options).then(result => {
+          // Pass the final URL up the chain
+          resolve({
+            ...result,
+            finalUrl: result.finalUrl || res.headers.location
+          });
+        }).catch(reject);
+        return;
+      }
+      
       let data = '';
       
       res.on('data', (chunk) => {
@@ -439,7 +455,8 @@ function fetchUrl(url, options = {}) {
         resolve({
           statusCode: res.statusCode,
           headers: res.headers,
-          data: data
+          data: data,
+          finalUrl: url // This is the final URL (no more redirects)
         });
       });
     });
@@ -478,7 +495,8 @@ ipcMain.handle('fetch-url', async (event, url, options = {}) => {
       success: true,
       data: response.data,
       statusCode: response.statusCode,
-      headers: response.headers
+      headers: response.headers,
+      finalUrl: response.finalUrl || url
     };
   } catch (error) {
     return {
@@ -490,6 +508,134 @@ ipcMain.handle('fetch-url', async (event, url, options = {}) => {
 
 ipcMain.handle('open-file-dialog', async () => {
   await openFileDialog();
+});
+
+// Start proxy server for IPTV streams
+function startProxyServer() {
+  if (proxyServer) {
+    return proxyServer.address().port;
+  }
+
+  proxyServer = http.createServer((req, res) => {
+    const urlPath = req.url;
+    
+    // Handle CORS preflight
+    if (req.method === 'OPTIONS') {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', '*');
+      res.writeHead(200);
+      res.end();
+      return;
+    }
+    
+    // Parse proxy URL: /proxy/originalUrl or /hls/originalUrl
+    if (urlPath.startsWith('/hls/')) {
+      // Generate HLS manifest for IPTV stream
+      const originalUrl = decodeURIComponent(urlPath.replace('/hls/', ''));
+      console.log(`🎬 Generating HLS manifest for: ${originalUrl}`);
+      
+      const manifest = `#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-TARGETDURATION:10
+#EXT-X-MEDIA-SEQUENCE:0
+#EXT-X-PLAYLIST-TYPE:EVENT
+#EXTINF:10.0,
+/proxy/${encodeURIComponent(originalUrl)}
+#EXT-X-ENDLIST`;
+
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
+      res.writeHead(200);
+      res.end(manifest);
+      return;
+    }
+    
+    if (!urlPath.startsWith('/proxy/')) {
+      res.writeHead(404);
+      res.end('Not found');
+      return;
+    }
+
+    const originalUrl = decodeURIComponent(urlPath.replace('/proxy/', ''));
+    console.log(`🔄 Proxying request to: ${originalUrl}`);
+
+    try {
+      const targetUrl = new URL(originalUrl);
+      const isHttps = targetUrl.protocol === 'https:';
+      const client = isHttps ? https : http;
+
+      const proxyReq = client.request({
+        hostname: targetUrl.hostname,
+        port: targetUrl.port,
+        path: targetUrl.pathname + targetUrl.search,
+        method: req.method,
+        headers: {
+          'User-Agent': 'VLC/3.0.8 LibVLC/3.0.8',
+          'Referer': `${targetUrl.protocol}//${targetUrl.hostname}/`,
+          'Accept': '*/*',
+          'Connection': 'keep-alive',
+          ...req.headers
+        }
+      }, (proxyRes) => {
+        // Set CORS headers for browser access
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', '*');
+        res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'video/mp2t');
+        
+        res.writeHead(proxyRes.statusCode, proxyRes.headers);
+        proxyRes.pipe(res);
+      });
+
+      proxyReq.on('error', (error) => {
+        console.error('❌ Proxy error:', error);
+        res.writeHead(500);
+        res.end('Proxy error');
+      });
+
+      req.pipe(proxyReq);
+      
+    } catch (error) {
+      console.error('❌ Invalid URL:', error);
+      res.writeHead(400);
+      res.end('Invalid URL');
+    }
+  });
+
+  proxyServer.listen(13337, 'localhost', () => {
+    console.log('🌐 IPTV Proxy server started on port 13337');
+  });
+
+  return 13337;
+}
+
+// Stop proxy server
+function stopProxyServer() {
+  if (proxyServer) {
+    proxyServer.close();
+    proxyServer = null;
+    console.log('🔌 IPTV Proxy server stopped');
+  }
+}
+
+// IPC handler for proxy URLs
+ipcMain.handle('get-proxy-url', async (event, originalUrl) => {
+  try {
+    const port = startProxyServer();
+    const hlsUrl = `http://localhost:${port}/hls/${encodeURIComponent(originalUrl)}`;
+    
+    return {
+      success: true,
+      proxyUrl: hlsUrl, // Now returns HLS manifest URL
+      originalUrl: originalUrl
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message
+    };
+  }
 });
 
 ipcMain.handle('show-save-dialog', async (event, options) => {
@@ -629,4 +775,10 @@ process.argv.forEach((arg, index) => {
       }, 1000);
     });
   }
+});
+
+// Cleanup on app quit
+app.on('before-quit', () => {
+  console.log('🔌 Application shutting down...');
+  stopProxyServer();
 });

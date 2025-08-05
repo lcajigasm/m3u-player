@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // Network (without CORS restrictions)
   fetchUrl: (url, options) => ipcRenderer.invoke('fetch-url', url, options),
+  getProxyUrl: (url) => ipcRenderer.invoke('get-proxy-url', url),
   
   // App information
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),

@@ -9,7 +9,13 @@
       "Bash(find:*)",
       "Bash(npm start)",
       "Bash(node:*)",
-      "Bash(npm run start-quiet:*)"
+      "Bash(npm run start-quiet:*)",
+      "Bash(open test-ts-stream.html)",
+      "Bash(pkill:*)",
+      "Bash(true)",
+      "Bash(open test-solanaflix.html)",
+      "Bash(curl:*)",
+      "Bash(open test-final-url.html)"
     ],
     "deny": []
   }

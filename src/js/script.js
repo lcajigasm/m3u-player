@@ -424,12 +424,32 @@ class M3UPlayer {
             this.showFileInfo('Cargando desde URL...', 'loading');
 
             let content;
+            let requestOptions = {
+                userAgent: this.config.playerSettings?.userAgent,
+                referer: this.config.playerSettings?.referer,
+                origin: this.config.playerSettings?.origin
+            };
+
+            // Special handling for IPTV API endpoints that need authentication
+            if (this.streamNeedsAuthentication(url)) {
+                console.log('🔐 Detectada URL que requiere autenticación, usando headers VLC');
+                const urlObj = new URL(url);
+                const referer = `${urlObj.protocol}//${urlObj.hostname}/`;
+                
+                requestOptions = {
+                    userAgent: 'VLC/3.0.8 LibVLC/3.0.8',
+                    referer: referer,
+                    headers: {
+                        'User-Agent': 'VLC/3.0.8 LibVLC/3.0.8',
+                        'Referer': referer,
+                        'Accept': '*/*',
+                        'Connection': 'keep-alive'
+                    }
+                };
+            }
+
             if (this.isElectron && window.electronAPI) {
-                const response = await window.electronAPI.fetchUrl(url, {
-                    userAgent: this.config.playerSettings?.userAgent,
-                    referer: this.config.playerSettings?.referer,
-                    origin: this.config.playerSettings?.origin
-                });
+                const response = await window.electronAPI.fetchUrl(url, requestOptions);
 
                 if (response.success) {
                     content = response.data;
@@ -437,7 +457,8 @@ class M3UPlayer {
                     throw new Error(response.error);
                 }
             } else {
-                const response = await fetch(url);
+                const fetchHeaders = requestOptions.headers || {};
+                const response = await fetch(url, { headers: fetchHeaders });
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
@@ -808,8 +829,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             } else if (line && !line.startsWith('#') && currentItem.title) {
                 // Optimized stream type detection
                 currentItem.url = line;
-                currentItem.type = line.includes('.m3u8') ? 'HLS' : 
-                                  (line.includes('.mp4') || line.includes('.webm') || line.includes('.ogg')) ? 'Direct' : 'Stream';
+                currentItem.type = this.detectStreamType(line);
                 items.push(currentItem);
                 currentItem = {};
             }
@@ -820,13 +840,62 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
     detectStreamType(url) {
         const urlLower = url.toLowerCase();
-        if (urlLower.includes('.m3u8')) {
+        
+        // HLS streams
+        if (urlLower.includes('.m3u8') || urlLower.includes('/hls/')) {
             return 'HLS';
-        } else if (urlLower.includes('.mp4') || urlLower.includes('.webm') || urlLower.includes('.ogg')) {
+        }
+        
+        // Transport Stream files (should be treated as direct)
+        if (urlLower.includes('.ts') || urlLower.includes('.mts')) {
             return 'Direct';
-        } else {
+        }
+        
+        // Direct video files
+        if (urlLower.includes('.mp4') || urlLower.includes('.webm') || 
+            urlLower.includes('.ogg') || urlLower.includes('.mkv') || 
+            urlLower.includes('.avi') || urlLower.includes('.mov')) {
+            return 'Direct';
+        }
+        
+        // DASH streams
+        if (urlLower.includes('.mpd')) {
+            return 'DASH';
+        }
+        
+        // RTMP/RTSP streams
+        if (urlLower.startsWith('rtmp://') || urlLower.startsWith('rtmps://')) {
+            return 'RTMP';
+        }
+        if (urlLower.startsWith('rtsp://')) {
+            return 'RTSP';
+        }
+        
+        // IPTV streams with authentication pattern (user/pass/channel or similar)
+        // Matches patterns like: /user/pass/12345.ts or /TV-user/pass/12345
+        const iptvPattern = /\/[^\/]+\/[^\/]+\/\d+/;
+        if (iptvPattern.test(url)) {
+            return 'IPTV';
+        }
+        
+        // Also detect URLs that contain encoded IPTV tokens (from redirects)
+        if (url.includes('/play/mpegts/') || url.includes('lvtoken=')) {
+            return 'IPTV';
+        }
+        
+        // Detect proxy URLs for IPTV streams
+        if (url.includes('localhost:13337/proxy/')) {
+            return 'IPTV';
+        }
+        
+        // HTTP Live streams (detect by URL patterns)
+        if (urlLower.includes('/live/') || urlLower.includes('/stream/') || 
+            urlLower.includes('?') || urlLower.includes('channel=')) {
             return 'Stream';
         }
+        
+        // Default to Stream for unknown formats
+        return 'Stream';
     }
 
     renderPlaylist() {
@@ -1020,6 +1089,9 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         const item = this.playlistData[index];
         console.log(`🎬 Cargando: ${item.title}`);
 
+        // Clear any previous audio-only styling
+        this.clearAudioOnlyDisplay();
+
         this.currentIndex = index;
         this.updateCurrentInfo(item);
         this.updatePlaylistSelection();
@@ -1047,6 +1119,8 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
         if (item.type === 'HLS' && window.Hls && window.Hls.isSupported()) {
             await this.loadHLSStream(item);
+        } else if (item.type === 'IPTV') {
+            await this.loadIPTVStream(item);
         } else {
             await this.loadDirectStream(item);
         }
@@ -1066,14 +1140,39 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
     }
 
     async loadHLSStream(item) {
+        // Check if this is an audio-only stream
+        const isAudioOnly = await this.isAudioOnlyStream(item.url);
+        if (isAudioOnly) {
+            this.setupAudioOnlyDisplay(item);
+        }
+        
         return new Promise((resolve, reject) => {
             console.log('📡 Cargando stream HLS con HLS.js');
 
-            this.hls = new window.Hls({
+            // Configure HLS.js with special headers for Solanaflix
+            const hlsConfig = {
                 enableWorker: true,
                 lowLatencyMode: false,
                 backBufferLength: 90
-            });
+            };
+
+            // Add VLC headers for streams that need authentication
+            // Check if URL contains credentials or comes from IPTV providers
+            const needsAuth = this.streamNeedsAuthentication(item.url);
+            if (needsAuth) {
+                console.log('🔐 Aplicando headers de autenticación para stream HLS');
+                const url = new URL(item.url);
+                const referer = `${url.protocol}//${url.hostname}/`;
+                
+                hlsConfig.xhrSetup = function(xhr, url) {
+                    xhr.setRequestHeader('User-Agent', 'VLC/3.0.8 LibVLC/3.0.8');
+                    xhr.setRequestHeader('Referer', referer);
+                    xhr.setRequestHeader('Accept', '*/*');
+                    xhr.setRequestHeader('Connection', 'keep-alive');
+                };
+            }
+
+            this.hls = new window.Hls(hlsConfig);
 
             this.hls.loadSource(item.url);
             this.hls.attachMedia(this.videoPlayer);
@@ -1120,8 +1219,11 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
     async loadDirectStream(item) {
         return new Promise((resolve, reject) => {
-            console.log('🎥 Cargando stream directo');
+            console.log(`🎥 Cargando stream directo (${item.type}): ${item.url}`);
 
+            // Special handling for TS streams
+            const isTS = item.url.toLowerCase().includes('.ts');
+            
             const handleCanPlay = () => {
                 console.log('✅ Stream directo cargado correctamente');
                 this.hideLoading();
@@ -1135,31 +1237,500 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
                 this.updatePlayPauseButton();
                 this.videoPlayer.removeEventListener('canplay', handleCanPlay);
                 this.videoPlayer.removeEventListener('error', handleError);
+                this.videoPlayer.removeEventListener('loadeddata', handleLoadedData);
+                resolve();
+            };
+
+            const handleLoadedData = () => {
+                console.log('✅ Stream data loaded');
+                this.hideLoading();
+                
+                if (this.config.playerSettings?.autoplay) {
+                    this.videoPlayer.play().catch(e => {
+                        console.warn('Autoplay bloqueado:', e);
+                    });
+                }
+                
+                this.updatePlayPauseButton();
+                this.videoPlayer.removeEventListener('canplay', handleCanPlay);
+                this.videoPlayer.removeEventListener('error', handleError);
+                this.videoPlayer.removeEventListener('loadeddata', handleLoadedData);
                 resolve();
             };
 
             const handleError = (e) => {
+                console.error('❌ Error en stream directo:', e.target.error);
                 this.videoPlayer.removeEventListener('canplay', handleCanPlay);
                 this.videoPlayer.removeEventListener('error', handleError);
-                reject(new Error('Error cargando stream directo'));
+                this.videoPlayer.removeEventListener('loadeddata', handleLoadedData);
+                
+                const errorMsg = e.target.error ? 
+                    `Error ${e.target.error.code}: ${this.getMediaErrorMessage(e.target.error.code)}` :
+                    'Error desconocido cargando stream';
+                reject(new Error(errorMsg));
             };
 
+            // Add event listeners
             this.videoPlayer.addEventListener('canplay', handleCanPlay);
+            this.videoPlayer.addEventListener('loadeddata', handleLoadedData);
             this.videoPlayer.addEventListener('error', handleError);
 
-            // Configurar source
-            this.videoPlayer.src = item.url;
+            // Configure video element for better TS support
+            this.videoPlayer.preload = 'metadata';
+            this.videoPlayer.crossOrigin = 'anonymous';
+            
+            // Set source with proper headers for TS streams
+            if (isTS) {
+                console.log('🎬 Configurando para stream TS');
+                this.videoPlayer.src = item.url;
+            } else {
+                this.videoPlayer.src = item.url;
+            }
+            
             this.videoPlayer.load();
 
-            // Timeout para streams directos
+            // Extended timeout for TS streams
+            const timeout = isTS ? 15000 : 10000;
             setTimeout(() => {
                 if (this.videoPlayer.readyState === 0) {
                     this.videoPlayer.removeEventListener('canplay', handleCanPlay);
                     this.videoPlayer.removeEventListener('error', handleError);
-                    reject(new Error('Timeout cargando stream directo (10s)'));
+                    this.videoPlayer.removeEventListener('loadeddata', handleLoadedData);
+                    reject(new Error(`Timeout cargando stream (${timeout/1000}s)`));
                 }
-            }, 10000);
+            }, timeout);
         });
+    }
+
+    streamNeedsAuthentication(url) {
+        // Only apply authentication headers to known IPTV providers that need them
+        // Be very specific to avoid false positives with public streams
+        
+        // Specific IPTV provider patterns
+        if (url.includes('solanaflix.com')) return true;
+        if (/xtream.*codes/i.test(url)) return true;
+        if (/stalker.*portal/i.test(url)) return true;
+        
+        // Specific credential patterns in path (not query parameters)
+        if (/\/[A-Z]+-\d+\/\d+\/\d+/.test(url)) return true;  // TV-12345/67890/123 pattern
+        
+        // API endpoints with explicit username/password
+        if (url.includes('get.php') && /username.*password/i.test(url)) return true;
+        
+        // Avoid false positives with public streaming services
+        const publicServices = [
+            'pluto.tv', 'youtube.com', 'twitch.tv', 'vimeo.com',
+            'dailymotion.com', 'facebook.com', 'cdn.', 'akamai',
+            'cloudfront.net', 'fastly.com', 'netlify.com'
+        ];
+        
+        if (publicServices.some(service => url.includes(service))) {
+            return false;
+        }
+        
+        return false;  // Default to no auth for unknown URLs
+    }
+
+    async isAudioOnlyStream(url) {
+        try {
+            console.log('🎵 Checking if stream is audio-only...');
+            const response = await window.electronAPI.fetchUrl(url, {
+                method: 'HEAD',
+                timeout: 5000
+            });
+            
+            if (response.success) {
+                const contentType = response.headers['content-type'];
+                if (contentType && contentType.includes('audio/')) {
+                    return true;
+                }
+            }
+            
+            // If it's an M3U8, check the manifest for codec information
+            if (url.includes('.m3u8')) {
+                const manifestResponse = await window.electronAPI.fetchUrl(url, { timeout: 5000 });
+                if (manifestResponse.success && manifestResponse.data) {
+                    const manifest = manifestResponse.data;
+                    // Check for audio-only codec patterns
+                    if (manifest.includes('CODECS="mp4a.') && !manifest.includes('avc1.') && !manifest.includes('hvc1.')) {
+                        console.log('🎵 Detected audio-only stream from manifest');
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        } catch (error) {
+            console.log('⚠️ Could not determine if stream is audio-only:', error.message);
+            return false;
+        }
+    }
+
+    async loadIPTVStream(item) {
+        console.log(`📡 Cargando stream IPTV: ${item.url}`);
+        
+        // Use original item for now to avoid conflicts with normal streams
+        let finalItem = { ...item };
+        
+        // Try multiple approaches for IPTV streams
+        const approaches = [
+            () => this.tryIPTVAsHLS(finalItem),
+            () => this.tryIPTVAsDirect(finalItem),
+            () => this.tryIPTVWithHeaders(finalItem),
+            () => this.tryIPTVWithProxy(finalItem)
+        ];
+        
+        for (let i = 0; i < approaches.length; i++) {
+            try {
+                console.log(`🔄 Intentando método ${i + 1}/${approaches.length}`);
+                await approaches[i]();
+                console.log(`✅ Stream IPTV cargado con método ${i + 1}`);
+                return;
+            } catch (error) {
+                console.warn(`⚠️ Método ${i + 1} falló:`, error.message);
+                if (i === approaches.length - 1) {
+                    throw new Error(`Todos los métodos fallaron. Último error: ${error.message}`);
+                }
+            }
+        }
+    }
+
+    async resolveFinalUrl(originalUrl) {
+        try {
+            const url = new URL(originalUrl);
+            const referer = `${url.protocol}//${url.hostname}/`;
+            
+            console.log(`🔍 Resolviendo URL final para: ${originalUrl}`);
+            
+            const headResponse = await window.electronAPI.fetchUrl(originalUrl, {
+                method: 'HEAD',
+                timeout: 10000,
+                userAgent: 'VLC/3.0.8 LibVLC/3.0.8',
+                headers: {
+                    'User-Agent': 'VLC/3.0.8 LibVLC/3.0.8',
+                    'Referer': referer,
+                    'Accept': '*/*',
+                    'Connection': 'keep-alive'
+                }
+            });
+
+            if (headResponse.success) {
+                const finalUrl = headResponse.finalUrl || originalUrl;
+                console.log(`✅ URL final obtenida: ${finalUrl}`);
+                return finalUrl;
+            } else {
+                console.warn(`⚠️ HEAD request falló: ${headResponse.error}`);
+                return originalUrl;
+            }
+        } catch (error) {
+            console.warn('❌ Error resolving final URL:', error);
+            return originalUrl;
+        }
+    }
+
+    async tryIPTVWithProxy(item) {
+        return new Promise(async (resolve, reject) => {
+            console.log('🧪 Probando IPTV con proxy local...');
+            
+            if (!this.isElectron || !window.electronAPI) {
+                reject(new Error('Proxy requiere Electron'));
+                return;
+            }
+
+            try {
+                // Get proxy URL for the final stream URL
+                const proxyResponse = await window.electronAPI.getProxyUrl(item.url);
+                
+                if (!proxyResponse.success) {
+                    throw new Error(`Error creando proxy: ${proxyResponse.error}`);
+                }
+
+                console.log(`✅ HLS Manifest URL creada: ${proxyResponse.proxyUrl}`);
+
+                // Use HLS.js with the generated manifest
+                if (!window.Hls || !window.Hls.isSupported()) {
+                    throw new Error('HLS.js no soportado para proxy streams');
+                }
+
+                this.hls = new window.Hls({
+                    debug: false,
+                    enableWorker: true,
+                    lowLatencyMode: false,
+                    backBufferLength: 90,
+                    maxBufferLength: 30,
+                    maxMaxBufferLength: 600,
+                    fragLoadingTimeOut: 20000,
+                    manifestLoadingTimeOut: 10000
+                });
+
+                this.hls.loadSource(proxyResponse.proxyUrl);
+                this.hls.attachMedia(this.videoPlayer);
+                
+                let resolved = false;
+                const timeout = setTimeout(() => {
+                    if (!resolved) {
+                        resolved = true;
+                        reject(new Error('Timeout esperando que el proxy stream se cargue'));
+                    }
+                }, 20000);
+                
+                this.hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
+                    if (!resolved) {
+                        console.log('✅ IPTV manifest proxy parseado');
+                        resolved = true;
+                        clearTimeout(timeout);
+                        this.hideLoading();
+                        if (this.config.playerSettings?.autoplay) {
+                            this.videoPlayer.play().catch(e => console.warn('Autoplay:', e));
+                        }
+                        this.updatePlayPauseButton();
+                        resolve();
+                    }
+                });
+
+                this.hls.on(window.Hls.Events.ERROR, (event, data) => {
+                    if (!resolved) {
+                        console.error('❌ HLS Proxy Error:', data);
+                        if (data.fatal) {
+                            resolved = true;
+                            clearTimeout(timeout);
+                            reject(new Error(`HLS proxy error: ${data.type} - ${data.details}`));
+                        }
+                    }
+                });
+                
+            } catch (error) {
+                console.error('❌ Error en tryIPTVWithProxy:', error);
+                reject(error);
+            }
+        });
+    }
+
+    async tryIPTVAsHLS(item) {
+        if (!window.Hls || !window.Hls.isSupported()) {
+            throw new Error('HLS.js no soportado');
+        }
+
+        return new Promise((resolve, reject) => {
+            console.log('🧪 Probando IPTV como HLS...');
+            
+            this.hls = new window.Hls({
+                debug: false,
+                enableWorker: true,
+                lowLatencyMode: false,
+                backBufferLength: 90,
+                maxBufferLength: 30,
+                maxMaxBufferLength: 600,
+                fragLoadingTimeOut: 20000,
+                manifestLoadingTimeOut: 10000,
+                // Remove xhrSetup for now to avoid CORS issues
+                // The redirect handling in fetchUrl should provide the correct final URL
+            });
+
+            let resolved = false;
+
+            this.hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
+                if (!resolved) {
+                    console.log('✅ IPTV stream detectado como HLS');
+                    this.hideLoading();
+                    if (this.config.playerSettings?.autoplay) {
+                        this.videoPlayer.play().catch(e => console.warn('Autoplay:', e));
+                    }
+                    this.updatePlayPauseButton();
+                    resolved = true;
+                    resolve();
+                }
+            });
+
+            this.hls.on(window.Hls.Events.ERROR, (event, data) => {
+                if (!resolved) {
+                    console.error('❌ HLS Error:', data);
+                    if (data.fatal) {
+                        resolved = true;
+                        reject(new Error(`HLS Error: ${data.details}`));
+                    }
+                }
+            });
+
+            try {
+                this.hls.loadSource(item.url);
+                this.hls.attachMedia(this.videoPlayer);
+                
+                // Timeout for HLS detection
+                setTimeout(() => {
+                    if (!resolved) {
+                        resolved = true;
+                        reject(new Error('Timeout HLS (10s)'));
+                    }
+                }, 10000);
+            } catch (error) {
+                resolved = true;
+                reject(error);
+            }
+        });
+    }
+
+    async tryIPTVAsDirect(item) {
+        return new Promise((resolve, reject) => {
+            console.log('🧪 Probando IPTV como stream directo...');
+            
+            let resolved = false;
+            
+            const handleSuccess = () => {
+                if (!resolved) {
+                    console.log('✅ IPTV cargado como stream directo');
+                    this.hideLoading();
+                    if (this.config.playerSettings?.autoplay) {
+                        this.videoPlayer.play().catch(e => console.warn('Autoplay:', e));
+                    }
+                    this.updatePlayPauseButton();
+                    cleanup();
+                    resolved = true;
+                    resolve();
+                }
+            };
+
+            const handleError = (e) => {
+                if (!resolved) {
+                    cleanup();
+                    resolved = true;
+                    reject(new Error(`Stream directo error: ${e.target.error?.code || 'unknown'}`));
+                }
+            };
+
+            const cleanup = () => {
+                this.videoPlayer.removeEventListener('canplay', handleSuccess);
+                this.videoPlayer.removeEventListener('loadeddata', handleSuccess);
+                this.videoPlayer.removeEventListener('error', handleError);
+            };
+
+            this.videoPlayer.addEventListener('canplay', handleSuccess);
+            this.videoPlayer.addEventListener('loadeddata', handleSuccess);
+            this.videoPlayer.addEventListener('error', handleError);
+
+            // Configure for IPTV
+            this.videoPlayer.preload = 'metadata';
+            this.videoPlayer.crossOrigin = 'anonymous';
+            this.videoPlayer.src = item.url;
+            this.videoPlayer.load();
+
+            // Timeout for direct stream
+            setTimeout(() => {
+                if (!resolved) {
+                    cleanup();
+                    resolved = true;
+                    reject(new Error('Timeout stream directo (15s)'));
+                }
+            }, 15000);
+        });
+    }
+
+    async tryIPTVWithHeaders(item) {
+        return new Promise(async (resolve, reject) => {
+            console.log('🧪 Probando IPTV con headers especiales...');
+            
+            // This approach tries to load with special headers via fetch
+            // and then use blob URL
+            if (!this.isElectron || !window.electronAPI) {
+                reject(new Error('Headers especiales requieren Electron'));
+                return;
+            }
+
+            try {
+                // Extract domain for referer
+                const url = new URL(item.url);
+                const referer = `${url.protocol}//${url.hostname}/`;
+
+                // First, get the final URL by following redirects
+                console.log('🔄 Resolviendo URL final mediante HEAD request...');
+                let finalUrl = item.url;
+                let attempts = 0;
+                const maxRedirects = 5;
+                
+                while (attempts < maxRedirects) {
+                    const headResponse = await window.electronAPI.fetchUrl(finalUrl, {
+                        method: 'HEAD',
+                        timeout: 10000,
+                        userAgent: 'VLC/3.0.8 LibVLC/3.0.8',
+                        headers: {
+                            'User-Agent': 'VLC/3.0.8 LibVLC/3.0.8',
+                            'Referer': referer,
+                            'Accept': '*/*',
+                            'Connection': 'keep-alive'
+                        }
+                    });
+
+                    if (!headResponse.success) {
+                        throw new Error(`HEAD request failed: ${headResponse.statusCode}`);
+                    }
+
+                    // Check if there's a redirect
+                    if (headResponse.statusCode >= 300 && headResponse.statusCode < 400) {
+                        // The fetchUrl already followed redirects, so we should get the final URL
+                        break;
+                    } else if (headResponse.statusCode === 200) {
+                        console.log(`✅ URL final encontrada. Content-Type: ${headResponse.headers['content-type']}`);
+                        break;
+                    }
+                    
+                    attempts++;
+                }
+
+                // Now try to use the stream directly - MPEG-TS streams should work with direct video element
+                console.log('🎬 Intentando reproducir stream TS directamente...');
+                
+                // For MPEG-TS streams, try direct approach first
+                this.videoPlayer.src = finalUrl;
+                this.videoPlayer.load();
+                
+                let resolved = false;
+                const timeout = setTimeout(() => {
+                    if (!resolved) {
+                        resolved = true;
+                        reject(new Error('Timeout esperando que el video se cargue'));
+                    }
+                }, 15000);
+                
+                this.videoPlayer.addEventListener('canplay', () => {
+                    if (!resolved) {
+                        console.log('✅ Stream TS cargado directamente');
+                        resolved = true;
+                        clearTimeout(timeout);
+                        this.hideLoading();
+                        if (this.config.playerSettings?.autoplay) {
+                            this.videoPlayer.play().catch(e => console.warn('Autoplay:', e));
+                        }
+                        resolve();
+                    }
+                }, { once: true });
+
+                this.videoPlayer.addEventListener('loadedmetadata', () => {
+                    console.log('✅ Metadata del stream cargada');
+                }, { once: true });
+
+                this.videoPlayer.addEventListener('error', (e) => {
+                    if (!resolved) {
+                        resolved = true;
+                        clearTimeout(timeout);
+                        const error = e.target.error;
+                        reject(new Error(`Error de video: ${error?.code} - ${this.getMediaErrorMessage(error?.code)}`));
+                    }
+                }, { once: true });
+            } catch (error) {
+                console.error('❌ Error en tryIPTVWithHeaders:', error);
+                reject(error);
+            }
+        });
+    }
+
+    getMediaErrorMessage(code) {
+        switch(code) {
+            case 1: return 'Reproducción abortada';
+            case 2: return 'Error de red';
+            case 3: return 'Error de decodificación';
+            case 4: return 'Formato no soportado';
+            default: return 'Error desconocido';
+        }
     }
 
     handleStreamError(error) {
@@ -1277,6 +1848,9 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         this.hideLoading();
         this.hideError();
         this.updatePlayPauseButton();
+
+        // Clean up audio-only styling
+        this.clearAudioOnlyDisplay();
 
         // Resetear información actual
         if (this.currentTitle) this.currentTitle.textContent = 'No hay video seleccionado';
@@ -1491,6 +2065,84 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         this.updatePlayPauseButton();
     }
 
+    setupAudioOnlyDisplay(item) {
+        console.log('🎵 Setting up audio-only display for radio stream');
+        
+        // Show a visual indicator that this is an audio-only stream
+        if (this.videoPlayer) {
+            // Set a background image or color for audio streams
+            this.videoPlayer.style.background = `
+                linear-gradient(135deg, #667eea 0%, #764ba2 100%),
+                url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="50" font-size="40" text-anchor="middle" fill="white">🎵</text></svg>')
+            `;
+            this.videoPlayer.style.backgroundSize = 'cover, 60px 60px';
+            this.videoPlayer.style.backgroundPosition = 'center, center';
+            this.videoPlayer.style.backgroundRepeat = 'no-repeat, no-repeat';
+        }
+        
+        // Update UI to show it's a radio stream
+        if (this.currentTitle) {
+            this.currentTitle.innerHTML = `🎵 ${item.title} <span style="font-size: 0.8em; opacity: 0.7;">(Audio Only)</span>`;
+        }
+        
+        // Show audio visualization or waveform if available
+        this.showAudioVisualization();
+    }
+
+    showAudioVisualization() {
+        // Simple pulsing animation for audio-only streams
+        if (this.videoPlayer) {
+            this.videoPlayer.classList.add('audio-only-stream');
+            
+            // Add CSS animation if not already added
+            if (!document.getElementById('audio-only-styles')) {
+                const style = document.createElement('style');
+                style.id = 'audio-only-styles';
+                style.textContent = `
+                    .audio-only-stream {
+                        animation: audioPulse 2s ease-in-out infinite alternate;
+                    }
+                    
+                    @keyframes audioPulse {
+                        0% { filter: brightness(1) saturate(1); }
+                        100% { filter: brightness(1.2) saturate(1.3); }
+                    }
+                    
+                    .audio-only-stream::after {
+                        content: '';
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        width: 100px;
+                        height: 100px;
+                        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"/><text x="50" y="60" font-size="30" text-anchor="middle" fill="rgba(255,255,255,0.8)">♪</text></svg>');
+                        background-size: contain;
+                        animation: audioSpin 8s linear infinite;
+                        pointer-events: none;
+                    }
+                    
+                    @keyframes audioSpin {
+                        from { transform: translate(-50%, -50%) rotate(0deg); }
+                        to { transform: translate(-50%, -50%) rotate(360deg); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+    }
+
+    clearAudioOnlyDisplay() {
+        if (this.videoPlayer) {
+            // Remove audio-only styling
+            this.videoPlayer.classList.remove('audio-only-stream');
+            this.videoPlayer.style.background = '';
+            this.videoPlayer.style.backgroundSize = '';
+            this.videoPlayer.style.backgroundPosition = '';
+            this.videoPlayer.style.backgroundRepeat = '';
+        }
+    }
+
     showError(message) {
         if (this.errorMessage && this.errorText) {
             this.errorText.textContent = message;
@@ -1561,8 +2213,9 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             // Limpiar playlist actual
             this.playlist.innerHTML = '';
 
-            // Filtrar datos en memoria (más rápido que DOM)
-            const filteredData = this.playlistData.filter((item, index) => {
+            // Filtrar datos en memoria pero manteniendo índices originales
+            const filteredData = [];
+            this.playlistData.forEach((item, originalIndex) => {
                 const title = item.title.toLowerCase();
                 const group = (item.group || '').toLowerCase();
                 const type = item.type.toLowerCase();
@@ -1575,12 +2228,14 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
                 const matchesGroup = !selectedGroup || group.includes(selectedGroup.toLowerCase());
                 const matchesType = !selectedType || type.includes(selectedType.toLowerCase());
 
-                return matchesSearch && matchesGroup && matchesType;
+                if (matchesSearch && matchesGroup && matchesType) {
+                    filteredData.push({ item, originalIndex });
+                }
             });
 
-            // Renderizar solo elementos visibles
-            filteredData.forEach((item, index) => {
-                const playlistItem = this.createPlaylistItem(item, index);
+            // Renderizar solo elementos visibles usando índice original
+            filteredData.forEach(({ item, originalIndex }, displayIndex) => {
+                const playlistItem = this.createPlaylistItem(item, originalIndex, displayIndex + 1);
                 fragment.appendChild(playlistItem);
                 visibleCount++;
             });
@@ -1599,17 +2254,19 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
     }
 
     // Crear elemento de playlist optimizado
-    createPlaylistItem(item, index) {
+    createPlaylistItem(item, originalIndex, displayNumber = null) {
         const playlistItem = document.createElement('div');
         playlistItem.className = 'playlist-item';
-        playlistItem.dataset.index = index;
+        playlistItem.dataset.index = originalIndex; // Use original index for data lookup
 
         // Determinar tipo de stream
         const streamType = this.getStreamType(item.url);
         const typeClass = streamType.toLowerCase();
 
+        const numberToShow = displayNumber !== null ? displayNumber : originalIndex + 1;
+
         playlistItem.innerHTML = `
-            <div class="playlist-item-number">${index + 1}</div>
+            <div class="playlist-item-number">${numberToShow}</div>
             <div class="playlist-item-logo">
                 ${item.logo && item.logo.trim() !== '' ?
                     `<img src="${this.escapeHtml(item.logo)}" alt="Logo" onerror="this.parentElement.innerHTML='<div class=&quot;logo-placeholder&quot;>📺</div>'" />` :
@@ -1630,8 +2287,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             </div>
         `;
 
-        // Store original index directly for better performance
-        const originalIndex = index;
+        // Use the originalIndex parameter directly (no need to redeclare)
         
         // Event listeners optimizados
         playlistItem.addEventListener('click', (e) => {
