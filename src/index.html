@@ -483,8 +483,72 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.12/dist/hls.min.js"></script>
+    <!-- External Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.5/dist/hls.min.js"></script>
+    
+    <!-- Original Script - Restored for functionality -->
     <script src="js/script.js?v=1.2.0"></script>
+    
+    <!-- Debug Script -->
+    <script>
+        // Debug function to test streaming
+        window.debugStream = function() {
+            console.log('🔍 Estado del sistema:');
+            console.log('- HLS.js disponible:', !!window.Hls);
+            console.log('- HLS.js soportado:', window.Hls ? window.Hls.isSupported() : false);
+            console.log('- HLS.js versión:', window.Hls ? window.Hls.version : 'N/A');
+            console.log('- Player disponible:', !!window.player);
+            console.log('- Video element:', !!document.getElementById('videoPlayer'));
+            
+            if (window.player) {
+                console.log('- Player state:', {
+                    currentIndex: window.player.currentIndex,
+                    playlistData: window.player.playlistData?.length || 0,
+                    videoPlayer: !!window.player.videoPlayer,
+                    hls: !!window.player.hls
+                });
+            }
+            
+            // Test directo del stream
+            const video = document.getElementById('videoPlayer');
+            if (video && window.Hls && window.Hls.isSupported()) {
+                console.log('🧪 Iniciando test directo...');
+                
+                const testHls = new window.Hls({
+                    debug: true,
+                    enableWorker: true,
+                    lowLatencyMode: false,
+                    backBufferLength: 90
+                });
+                
+                testHls.on(window.Hls.Events.ERROR, (event, data) => {
+                    console.error('❌ Test Error:', data);
+                });
+                
+                testHls.on(window.Hls.Events.MANIFEST_PARSED, () => {
+                    console.log('✅ Test: Manifest loaded successfully');
+                    testHls.destroy();
+                });
+                
+                testHls.loadSource('http://185.189.225.150:85/TeleCincoHD/index.m3u8');
+                testHls.attachMedia(video);
+                
+                setTimeout(() => {
+                    if (testHls) testHls.destroy();
+                }, 10000);
+            }
+        };
+        
+        // Auto-debug after page load
+        setTimeout(() => {
+            console.log('🔍 Auto-debug iniciado...');
+            if (typeof debugStream === 'function') {
+                debugStream();
+            }
+        }, 3000);
+    </script>
+    
+    <!-- EPG Integration (Simple) -->
     <script type="module">
         // Integrar funcionalidad EPG después de que se cargue el reproductor
         document.addEventListener('DOMContentLoaded', async () => {

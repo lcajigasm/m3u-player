@@ -5,7 +5,9 @@
       "Bash(mv:*)",
       "Bash(ls:*)",
       "Bash(mkdir:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(find:*)",
+      "Bash(npm start)"
     ],
     "deny": []
   }

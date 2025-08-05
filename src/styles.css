@@ -23,6 +23,114 @@ body {
     position: relative;
 }
 
+/* Error States */
+.init-error, .critical-error {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+}
+
+.error-content {
+    text-align: center;
+    max-width: 600px;
+    padding: 40px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 16px;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+}
+
+.error-content h1, .error-content h2 {
+    color: #fecaca;
+    margin-bottom: 16px;
+    font-weight: 700;
+}
+
+.error-content p {
+    color: #fed7d7;
+    margin-bottom: 16px;
+    line-height: 1.6;
+}
+
+.error-content details {
+    text-align: left;
+    margin: 20px 0;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.error-content summary {
+    cursor: pointer;
+    color: #fca5a5;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.error-content pre {
+    color: #fef2f2;
+    font-size: 12px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.error-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 24px;
+}
+
+.error-actions button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.error-actions .primary {
+    background: #dc2626;
+    color: white;
+}
+
+.error-actions .primary:hover {
+    background: #b91c1c;
+}
+
+.error-actions .secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fecaca;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.error-actions .secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* App Initialization States */
+.app-initialized {
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.app-loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
 /* Loading Screen */
 .loading-screen {
     position: fixed;
