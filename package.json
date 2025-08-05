@@ -1,6 +1,6 @@
 {
   "name": "m3u-player",
-  "version": "0.1.4",
+  "version": "0.5.0",
   "description": "Modern IPTV player built with Electron that bypasses CORS limitations",
   "main": "main.js",
   "homepage": "https://m3u-player.eu",
