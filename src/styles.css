@@ -1,3 +1,6 @@
+/* Import EPG Styles */
+@import url('styles/epg.css');
+
 * {
     margin: 0;
     padding: 0;

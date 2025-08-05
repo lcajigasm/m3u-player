@@ -183,6 +183,9 @@
                     <button id="fullscreenBtn" class="control-btn" title="Fullscreen">
                         ⛶ Fullscreen
                     </button>
+                    <button id="epgBtn" class="control-btn" title="Electronic Program Guide">
+                        📺 EPG
+                    </button>
                 </div>
                 
                 <div class="controls-row secondary-controls">
@@ -214,6 +217,21 @@
             <div class="current-info">
                 <div class="current-title" id="currentTitle">
                     No video selected
+                </div>
+                <div class="current-program-info">
+                    <div class="program-info-main">
+                        <span id="currentProgramTitle">Programa actual</span>
+                        <span id="currentProgramTime">--:-- - --:--</span>
+                    </div>
+                    <div class="program-info-details">
+                        <span id="currentProgramDescription"></span>
+                        <div class="program-progress">
+                            <div class="progress-bar-epg">
+                                <div class="progress-fill-epg" id="programProgressFill"></div>
+                            </div>
+                            <span id="programProgressText">--% completado</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="current-url" id="currentUrl"></div>
                 <div class="stream-info" id="streamInfo"></div>
@@ -256,6 +274,186 @@
             </div>
         </div>
 
+        <!-- EPG Modal -->
+        <div id="epgModal" class="modal epg-modal" style="display: none">
+            <div class="epg-container">
+                <div class="epg-header">
+                    <div class="epg-title">
+                        <h2>📺 Electronic Program Guide</h2>
+                    </div>
+                    <div class="epg-controls">
+                        <div class="epg-search-container">
+                            <input type="text" id="epgSearch" placeholder="Buscar programas..." class="epg-search-input">
+                            <button id="clearEpgSearchBtn" class="clear-search-btn" title="Limpiar búsqueda">✕</button>
+                            <div class="search-suggestions" id="epgSearchSuggestions" style="display: none;">
+                                <!-- Sugerencias de búsqueda -->
+                            </div>
+                        </div>
+                        <div class="epg-search-filters" id="epgSearchFilters" style="display: none;">
+                            <div class="filter-group">
+                                <label>Género:</label>
+                                <select id="epgGenreFilter">
+                                    <option value="">Todos los géneros</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Canal:</label>
+                                <select id="epgChannelFilter">
+                                    <option value="">Todos los canales</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Tiempo:</label>
+                                <select id="epgTimeFilter">
+                                    <option value="">Cualquier momento</option>
+                                    <option value="now">Ahora</option>
+                                    <option value="today">Hoy</option>
+                                    <option value="tomorrow">Mañana</option>
+                                    <option value="next2h">Próximas 2 horas</option>
+                                    <option value="next6h">Próximas 6 horas</option>
+                                </select>
+                            </div>
+                            <button id="epgClearFilters" class="clear-filters-btn">Limpiar filtros</button>
+                        </div>
+                        <div class="epg-navigation">
+                            <button id="epgTodayBtn" class="epg-nav-btn active">Hoy</button>
+                            <button id="epgTomorrowBtn" class="epg-nav-btn">Mañana</button>
+                            <button id="epgPrevDayBtn" class="epg-nav-btn">◀</button>
+                            <button id="epgNextDayBtn" class="epg-nav-btn">▶</button>
+                        </div>
+                        <div class="epg-actions">
+                            <button id="epgFiltersBtn" class="epg-action-btn" title="Mostrar filtros">🔍</button>
+                            <button id="epgRefreshBtn" class="epg-action-btn" title="Actualizar datos EPG">🔄</button>
+                            <button id="epgSettingsBtn" class="epg-action-btn" title="Configuración EPG">⚙️</button>
+                        </div>
+                    </div>
+                    <button id="closeEPG" class="close-btn">&times;</button>
+                </div>
+                
+                <div class="epg-content">
+                    <div class="epg-status-bar">
+                        <div class="epg-current-time">
+                            <span id="epgCurrentTime">--:--</span>
+                            <span id="epgCurrentDate">-- de --</span>
+                        </div>
+                        <div class="epg-data-status">
+                            <span id="epgDataStatus" class="status-indicator">●</span>
+                            <span id="epgLastUpdate">Última actualización: --</span>
+                        </div>
+                    </div>
+                    
+                    <div class="epg-timeline-container">
+                        <div class="epg-timeline-header">
+                            <div class="epg-channel-header">Canales</div>
+                            <div class="epg-timeline" id="epgTimeline">
+                                <!-- Timeline slots will be generated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="epg-search-results" id="epgSearchResults" style="display: none;">
+                        <div class="search-results-header">
+                            <h3 id="searchResultsTitle">Resultados de búsqueda</h3>
+                            <div class="search-results-info">
+                                <span id="searchResultsCount">0 resultados</span>
+                                <button id="backToGridBtn" class="back-to-grid-btn">← Volver a la grilla</button>
+                            </div>
+                        </div>
+                        <div class="search-results-list" id="searchResultsList">
+                            <!-- Search results will be generated dynamically -->
+                        </div>
+                        <div class="search-pagination" id="searchPagination" style="display: none;">
+                            <button id="prevPageBtn" class="pagination-btn">← Anterior</button>
+                            <span id="pageInfo">Página 1 de 1</span>
+                            <button id="nextPageBtn" class="pagination-btn">Siguiente →</button>
+                        </div>
+                    </div>
+
+                    <div class="epg-grid-container" id="epgGridContainer">
+                        <div class="epg-channels-sidebar" id="epgChannelsSidebar">
+                            <!-- Channel list will be generated dynamically -->
+                        </div>
+                        <div class="epg-grid-scroll">
+                            <div class="epg-grid" id="epgGrid">
+                                <!-- Program grid will be generated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="epg-loading" id="epgLoading" style="display: none">
+                        <div class="loading-spinner">
+                            <div class="spinner"></div>
+                            <p>Cargando datos EPG...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="epg-no-data" id="epgNoData" style="display: none">
+                        <div class="no-data-message">
+                            <h3>📺 Sin datos EPG</h3>
+                            <p>No hay información de programación disponible para los canales actuales.</p>
+                            <button id="epgRetryBtn" class="upload-btn">🔄 Reintentar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- EPG Program Details Modal -->
+        <div id="epgProgramModal" class="modal epg-program-modal" style="display: none">
+            <div class="modal-content program-details">
+                <div class="modal-header">
+                    <h2 id="programTitle">Título del Programa</h2>
+                    <button id="closeProgramDetails" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="program-info">
+                        <div class="program-meta">
+                            <div class="program-time">
+                                <span id="programStartTime">20:00</span> - <span id="programEndTime">21:00</span>
+                                <span id="programDuration">(60 min)</span>
+                            </div>
+                            <div class="program-channel">
+                                <span id="programChannel">Canal</span>
+                            </div>
+                            <div class="program-genre" id="programGenre">
+                                <!-- Genre tags will be added dynamically -->
+                            </div>
+                        </div>
+                        <div class="program-description">
+                            <p id="programDescription">Descripción del programa...</p>
+                        </div>
+                        <div class="program-details-extra" id="programDetailsExtra">
+                            <!-- Additional details like episode info, credits, etc. -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="watchNowBtn" class="upload-btn primary">📺 Ver Ahora</button>
+                    <button id="setReminderBtn" class="upload-btn secondary">⏰ Recordatorio</button>
+                    <button id="shareProgram" class="upload-btn tertiary">📤 Compartir</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- EPG Search Results Modal -->
+        <div id="epgSearchModal" class="modal epg-search-modal" style="display: none">
+            <div class="modal-content search-results">
+                <div class="modal-header">
+                    <h2>🔍 Resultados de Búsqueda</h2>
+                    <button id="closeSearchResults" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="search-results-container" id="searchResultsContainer">
+                        <!-- Search results will be populated dynamically -->
+                    </div>
+                    <div class="search-no-results" id="searchNoResults" style="display: none">
+                        <h3>🔍 Sin resultados</h3>
+                        <p>No se encontraron programas que coincidan con tu búsqueda.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- About Modal -->
         <div id="aboutModal" class="modal" style="display: none">
             <div class="modal-content">
@@ -287,6 +485,23 @@
 
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.12/dist/hls.min.js"></script>
     <script src="js/script.js?v=1.2.0"></script>
+    <script type="module">
+        // Integrar funcionalidad EPG después de que se cargue el reproductor
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Esperar a que el reproductor esté disponible
+            if (window.player) {
+                try {
+                    const { integrateEPG } = await import('./js/epg/EPGIntegration.js');
+                    await integrateEPG(window.player);
+                    console.log('✅ EPG integrado correctamente');
+                } catch (error) {
+                    console.error('❌ Error integrando EPG:', error);
+                }
+            } else {
+                console.warn('⚠️ Reproductor no disponible para integración EPG');
+            }
+        });
+    </script>
 </body>
 
 </html>
