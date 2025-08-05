@@ -51,6 +51,11 @@ function saveConfig(config) {
 }
 
 function createWindow() {
+  if (!app.isReady()) {
+    // Previene creación prematura
+    app.once('ready', createWindow);
+    return;
+  }
   const config = loadConfig();
   
   // Create the browser window
@@ -713,6 +718,7 @@ if (process.platform === 'darwin') {
 }
 
 // Application event handlers
+
 app.whenReady().then(() => {
   // Set dock icon on macOS
   if (process.platform === 'darwin') {
@@ -720,6 +726,23 @@ app.whenReady().then(() => {
     app.dock.setIcon(iconPath);
   }
   createWindow();
+
+  // Manejo de argumentos de línea de comandos para archivos .m3u/.m3u8
+  const argFile = process.argv.find(arg => arg.endsWith('.m3u') || arg.endsWith('.m3u8'));
+  if (argFile && mainWindow) {
+    mainWindow.webContents.once('did-finish-load', () => {
+      try {
+        const content = fs.readFileSync(argFile, 'utf8');
+        mainWindow.webContents.send('file-loaded', {
+          content,
+          filename: path.basename(argFile),
+          fullPath: argFile
+        });
+      } catch (error) {
+        console.error('Error reading file from arguments:', error);
+      }
+    });
+  }
 });
 
 app.on('window-all-closed', () => {
@@ -757,25 +780,7 @@ app.on('open-file', (event, filePath) => {
   }
 });
 
-// Command line arguments handling
-process.argv.forEach((arg, index) => {
-  if (arg.endsWith('.m3u') || arg.endsWith('.m3u8')) {
-    app.on('ready', () => {
-      setTimeout(() => {
-        try {
-          const content = fs.readFileSync(arg, 'utf8');
-          mainWindow.webContents.send('file-loaded', {
-            content,
-            filename: path.basename(arg),
-            fullPath: arg
-          });
-        } catch (error) {
-          console.error('Error reading file from arguments:', error);
-        }
-      }, 1000);
-    });
-  }
-});
+// ...eliminado: ahora se maneja en app.whenReady...
 
 // Cleanup on app quit
 app.on('before-quit', () => {
