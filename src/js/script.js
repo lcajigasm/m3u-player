@@ -285,8 +285,8 @@ class M3UPlayer {
 
     setupElectronEvents() {
         // File loaded from main process
-        window.electronAPI.onFileLoaded((data) => {
-            this.processM3UContent(data.content, data.filename);
+        window.electronAPI.onFileLoaded(async (data) => {
+            await this.processM3UContent(data.content, data.filename);
         });
 
         // Show dialogs
@@ -403,8 +403,8 @@ class M3UPlayer {
                 const file = e.target.files[0];
                 if (file) {
                     const reader = new FileReader();
-                    reader.onload = (e) => {
-                        this.processM3UContent(e.target.result, file.name);
+                    reader.onload = async (e) => {
+                        await this.processM3UContent(e.target.result, file.name);
                     };
                     reader.readAsText(file);
                 }
@@ -444,7 +444,7 @@ class M3UPlayer {
                 content = await response.text();
             }
 
-            this.processM3UContent(content, new URL(url).pathname.split('/').pop() || 'playlist.m3u');
+            await this.processM3UContent(content, new URL(url).pathname.split('/').pop() || 'playlist.m3u');
             this.hideUrlInput();
 
         } catch (error) {
@@ -460,7 +460,7 @@ class M3UPlayer {
                 if (fileResult.success && fileResult.data && !fileResult.data.includes('404: Not Found')) {
                     // File exists and has valid content
                     this.iptvOrgContent = fileResult.data;
-                    const tempData = this.parseM3U(fileResult.data);
+                    const tempData = await this.parseM3U(fileResult.data);
                     const channelCount = tempData.length;
                     
                     if (channelCount > 0) {
@@ -540,7 +540,7 @@ class M3UPlayer {
             this.iptvOrgContent = content;
             
             // Parse to get channel count
-            const tempData = this.parseM3U(content);
+            const tempData = await this.parseM3U(content);
             const channelCount = tempData.length;
             
             this.updateLoadingProgress(100, 'Complete!', channelCount, channelCount);
@@ -588,7 +588,7 @@ class M3UPlayer {
                 content = this.getTestPlaylistContent();
             }
             
-            this.processM3UContent(content, 'iptv-org-channels.m3u');
+            await this.processM3UContent(content, 'iptv-org-channels.m3u');
             
         } catch (error) {
             console.error('❌ Error loading IPTV-ORG playlist:', error);
@@ -702,7 +702,7 @@ https://pluto-live.plutotv.net/egress/chandler/pluto01/live/VIACBS02/master.m3u8
 https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe3f5213/master.m3u8`;
     }
 
-    processM3UContent(content, filename) {
+    async processM3UContent(content, filename) {
         try {
             console.log(`📁 Processing file: ${filename}`);
 
@@ -713,7 +713,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
                 this.updateLoadingProgress(10, 'Parsing M3U content...');
             }
 
-            this.playlistData = this.parseM3U(content, isLargeFile);
+            this.playlistData = await this.parseM3U(content, isLargeFile);
             console.log(`📋 ${this.playlistData.length} elements in playlist`);
 
             if (this.playlistData.length === 0) {
@@ -747,71 +747,70 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         }
     }
 
-    parseM3U(content, showProgress = false) {
-        const lines = content.split('\n').map(line => line.trim()).filter(line => line);
+    async parseM3U(content, showProgress = false) {
+        const lines = content.split('\n');
         const items = [];
         let currentItem = {};
+        let progressUpdateInterval = Math.max(1, Math.floor(lines.length / 100)); // Update progress max 100 times
 
         for (let i = 0; i < lines.length; i++) {
-            // Update progress for large files
-            if (showProgress && i % 100 === 0) {
+            // Update progress for large files less frequently
+            if (showProgress && i % progressUpdateInterval === 0) {
                 const progress = 10 + (i / lines.length) * 60; // 10-70% range
-                this.updateLoadingProgress(progress, `Processing line ${i + 1}/${lines.length}...`, items.length, items.length);
+                this.updateLoadingProgress(progress, `Processing ${Math.floor((i / lines.length) * 100)}%...`, items.length, items.length);
+                // Yield to UI thread periodically
+                if (i % (progressUpdateInterval * 10) === 0) {
+                    await new Promise(resolve => setTimeout(resolve, 0));
+                }
             }
-            const line = lines[i];
-
-            if (line.startsWith('#EXTM3U')) {
-                continue;
-            }
+            
+            const line = lines[i].trim();
+            if (!line || line.startsWith('#EXTM3U')) continue;
 
             if (line.startsWith('#EXTINF:')) {
-                // Parsear información del elemento
-                const match = line.match(/#EXTINF:([^,]*),(.*)$/);
-                if (match) {
-                    currentItem = {
-                        duration: match[1],
-                        title: match[2].trim(),
-                        group: '',
-                        logo: '',
-                        tvgId: '',
-                        tvgName: ''
-                    };
+                // Optimized parsing with single regex
+                const extinf = line.match(/#EXTINF:([^,]*),(.*)$/);
+                if (!extinf) continue;
 
-                    // Extraer atributos adicionales con regex más robusto
-                    const attrs = line.match(/(\w+(?:-\w+)*)="([^"]*)"/g);
-                    if (attrs) {
-                        attrs.forEach(attr => {
-                            const equalIndex = attr.indexOf('=');
-                            const key = attr.substring(0, equalIndex);
-                            const value = attr.substring(equalIndex + 1).replace(/"/g, '');
+                currentItem = {
+                    duration: extinf[1],
+                    title: extinf[2].trim(),
+                    group: '',
+                    logo: '',
+                    tvgId: '',
+                    tvgName: ''
+                };
 
-                            switch (key.toLowerCase()) {
-                                case 'group-title':
-                                    currentItem.group = value;
-                                    break;
-                                case 'tvg-logo':
-                                    currentItem.logo = value;
-                                    break;
-                                case 'tvg-id':
-                                    currentItem.tvgId = value;
-                                    break;
-                                case 'tvg-name':
-                                    currentItem.tvgName = value;
-                                    break;
-                            }
-                        });
-                    }
-
-                    // Si no hay título en los atributos, usar el que viene después de la coma
-                    if (!currentItem.title && currentItem.tvgName) {
-                        currentItem.title = currentItem.tvgName;
+                // Fast attribute parsing with optimized regex
+                const attrMatches = line.matchAll(/(\w+(?:-\w+)*)="([^"]*)"/g);
+                for (const match of attrMatches) {
+                    const [, key, value] = match;
+                    switch (key.toLowerCase()) {
+                        case 'group-title':
+                            currentItem.group = value;
+                            break;
+                        case 'tvg-logo':
+                            currentItem.logo = value;
+                            break;
+                        case 'tvg-id':
+                            currentItem.tvgId = value;
+                            break;
+                        case 'tvg-name':
+                            currentItem.tvgName = value;
+                            break;
                     }
                 }
+
+                // Use tvgName as fallback title
+                if (!currentItem.title && currentItem.tvgName) {
+                    currentItem.title = currentItem.tvgName;
+                }
             } else if (line && !line.startsWith('#') && currentItem.title) {
-                // Esta es la URL del stream
+                // Optimized stream type detection
                 currentItem.url = line;
-                currentItem.type = this.detectStreamType(line);
-                items.push({ ...currentItem });
+                currentItem.type = line.includes('.m3u8') ? 'HLS' : 
+                                  (line.includes('.mp4') || line.includes('.webm') || line.includes('.ogg')) ? 'Direct' : 'Stream';
+                items.push(currentItem);
                 currentItem = {};
             }
         }
@@ -835,11 +834,26 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
         console.log(`📋 Rendering ${this.playlistData.length} elements...`);
 
-        // Use fragment for better performance
-        const fragment = document.createDocumentFragment();
+        // For large playlists, use virtual scrolling
+        if (this.playlistData.length > 1000) {
+            this.initVirtualScrolling();
+            return;
+        }
 
-        // Renderizar en lotes para no bloquear la UI
-        const batchSize = 50;
+        // For smaller playlists, use optimized batch rendering
+        this.renderBatchedPlaylist();
+
+        // Configure filters and counter
+        this.populateGroupFilter();
+        this.updateChannelCount(this.playlistData.length, this.playlistData.length);
+
+        // Preload logos in background (limited for performance)
+        setTimeout(() => this.preloadLogos(), 100);
+    }
+
+    renderBatchedPlaylist() {
+        const fragment = document.createDocumentFragment();
+        const batchSize = 100; // Increased batch size
         let currentBatch = 0;
 
         const renderBatch = () => {
@@ -861,32 +875,105 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
                 // Insert everything at once at the end
                 this.playlist.innerHTML = '';
                 this.playlist.appendChild(fragment);
-
-                // Configure filters and counter
-                this.populateGroupFilter();
-                this.updateChannelCount(this.playlistData.length, this.playlistData.length);
-
                 console.log(`✅ Playlist rendered completely`);
             }
         };
 
-        // Iniciar renderizado
         renderBatch();
+    }
 
-        // Preload logos in background
-        setTimeout(() => this.preloadLogos(), 100);
+    initVirtualScrolling() {
+        console.log(`🚀 Using virtual scrolling for ${this.playlistData.length} items`);
+        
+        this.playlist.innerHTML = '';
+        this.playlist.style.height = '400px';
+        this.playlist.style.overflow = 'auto';
+        this.playlist.style.position = 'relative';
+
+        // Virtual scrolling parameters
+        this.itemHeight = 60; // Fixed item height
+        this.containerHeight = 400;
+        this.visibleItemCount = Math.ceil(this.containerHeight / this.itemHeight) + 5; // Add buffer
+        this.startIndex = 0;
+        this.endIndex = Math.min(this.visibleItemCount, this.playlistData.length);
+
+        // Create virtual container
+        this.virtualContainer = document.createElement('div');
+        this.virtualContainer.style.height = `${this.playlistData.length * this.itemHeight}px`;
+        this.virtualContainer.style.position = 'relative';
+
+        // Create visible items container
+        this.visibleContainer = document.createElement('div');
+        this.visibleContainer.style.position = 'absolute';
+        this.visibleContainer.style.top = '0px';
+        this.visibleContainer.style.width = '100%';
+
+        this.virtualContainer.appendChild(this.visibleContainer);
+        this.playlist.appendChild(this.virtualContainer);
+
+        // Render initial items
+        this.renderVirtualItems();
+
+        // Add scroll listener with throttling
+        let scrollTimeout;
+        this.playlist.addEventListener('scroll', () => {
+            if (scrollTimeout) return;
+            scrollTimeout = setTimeout(() => {
+                this.handleVirtualScroll();
+                scrollTimeout = null;
+            }, 16); // ~60fps
+        });
+    }
+
+    renderVirtualItems() {
+        const fragment = document.createDocumentFragment();
+        
+        for (let i = this.startIndex; i < this.endIndex; i++) {
+            if (i >= this.playlistData.length) break;
+            
+            const item = this.playlistData[i];
+            const playlistItem = this.createPlaylistItem(item, i);
+            playlistItem.style.position = 'absolute';
+            playlistItem.style.top = `${(i - this.startIndex) * this.itemHeight}px`;
+            playlistItem.style.height = `${this.itemHeight}px`;
+            playlistItem.style.width = '100%';
+            playlistItem.style.boxSizing = 'border-box';
+            fragment.appendChild(playlistItem);
+        }
+
+        this.visibleContainer.innerHTML = '';
+        this.visibleContainer.appendChild(fragment);
+        
+        // Update container position
+        this.visibleContainer.style.transform = `translateY(${this.startIndex * this.itemHeight}px)`;
+    }
+
+    handleVirtualScroll() {
+        const scrollTop = this.playlist.scrollTop;
+        const newStartIndex = Math.floor(scrollTop / this.itemHeight);
+        const newEndIndex = Math.min(newStartIndex + this.visibleItemCount, this.playlistData.length);
+
+        if (newStartIndex !== this.startIndex || newEndIndex !== this.endIndex) {
+            this.startIndex = newStartIndex;
+            this.endIndex = newEndIndex;
+            this.renderVirtualItems();
+        }
     }
 
     preloadLogos() {
+        // Limit preloading based on playlist size
+        const maxLogos = this.playlistData.length > 1000 ? 10 : 20;
         const logosToPreload = this.playlistData
-            .filter(item => item.logo)
-            .slice(0, 20) // Only preload first 20 to avoid overload
+            .filter(item => item.logo && item.logo.trim())
+            .slice(0, maxLogos)
             .map(item => item.logo);
 
-        logosToPreload.forEach(logoUrl => {
-            const img = new Image();
-            img.src = logoUrl;
-            // No necesitamos hacer nada con la imagen, solo precargarla
+        // Preload with delay to avoid overwhelming the browser
+        logosToPreload.forEach((logoUrl, index) => {
+            setTimeout(() => {
+                const img = new Image();
+                img.src = logoUrl;
+            }, index * 100); // 100ms delay between each image
         });
 
         if (logosToPreload.length > 0) {
@@ -1543,10 +1630,12 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             </div>
         `;
 
+        // Store original index directly for better performance
+        const originalIndex = index;
+        
         // Event listeners optimizados
         playlistItem.addEventListener('click', (e) => {
             if (!e.target.classList.contains('test-stream-btn')) {
-                const originalIndex = this.playlistData.findIndex(dataItem => dataItem === item);
                 this.playItem(originalIndex);
             }
         });
@@ -1554,7 +1643,6 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         const testBtn = playlistItem.querySelector('.test-stream-btn');
         testBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const originalIndex = this.playlistData.findIndex(dataItem => dataItem === item);
             this.testStream(originalIndex);
         });
 

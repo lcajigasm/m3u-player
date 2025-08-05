@@ -7,7 +7,9 @@
       "Bash(mkdir:*)",
       "Bash(tree:*)",
       "Bash(find:*)",
-      "Bash(npm start)"
+      "Bash(npm start)",
+      "Bash(node:*)",
+      "Bash(npm run start-quiet:*)"
     ],
     "deny": []
   }

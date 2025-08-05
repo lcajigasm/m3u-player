@@ -14,7 +14,7 @@ const configPath = path.join(userDataPath, 'config.json');
 
 // Default configuration
 const defaultConfig = {
-  windowSize: { width: 1200, height: 800 },
+  windowSize: { width: 1200, height: 800, x: undefined, y: undefined },
   playerSettings: {
     volume: 0.8,
     autoplay: true,
@@ -54,24 +54,47 @@ function createWindow() {
   const iconPath = path.join(__dirname, 'assets', process.platform === 'darwin' ? 'icon.icns' : process.platform === 'win32' ? 'icon.ico' : 'icon.png');
   console.log('Using icon path:', iconPath);
   
-  mainWindow = new BrowserWindow({
+  const windowOptions = {
     width: config.windowSize.width,
     height: config.windowSize.height,
-    minWidth: 800,
-    minHeight: 600,
+    minWidth: 900,
+    minHeight: 650,
+    maxWidth: process.platform === 'darwin' ? undefined : 2560,
+    maxHeight: process.platform === 'darwin' ? undefined : 1440,
     icon: iconPath,
     title: 'M3U Player',
+    resizable: true,
+    movable: true,
+    minimizable: true,
+    maximizable: true,
+    closable: true,
+    focusable: true,
+    alwaysOnTop: false,
+    fullscreenable: true,
+    kiosk: false,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
       enableRemoteModule: false,
       preload: path.join(__dirname, 'preload.js'),
       webSecurity: false, // Required for loading IPTV streams
-      cache: false // Disable cache for development
+      cache: false, // Disable cache for development
+      enableWebSQL: false,
+      allowRunningInsecureContent: true
     },
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
-    show: false
-  });
+    titleBarStyle: 'default',
+    show: false,
+    center: config.windowSize.x === undefined || config.windowSize.y === undefined,
+    skipTaskbar: false
+  };
+
+  // Set position if saved
+  if (config.windowSize.x !== undefined && config.windowSize.y !== undefined) {
+    windowOptions.x = config.windowSize.x;
+    windowOptions.y = config.windowSize.y;
+  }
+
+  mainWindow = new BrowserWindow(windowOptions);
 
   // Load the application
   mainWindow.loadFile('src/index.html');
@@ -86,11 +109,28 @@ function createWindow() {
     }
   });
 
-  // Save window size on close
+  // Handle window resize
+  mainWindow.on('resize', () => {
+    const bounds = mainWindow.getBounds();
+    console.log(`Window resized to: ${bounds.width}x${bounds.height}`);
+  });
+
+  // Handle window move
+  mainWindow.on('move', () => {
+    const bounds = mainWindow.getBounds();
+    console.log(`Window moved to: ${bounds.x}, ${bounds.y}`);
+  });
+
+  // Save window size and position on close
   mainWindow.on('close', () => {
     const bounds = mainWindow.getBounds();
     const config = loadConfig();
-    config.windowSize = { width: bounds.width, height: bounds.height };
+    config.windowSize = { 
+      width: bounds.width, 
+      height: bounds.height,
+      x: bounds.x,
+      y: bounds.y
+    };
     saveConfig(config);
   });
 
@@ -138,6 +178,42 @@ function createMenu() {
           click: () => {
             app.quit();
           }
+        }
+      ]
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        {
+          label: 'Undo',
+          accelerator: 'CmdOrCtrl+Z',
+          role: 'undo'
+        },
+        {
+          label: 'Redo',
+          accelerator: 'Shift+CmdOrCtrl+Z',
+          role: 'redo'
+        },
+        { type: 'separator' },
+        {
+          label: 'Cut',
+          accelerator: 'CmdOrCtrl+X',
+          role: 'cut'
+        },
+        {
+          label: 'Copy',
+          accelerator: 'CmdOrCtrl+C',
+          role: 'copy'
+        },
+        {
+          label: 'Paste',
+          accelerator: 'CmdOrCtrl+V',
+          role: 'paste'
+        },
+        {
+          label: 'Select All',
+          accelerator: 'CmdOrCtrl+A',
+          role: 'selectall'
         }
       ]
     },
@@ -220,6 +296,49 @@ function createMenu() {
           accelerator: process.platform === 'darwin' ? 'Alt+Cmd+I' : 'Ctrl+Shift+I',
           click: () => {
             mainWindow.webContents.toggleDevTools();
+          }
+        }
+      ]
+    },
+    {
+      label: 'Window',
+      submenu: [
+        {
+          label: 'Minimize',
+          accelerator: 'CmdOrCtrl+M',
+          click: () => {
+            mainWindow.minimize();
+          }
+        },
+        {
+          label: 'Close',
+          accelerator: 'CmdOrCtrl+W',
+          click: () => {
+            mainWindow.close();
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Zoom In',
+          accelerator: 'CmdOrCtrl+Plus',
+          click: () => {
+            const currentZoom = mainWindow.webContents.getZoomFactor();
+            mainWindow.webContents.setZoomFactor(Math.min(currentZoom + 0.1, 2.0));
+          }
+        },
+        {
+          label: 'Zoom Out',
+          accelerator: 'CmdOrCtrl+-',
+          click: () => {
+            const currentZoom = mainWindow.webContents.getZoomFactor();
+            mainWindow.webContents.setZoomFactor(Math.max(currentZoom - 0.1, 0.5));
+          }
+        },
+        {
+          label: 'Reset Zoom',
+          accelerator: 'CmdOrCtrl+0',
+          click: () => {
+            mainWindow.webContents.setZoomFactor(1.0);
           }
         }
       ]
@@ -417,6 +536,35 @@ ipcMain.handle('save-file', async (event, relativePath, content) => {
     return { success: false, error: error.message };
   }
 });
+
+// Suppress various Electron warnings and improve compatibility
+app.commandLine.appendSwitch('ignore-certificate-errors');
+app.commandLine.appendSwitch('ignore-ssl-errors');
+app.commandLine.appendSwitch('ignore-certificate-errors-spki-list');
+app.commandLine.appendSwitch('ignore-urlfetcher-cert-requests');
+app.commandLine.appendSwitch('disable-web-security');
+app.commandLine.appendSwitch('disable-features', 'VizDisplayCompositor,OutOfBlinkCors,CertVerifierBuiltin');
+app.commandLine.appendSwitch('disable-site-isolation-trials');
+app.commandLine.appendSwitch('allow-running-insecure-content');
+app.commandLine.appendSwitch('disable-extensions-except');
+app.commandLine.appendSwitch('log-level', '3'); // Only show fatal errors
+
+// Performance optimizations
+app.commandLine.appendSwitch('enable-gpu-rasterization');
+app.commandLine.appendSwitch('enable-zero-copy');
+app.commandLine.appendSwitch('disable-dev-shm-usage');
+app.commandLine.appendSwitch('max-old-space-size', '4096');
+
+// Suppress macOS specific warnings
+if (process.platform === 'darwin') {
+  app.commandLine.appendSwitch('disable-gpu-sandbox');
+  app.commandLine.appendSwitch('disable-software-rasterizer');
+  // Reduce font-related warnings
+  process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
+  process.env.ELECTRON_DISABLE_RENDERER_BACKGROUNDING = 'true';
+  // Suppress CoreText warnings
+  process.env.CT_DISABLE_FONT_WARNINGS = 'true';
+}
 
 // Application event handlers
 app.whenReady().then(() => {

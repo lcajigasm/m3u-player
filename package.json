@@ -12,9 +12,12 @@
     "url": "https://github.com/m3u-player-eu/m3u-player/issues"
   },
   "scripts": {
-    "start": "electron .",
-    "dev": "electron . --dev",
-    "dev-nocache": "electron . --dev --disable-http-cache --disable-web-security",
+    "start": "ELECTRON_DISABLE_SECURITY_WARNINGS=true electron .",
+    "start-quiet": "ELECTRON_DISABLE_SECURITY_WARNINGS=true electron . 2>/dev/null",
+    "start-silent": "ELECTRON_DISABLE_SECURITY_WARNINGS=true ELECTRON_NO_ATTACH_CONSOLE=true electron . >/dev/null 2>&1",
+    "dev": "ELECTRON_DISABLE_SECURITY_WARNINGS=true electron . --dev",
+    "debug": "ELECTRON_DISABLE_SECURITY_WARNINGS=true electron . --dev --inspect",
+    "dev-nocache": "ELECTRON_DISABLE_SECURITY_WARNINGS=true electron . --dev --disable-http-cache --disable-web-security",
     "build": "electron-builder",
     "dist": "electron-builder --publish=never",
     "pack": "electron-builder --dir",

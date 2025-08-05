@@ -8,7 +8,7 @@
 }
 
 body {
-    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
     min-height: 100vh;
     color: #e2e8f0;
@@ -17,10 +17,27 @@ body {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 20px;
     position: relative;
+    min-width: 800px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .container {
+        max-width: 95%;
+        padding: 15px;
+    }
+}
+
+@media (max-width: 900px) {
+    .container {
+        max-width: 100%;
+        padding: 10px;
+        min-width: auto;
+    }
 }
 
 /* Error States */
@@ -252,6 +269,7 @@ body {
     border-radius: 12px;
     backdrop-filter: blur(12px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    -webkit-app-region: drag; /* Enable dragging on the entire header */
 }
 
 .app-title-bar {
@@ -290,6 +308,7 @@ body {
     display: flex;
     gap: 8px;
     flex-shrink: 0;
+    -webkit-app-region: no-drag; /* Disable dragging on buttons */
 }
 
 .header-btn {
@@ -303,6 +322,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    -webkit-app-region: no-drag; /* Ensure buttons are clickable */
 }
 
 .header-btn:hover {

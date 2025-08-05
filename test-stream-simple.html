@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Stream Simple</title>
+    <style>
+        body {
+            background: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        video {
+            width: 100%;
+            max-width: 800px;
+            height: 450px;
+            background: black;
+        }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .logs {
+            background: #333;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Stream Simple - TeleCinco HD</h1>
+    
+    <video id="video" controls preload="none">
+        Su navegador no soporta el elemento video.
+    </video>
+    
+    <div>
+        <button onclick="testStream()">📡 Test TeleCinco</button>
+        <button onclick="clearVideo()">🗑️ Limpiar</button>
+    </div>
+    
+    <div class="logs" id="logs">
+        <div>Sistema listo...</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.5/dist/hls.min.js"></script>
+    <script>
+        const video = document.getElementById('video');
+        const logs = document.getElementById('logs');
+        let hls = null;
+        
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            logs.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            logs.scrollTop = logs.scrollHeight;
+            console.log(message);
+        }
+        
+        function testStream() {
+            log('🧪 Iniciando test...');
+            
+            if (hls) {
+                hls.destroy();
+                hls = null;
+            }
+            
+            video.src = '';
+            video.load();
+            
+            if (!Hls.isSupported()) {
+                log('❌ HLS.js no soportado');
+                return;
+            }
+            
+            log(`✅ HLS.js ${Hls.version} listo`);
+            
+            const streamUrl = 'http://185.189.225.150:85/TeleCincoHD/index.m3u8';
+            log(`🎯 Probando: ${streamUrl}`);
+            
+            hls = new Hls({
+                enableWorker: true,
+                lowLatencyMode: false,
+                backBufferLength: 90
+            });
+            
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                log('✅ Manifest cargado - intentando reproducir');
+                video.play().catch(err => log(`⚠️ Autoplay: ${err.message}`));
+            });
+            
+            hls.on(Hls.Events.ERROR, (event, data) => {
+                log(`❌ Error: ${data.type} - ${data.details}`);
+            });
+            
+            video.addEventListener('canplay', () => {
+                log('✅ Video listo para reproducir');
+            });
+            
+            video.addEventListener('error', (e) => {
+                log(`❌ Video error: ${e.target.error?.message || 'Desconocido'}`);
+            });
+            
+            hls.loadSource(streamUrl);
+            hls.attachMedia(video);
+        }
+        
+        function clearVideo() {
+            if (hls) {
+                hls.destroy();
+                hls = null;
+            }
+            video.src = '';
+            video.load();
+            logs.innerHTML = '<div>Sistema limpiado...</div>';
+        }
+        
+        log('✅ Test page lista');
+    </script>
+</body>
+</html>

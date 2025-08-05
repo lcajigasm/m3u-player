@@ -508,38 +508,20 @@
                     hls: !!window.player.hls
                 });
             }
-            
-            // Test directo del stream
-            const video = document.getElementById('videoPlayer');
-            if (video && window.Hls && window.Hls.isSupported()) {
-                console.log('🧪 Iniciando test directo...');
-                
-                const testHls = new window.Hls({
-                    debug: true,
-                    enableWorker: true,
-                    lowLatencyMode: false,
-                    backBufferLength: 90
-                });
-                
-                testHls.on(window.Hls.Events.ERROR, (event, data) => {
-                    console.error('❌ Test Error:', data);
-                });
-                
-                testHls.on(window.Hls.Events.MANIFEST_PARSED, () => {
-                    console.log('✅ Test: Manifest loaded successfully');
-                    testHls.destroy();
-                });
-                
-                testHls.loadSource('http://185.189.225.150:85/TeleCincoHD/index.m3u8');
-                testHls.attachMedia(video);
-                
-                setTimeout(() => {
-                    if (testHls) testHls.destroy();
-                }, 10000);
+        };
+        
+        // Quick test function
+        window.quickTest = function() {
+            console.log('🧪 Quick test iniciado...');
+            if (window.player && window.player.playlistData && window.player.playlistData.length > 0) {
+                console.log(`📋 Testing first item: ${window.player.playlistData[0].title}`);
+                window.player.playItem(0);
+            } else {
+                console.log('❌ No hay datos de playlist para testear');
             }
         };
         
-        // Auto-debug after page load
+        // Auto-debug after page load (reduced to avoid spam)
         setTimeout(() => {
             console.log('🔍 Auto-debug iniciado...');
             if (typeof debugStream === 'function') {
