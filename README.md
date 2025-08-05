@@ -19,6 +19,9 @@ A modern, professional IPTV player built with Electron that bypasses CORS limita
 - 📺 **Picture-in-Picture** - Floating window playback
 - ⛶ **Fullscreen mode** - Immersive experience
 - ☀️ **Video controls** - Real-time brightness and contrast adjustment
+- 📡 **IPTV-ORG integration** - Download and play official IPTV channels
+- ⏳ **Real-time loading** - Progress tracking for large playlists
+- 🎨 **Professional interface** - Dark theme with modern design
 
 ## 🚀 Quick Start
 

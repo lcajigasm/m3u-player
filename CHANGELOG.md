@@ -1,216 +1,138 @@
-# Changelog
-
-All notable changes to M3U Player will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+# Changelog - M3U Player Electron
 
 ## [1.0.0] - 2024-03-08
 
-### ✨ Features Implemented
+### ✨ Características implementadas
 
 #### Core Functionality
-- ✅ **Complete M3U/M3U8 player** - Robust parser with metadata support
-- ✅ **No CORS limitations** - Plays streams that fail in web browsers
-- ✅ **Native HLS support** - Automatic HLS.js integration
-- ✅ **Multiple formats** - MP4, WebM, HLS (.m3u8) and more
-- ✅ **Auto-type detection** - Automatically identifies stream format
+- ✅ **Reproductor M3U/M3U8 completo** - Parser robusto con soporte para metadatos
+- ✅ **Sin limitaciones CORS** - Reproduce streams que fallan en navegadores web
+- ✅ **Soporte HLS nativo** - Integración automática con HLS.js
+- ✅ **Múltiples formatos** - MP4, WebM, HLS (.m3u8) y más
+- ✅ **Auto-detección de tipo** - Identifica automáticamente el formato del stream
 
-#### User Interface
-- ✅ **Modern responsive design** - Works on any window size
-- ✅ **Interactive playlist** - Detailed information for each stream
-- ✅ **Complete controls** - Play/Pause, Previous/Next, Volume control
-- ✅ **Integrated search** - Filter channels by name or group
-- ✅ **Visual states** - Loading, error, and playback indicators
+#### Interface de Usuario
+- ✅ **Diseño moderno y responsive** - Funciona en cualquier tamaño de ventana
+- ✅ **Lista de reproducción interactiva** - Con información detallada de cada stream
+- ✅ **Controles completos** - Play/Pause, Anterior/Siguiente, Control de volumen
+- ✅ **Búsqueda integrada** - Filtra canales por nombre o grupo
+- ✅ **Estados visuales** - Indicadores de carga, error y reproducción
 
-#### Advanced Features
-- ✅ **Stream diagnostics** - "🔧 Test Stream" button to verify connectivity
-- ✅ **Customizable configuration** - HTTP headers, User-Agent, Referer
-- ✅ **Export playlists** - Save modified lists in M3U format
-- ✅ **Included test files** - To verify functionality
-- ✅ **Auto-advance on errors** - Continues to next stream automatically
+#### Funcionalidades Avanzadas
+- ✅ **Diagnóstico de streams** - Botón "🔧 Probar Stream" para verificar conectividad
+- ✅ **Configuración personalizable** - Headers HTTP, User-Agent, Referer
+- ✅ **Exportar playlists** - Guarda listas modificadas en formato M3U
+- ✅ **Archivos de prueba incluidos** - Para verificar funcionalidad
+- ✅ **Auto-avance en errores** - Continúa al siguiente stream automáticamente
 
 #### Electron Integration
-- ✅ **Native menus** - Complete OS integration
-- ✅ **Keyboard shortcuts** - Quick controls (Space, Arrows, etc.)
-- ✅ **File dialogs** - Open local M3U files
-- ✅ **Persistent configuration** - Saves preferences between sessions
-- ✅ **Multi-platform** - Windows, macOS, and Linux
+- ✅ **Menús nativos** - Integración completa con el sistema operativo
+- ✅ **Atajos de teclado** - Controles rápidos (Espacio, Flechas, etc.)
+- ✅ **Diálogos de archivo** - Abrir archivos M3U locales
+- ✅ **Configuración persistente** - Guarda preferencias entre sesiones
+- ✅ **Multi-plataforma** - Windows, macOS y Linux
 
 #### Error Handling & Debugging
-- ✅ **Robust error handling** - Clear and informative messages
-- ✅ **Detailed logging** - Technical information in console
-- ✅ **Configurable timeouts** - Prevents blocking on slow streams
-- ✅ **Fallback strategies** - Multiple loading methods
+- ✅ **Manejo robusto de errores** - Mensajes claros y informativos
+- ✅ **Logging detallado** - Información técnica en consola
+- ✅ **Timeouts configurables** - Evita bloqueos en streams lentos
+- ✅ **Fallback strategies** - Múltiples métodos de carga
 
-### 🔧 Technical Architecture
+### 🔧 Arquitectura técnica
 
-#### Implemented Stack:
-- **Electron 27.0.0** - Desktop application framework
-- **HLS.js 1.4.12** - HLS stream playback
-- **Electron-Store 8.1.0** - Configuration persistence
-- **HTML5 Video API** - Native video playback
-- **CSS Grid/Flexbox** - Modern responsive layout
+#### Stack implementado:
+- **Electron 27.0.0** - Framework de aplicación de escritorio
+- **HLS.js 1.4.12** - Reproducción de streams HLS
+- **Electron-Store 8.1.0** - Persistencia de configuración
+- **HTML5 Video API** - Reproducción nativa de video
+- **CSS Grid/Flexbox** - Layout moderno y responsive
 
-#### Design Patterns:
-- **M3UPlayer main class** - Encapsulates all functionality
-- **Event-driven architecture** - Asynchronous event handling
-- **Promise-based loading** - Async loading with error handling
-- **Modular CSS** - Organized and maintainable styles
+#### Patrones de diseño:
+- **Clase principal M3UPlayer** - Encapsula toda la funcionalidad
+- **Event-driven architecture** - Manejo de eventos asíncrono
+- **Promise-based loading** - Carga asíncrona con manejo de errores
+- **Modular CSS** - Estilos organizados y mantenibles
 
-### 📁 Main Files Created:
+### 📁 Archivos principales creados:
 
 ```
-m3u-player/
-├── src/
-│   ├── index.html           # Main UI (200+ lines)
-│   ├── js/main.js          # Core application logic (1000+ lines)
-│   └── styles/main.css     # Complete responsive styles (800+ lines)
-├── main.js                 # Electron main process (300+ lines)
-├── preload.js              # Secure preload script (100+ lines)
-├── examples/               # Test files directory
-├── docs/                   # Complete documentation
-└── scripts/                # Build and utility scripts
+m3u-player-electron/
+├── main.js              # Proceso principal de Electron (200+ líneas)
+├── preload.js           # Script de preload con API segura (100+ líneas)
+├── script.js            # Lógica principal de la aplicación (800+ líneas)
+├── styles.css           # Estilos completos y responsive (600+ líneas)
+├── index.html           # Interface de usuario completa
+├── package.json         # Configuración y dependencias
+├── electron-builder.yml # Configuración de compilación
+├── start.sh             # Script de inicio automático
+├── .gitignore           # Archivos a ignorar en Git
+└── assets/              # Directorio para iconos
 ```
 
 ### 🧪 Testing & Quality Assurance
 
-#### Included test files:
-- `examples/basic-test.m3u` - Guaranteed MP4 videos (Google Cloud Storage)
-- `examples/test-streams.m3u` - HLS test streams (Apple, Bitdash)
-- `examples/sample.m3u` - Additional examples from different sources
+#### Archivos de prueba incluidos:
+- `basic-test.m3u` - Videos MP4 garantizados (Google Cloud Storage)
+- `test-streams.m3u` - Streams HLS de prueba (Apple, Bitdash)
+- `sample.m3u` - Ejemplos adicionales de diferentes fuentes
 
-#### Debugging features:
-- Detailed console logging with emojis
-- Stream connectivity test button per stream
-- Technical information in modals
-- Error handling with auto-recovery
+#### Funcionalidades de debugging:
+- Console logging detallado con emojis
+- Botón de prueba de conectividad por stream
+- Información técnica en modales
+- Manejo de errores con auto-recuperación
 
 ### 🚀 Deployment & Distribution
 
-#### Available scripts:
-- `npm start` - Start application in normal mode
-- `npm run dev` - Development mode with DevTools
-- `npm run build` - Build for all platforms
-- `npm run pack` - Package without installer
-- `npm run dist` - Create complete distribution
+#### Scripts disponibles:
+- `npm start` - Iniciar aplicación en modo normal
+- `npm run dev` - Modo desarrollo con DevTools
+- `npm run build` - Compilar para todas las plataformas
+- `npm run pack` - Empaquetado sin instalador
+- `npm run dist` - Crear distribución completa
 
-#### Supported platforms:
-- **macOS** - .dmg and .app (Intel + Apple Silicon)
-- **Windows** - .exe and NSIS installer (x64 + x86)
+#### Plataformas soportadas:
+- **macOS** - .dmg y .app (Intel + Apple Silicon)
+- **Windows** - .exe e instalador NSIS (x64 + x86)
 - **Linux** - AppImage (x64)
 
-### 📚 Complete Documentation:
+### 📚 Documentación completa:
 
-- `README.md` - User guide and installation
-- `docs/DEBUG.md` - Detailed debugging guide
-- `docs/TROUBLESHOOTING.md` - Technical problem solving
-- `CHANGELOG.md` - This changelog file
-- `CONTRIBUTING.md` - Contribution guidelines
-- `LICENSE` - MIT license
+- `README.md` - Guía de usuario y instalación
+- `DEBUG.md` - Guía de debugging detallada
+- `TROUBLESHOOTING.md` - Solución de problemas técnicos
+- `CHANGELOG.md` - Este archivo de cambios
 
-## [1.1.0] - 2024-03-08 - Player Improvements
+## [1.1.0] - 2024-03-08 - Mejoras de Reproductor
 
-### ✨ New Features:
+### ✨ Nuevas características implementadas:
 
-#### Enhanced Player
-- ✅ **Picture-in-Picture** - Complete functionality with support detection
-- ✅ **Fullscreen mode** - Immersive mode with keyboard shortcuts
-- ✅ **Advanced video controls** - Real-time brightness, contrast, and saturation
-- ✅ **Time indicator** - Shows current time and total duration
-- ✅ **Reset button** - Restores video filters to default values
+#### Reproductor mejorado
+- ✅ **Picture-in-Picture** - Funcionalidad completa con detección de soporte
+- ✅ **Pantalla completa** - Modo inmersivo con atajos de teclado
+- ✅ **Controles de video avanzados** - Brillo, contraste y saturación en tiempo real
+- ✅ **Indicador de tiempo** - Muestra tiempo actual y duración total
+- ✅ **Botón de reset** - Restaura filtros de video a valores por defecto
 
-#### Visual Improvements
-- ✅ **Clearer player** - Removed initial dark filter
-- ✅ **More visible controls** - Improved background and contrast
-- ✅ **Custom sliders** - Modern design with hover effects
-- ✅ **Button states** - Visual indicators for play/pause/loading
-- ✅ **Improved responsive design** - Better mobile experience
+#### Mejoras visuales
+- ✅ **Reproductor más claro** - Eliminado filtro oscuro inicial
+- ✅ **Controles más visibles** - Fondo mejorado y mejor contraste
+- ✅ **Sliders personalizados** - Diseño moderno con efectos hover
+- ✅ **Estados de botones** - Indicadores visuales de play/pause/carga
+- ✅ **Diseño responsive mejorado** - Mejor experiencia en móviles
 
-#### Technical Features
-- ✅ **Auto-reset filters** - Reset when loading new stream
-- ✅ **Extended keyboard shortcuts** - P (PiP), F (Fullscreen), +/- (Brightness)
-- ✅ **State management** - Better visual feedback during loading
-- ✅ **Improved logging** - Detailed information for all actions
+#### Funcionalidades técnicas
+- ✅ **Auto-reset de filtros** - Se resetean al cargar nuevo stream
+- ✅ **Atajos de teclado extendidos** - P (PiP), F (Fullscreen), +/- (Brillo)
+- ✅ **Manejo de estados** - Mejor feedback visual durante carga
+- ✅ **Logging mejorado** - Información detallada de todas las acciones
 
-### 🔧 Bug Fixes:
-- ❌ **Very dark video** - Fixed by removing initial filters
-- ❌ **Controls not visible** - Improved contrast and background
-- ❌ **Persistent filters** - Now reset automatically
-- ❌ **Inconsistent states** - Better UI synchronization
+### 🔧 Correcciones de bugs:
+- ❌ **Video muy oscuro** - Solucionado removiendo filtros iniciales
+- ❌ **Controles no visibles** - Mejorado contraste y fondo
+- ❌ **Filtros persistentes** - Se resetean automáticamente
+- ❌ **Estados inconsistentes** - Mejor sincronización de UI
 
-## [1.2.0] - 2024-03-08 - Search & Interface Improvements
+### 🎯 Estado del proyecto: **COMPLETO** ✅
 
-### ✨ Enhanced Search Interface:
-
-#### Advanced Search
-- ✅ **Improved search field** with icon and clear button
-- ✅ **Real-time search** by name, group, or type
-- ✅ **Smart placeholder** that appears/disappears based on content
-- ✅ **Clear button** appears only when there's text
-
-#### Smart Filters
-- ✅ **Group filter** - Dropdown with all available groups
-- ✅ **Type filter** - HLS, Direct, Stream
-- ✅ **Sort button** - Toggles between A-Z and Z-A
-- ✅ **Combinable filters** - All filters work together
-
-#### Enhanced Information
-- ✅ **Channel counter** - "X of Y channels" when filters are active
-- ✅ **Informative tooltips** on all elements
-- ✅ **Channel IDs** shown when available
-- ✅ **No results message** when no matches found
-
-#### Visual Design Improvements
-- ✅ **Larger logos** (48x48px) with hover effects
-- ✅ **Improved placeholders** with dark gradients
-- ✅ **Staggered entry animations**
-- ✅ **Clear visual states** (hover, active, hidden)
-- ✅ **Side borders** that light up on hover
-
-### 🚀 Performance Optimizations:
-
-#### Instant Search
-- ✅ **Debouncing of 150ms** to prevent excessive searches
-- ✅ **Memory filtering** instead of DOM manipulation
-- ✅ **Batch rendering** using `requestAnimationFrame`
-- ✅ **DocumentFragment** for efficient insertion
-- ✅ **Pending search cancellation** when clearing
-
-#### Optimized Rendering
-- ✅ **Batch rendering** of 50 elements to avoid UI blocking
-- ✅ **Function reuse** (`createPlaylistItem`)
-- ✅ **Optimized event listeners** with direct references
-- ✅ **Background logo preloading**
-
-#### Centered Search Controls
-- ✅ **Centered layout** with max-width of 1000px
-- ✅ **Horizontally aligned filters** and centered
-- ✅ **Consistent spacing** between elements
-- ✅ **Improved responsive design** for mobile
-
-### 🎯 Project Status: **COMPLETE** ✅
-
-M3U Player is fully functional and ready for production use. It includes all planned features, complete documentation, and is prepared for multi-platform distribution.
-
----
-
-## Upcoming Features (Roadmap)
-
-### 🔮 Planned for v1.3.0:
-- [ ] **Favorites system** - Mark and organize favorite channels
-- [ ] **Recently played** - Quick access to recent channels
-- [ ] **Custom themes** - User-selectable color schemes
-- [ ] **Playlist management** - Create and edit playlists within the app
-- [ ] **Stream recording** - Record streams to local files
-
-### 🔮 Planned for v1.4.0:
-- [ ] **EPG support** - Electronic Program Guide integration
-- [ ] **Subtitles support** - External subtitle file loading
-- [ ] **Multi-language** - Interface localization
-- [ ] **Plugin system** - Extensible architecture for custom features
-- [ ] **Cloud sync** - Sync settings and favorites across devices
-
----
-
-For detailed technical information about any release, see the documentation in the `docs/` folder.
+El proyecto M3U Player Electron está completamente funcional y listo para uso en producción. Incluye todas las características planificadas, documentación completa y está preparado para distribución multi-plataforma.

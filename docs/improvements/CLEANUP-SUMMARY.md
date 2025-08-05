@@ -14,9 +14,9 @@
 - **Removed Technical Info**: No cryptic or irrelevant data
 - **File**: `script.js` → `createPlaylistItem()` and `styles.css`
 
-### **3. Organización de Archivos** ✅
-- **Eliminados**: Todos los archivos demo y duplicados
-- **Estructura organizada**:
+### **3. File Organization** ✅
+- **Removed**: All demo and duplicate files
+- **Organized structure**:
   ```
   /src/
   ├── index.html
@@ -46,7 +46,7 @@ M3U/
 └── package.json            # Configuración del proyecto
 ```
 
-## 🔄 **Archivos Eliminados**
+## 🔄 **Removed Files**
 - ❌ `demo-modern.html`
 - ❌ `index-modern.html` 
 - ❌ `index-simple.html`
@@ -102,8 +102,8 @@ getStreamType(url) {
 1. ✅ **Búsqueda ocupa 100% del ancho**
 2. ✅ **Lista de canales limpia y legible**
 3. ✅ **Proyecto completamente organizado**
-4. ✅ **Sin archivos duplicados o demos**
+4. ✅ **No duplicate or demo files**
 5. ✅ **CSS optimizado y eficiente**
 6. ✅ **JavaScript mejorado**
 
-El proyecto está ahora **limpio, organizado y funcional** con las correcciones solicitadas implementadas.
+The project is now **clean, organized and functional** with the requested fixes implemented.

@@ -8,19 +8,12 @@ directories:
 files:
   - main.js
   - preload.js
-  - index.html
-  - styles.css
-  - script.js
+  - src/**/*
   - assets/**/*
+  - examples/**/*
   - "!node_modules/**/*"
   - "node_modules/hls.js/**/*"
   - "node_modules/electron-store/**/*"
-
-extraResources:
-  - basic-test.m3u
-  - test-streams.m3u
-  - sample.m3u
-  - m3u/
 
 mac:
   category: public.app-category.video
@@ -53,4 +46,4 @@ dmg:
   icon: assets/icon.icns
 
 snap:
-  summary: Reproductor M3U/IPTV sin limitaciones CORS
+  summary: M3U/IPTV Player without CORS limitations

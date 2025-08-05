@@ -11,6 +11,8 @@
    - Use the "🔧 Test Stream" button for diagnostics
    - Check console (F12) for detailed error information
    - Verify the stream is publicly accessible
+   - IPTV-ORG button downloads real channels from official repository
+   - Internet connection required for initial download
 
 2. **Check stream format**:
 
@@ -22,6 +24,7 @@
    - Verify internet connection for online streams
    - Check if the stream URL is still valid
    - Some streams may be geo-blocked
+   - IPTV-ORG button works offline after initial download
 
 #### Video Quality Issues
 
@@ -57,6 +60,25 @@
    - Check for authentication requirements
    - Verify the playlist URL is still active
 
+#### IPTV-ORG Button Issues
+
+1. **Download IPTV-ORG button**:
+
+   - Downloads latest playlist from iptv-org.github.io
+   - Requires internet connection for download
+   - Button changes to "Play IPTV-ORG" after successful download
+
+2. **Play IPTV-ORG button**:
+
+   - Loads previously downloaded IPTV-ORG playlist
+   - Works offline once playlist is downloaded
+   - Shows channel count in button text
+
+3. **Expected behavior**:
+   - First time: Shows "Download IPTV-ORG"
+   - After download: Shows "Play IPTV-ORG (X channels)"
+   - Button is disabled during download process
+
 #### Logos Not Displaying
 
 1. **Check logo URLs**:
@@ -84,6 +106,36 @@
    - See [Cache Troubleshooting Guide](CACHE-TROUBLESHOOTING.md)
    - Use development mode: `npm run dev`
    - Clear browser data if using web version
+
+#### Control Elements Not Working
+
+1. **Time display issues**:
+
+   - Check if video is properly loaded
+   - Verify console (F12) for JavaScript errors
+   - Ensure video has valid duration metadata
+   - Time display should show "00:00 / 00:00" format in rounded container
+
+2. **Button controls not responding**:
+
+   - Check if video player is initialized
+   - Verify event listeners are attached
+   - Try reloading the video
+   - Buttons should have dark gray gradients with subtle hover effects
+
+3. **Professional dark interface features**:
+
+   - Controls use consistent dark theme with gray gradients
+   - Two-row layout: main controls (play/pause/etc) and secondary (sliders/time)
+   - Minimal rounded corners (8-10px) for professional appearance
+   - Subtle hover effects without excessive animations
+   - PiP button shows red accent when active with subtle pulse
+   - Professional terminology (Play/Pause, minimal emojis)
+
+4. **Slider controls (volume/brightness)**:
+   - Ensure video element is accessible
+   - Check for CSS conflicts
+   - Verify JavaScript is not blocked
 
 #### Configuration Problems
 
@@ -126,6 +178,21 @@
    - Disable hardware acceleration if causing issues
    - Update graphics drivers
 
+### � Auttomatic Updates
+
+#### IPTV-ORG Playlist Updates
+
+1. **Automatic updates on startup**:
+
+   - App automatically downloads latest IPTV-ORG playlist
+   - Updates saved locally for offline use
+   - Fallback to local file if update fails
+
+2. **Update issues**:
+   - Check internet connection for automatic updates
+   - Console shows update status messages
+   - Local backup ensures functionality even offline
+
 ### 📞 Getting Help
 
 #### Before Reporting Issues
@@ -135,6 +202,7 @@
    - Open DevTools (F12)
    - Look for error messages in Console tab
    - Check Network tab for failed requests
+   - Look for IPTV-ORG update messages
 
 2. **Gather information**:
    - Operating system and version

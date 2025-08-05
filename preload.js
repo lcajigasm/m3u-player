@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   showSaveDialog: (options) => ipcRenderer.invoke('show-save-dialog', options),
   writeFile: (filePath, content) => ipcRenderer.invoke('write-file', filePath, content),
   readFile: (filePath) => ipcRenderer.invoke('read-file', filePath),
+  saveFile: (relativePath, content) => ipcRenderer.invoke('save-file', relativePath, content),
   
   // Network (without CORS restrictions)
   fetchUrl: (url, options) => ipcRenderer.invoke('fetch-url', url, options),

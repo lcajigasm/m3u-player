@@ -13,14 +13,85 @@
 
 <body>
     <div class="container">
-        <header>
-            <h1>🎬 M3U Player</h1>
-            <p>IPTV Player without CORS limitations</p>
+        <header class="app-header">
+            <div class="app-title-bar">
+                <div class="app-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
+                        <path d="M8 21l4-4 4 4" stroke="currentColor" stroke-width="2"/>
+                        <circle cx="8" cy="8" r="1" fill="currentColor"/>
+                        <circle cx="12" cy="8" r="1" fill="currentColor"/>
+                        <circle cx="16" cy="8" r="1" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="app-title">
+                    <h1>M3U Player</h1>
+                    <span class="app-subtitle">Professional IPTV Player</span>
+                </div>
+                <div class="app-actions">
+                    <button class="header-btn" id="settingsHeaderBtn" title="Settings">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                    <button class="header-btn" id="aboutHeaderBtn" title="About">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 16v-4m0-4h.01" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
         </header>
+
+        <!-- Loading Screen -->
+        <div class="loading-screen" id="loadingScreen" style="display: none;">
+            <div class="loading-content">
+                <div class="loading-icon">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <h2 id="loadingTitle">Processing...</h2>
+                <p id="loadingMessage">Please wait while we process your request</p>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text">
+                        <span id="progressPercent">0%</span>
+                        <span id="progressDetails"></span>
+                    </div>
+                </div>
+                <div class="loading-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Channels:</span>
+                        <span class="stat-value" id="channelCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Processed:</span>
+                        <span class="stat-value" id="processedCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Time:</span>
+                        <span class="stat-value" id="elapsedTime">0s</span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div class="upload-section" id="uploadSection">
             <div class="upload-intro">
-                <div class="upload-icon">📺</div>
+                <div class="upload-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                        <path d="M8 21l4-4 4 4" stroke="currentColor" stroke-width="1.5"/>
+                        <circle cx="8" cy="8" r="1" fill="currentColor"/>
+                        <circle cx="12" cy="8" r="1" fill="currentColor"/>
+                        <circle cx="16" cy="8" r="1" fill="currentColor"/>
+                    </svg>
+                </div>
                 <h2>Load M3U Playlist</h2>
                 <p>Select a local file or enter a URL to get started</p>
             </div>
@@ -32,8 +103,8 @@
                 <button id="urlBtn" class="upload-btn secondary">
                     🌐 Load from URL
                 </button>
-                <button id="testBtn" class="upload-btn tertiary">
-                    🧪 Test File
+                <button id="iptvOrgBtn" class="upload-btn tertiary">
+                    📡 Download IPTV-ORG
                 </button>
             </div>
 
@@ -101,34 +172,42 @@
             </div>
 
             <div class="controls">
-                <button id="prevBtn" class="control-btn">⏮️ Previous</button>
-                <button id="playPauseBtn" class="control-btn">⏯️ Play/Pause</button>
-                <button id="nextBtn" class="control-btn">⏭️ Next</button>
-                <button id="stopBtn" class="control-btn">⏹️ Stop</button>
-                <button id="pipBtn" class="control-btn" title="Picture-in-Picture">
-                    📺 PiP
-                </button>
-                <button id="fullscreenBtn" class="control-btn" title="Fullscreen">
-                    ⛶ Fullscreen
-                </button>
-                <div class="video-controls">
-                    <label for="brightnessSlider">☀️</label>
-                    <input type="range" id="brightnessSlider" min="50" max="150" value="100" class="video-slider"
-                        title="Brightness" />
-                    <label for="contrastSlider">🔆</label>
-                    <input type="range" id="contrastSlider" min="50" max="150" value="100" class="video-slider"
-                        title="Contrast" />
-                    <button id="resetFiltersBtn" class="control-btn small" title="Reset filters">
-                        🔄
+                <div class="controls-row main-controls">
+                    <button id="prevBtn" class="control-btn">⏮ Previous</button>
+                    <button id="playPauseBtn" class="control-btn">▶ Play</button>
+                    <button id="nextBtn" class="control-btn">⏭ Next</button>
+                    <button id="stopBtn" class="control-btn">⏹ Stop</button>
+                    <button id="pipBtn" class="control-btn" title="Picture-in-Picture">
+                        ⧉ PiP
+                    </button>
+                    <button id="fullscreenBtn" class="control-btn" title="Fullscreen">
+                        ⛶ Fullscreen
                     </button>
                 </div>
-                <div class="volume-controls">
-                    <input type="range" id="volumeSlider" min="0" max="100" value="80" class="volume-slider" />
-                    <span id="volumeLabel">🔊 80%</span>
-                </div>
-                <div class="time-display">
-                    <span id="currentTime">00:00</span> /
-                    <span id="duration">00:00</span>
+                
+                <div class="controls-row secondary-controls">
+                    <div class="video-controls">
+                        <label for="brightnessSlider">☀️</label>
+                        <input type="range" id="brightnessSlider" min="50" max="150" value="100" class="video-slider"
+                            title="Brightness" />
+                        <label for="contrastSlider">🔆</label>
+                        <input type="range" id="contrastSlider" min="50" max="150" value="100" class="video-slider"
+                            title="Contrast" />
+                        <button id="resetFiltersBtn" class="control-btn small" title="Reset filters">
+                            ↻
+                        </button>
+                    </div>
+                    
+                    <div class="volume-controls">
+                        <input type="range" id="volumeSlider" min="0" max="100" value="80" class="volume-slider" />
+                        <span id="volumeLabel">♪ 80%</span>
+                    </div>
+                    
+                    <div class="time-display">
+                        <span id="currentTime">00:00</span>
+                        <span class="time-separator">/</span>
+                        <span id="duration">00:00</span>
+                    </div>
                 </div>
             </div>
 

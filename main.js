@@ -400,6 +400,24 @@ ipcMain.handle('get-app-version', () => {
   return app.getVersion();
 });
 
+ipcMain.handle('save-file', async (event, relativePath, content) => {
+  try {
+    const fullPath = path.join(__dirname, relativePath);
+    const dir = path.dirname(fullPath);
+    
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    
+    fs.writeFileSync(fullPath, content, 'utf8');
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving file:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // Application event handlers
 app.whenReady().then(() => {
   // Set dock icon on macOS

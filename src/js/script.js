@@ -8,6 +8,7 @@ class M3UPlayer {
         this.hls = null;
         this.config = {};
         this.isElectron = window.appInfo?.isElectron || false;
+        this.iptvOrgContent = null;
 
         this.initializeElements();
         this.setupEventListeners();
@@ -30,6 +31,9 @@ class M3UPlayer {
 
         // Configure debouncing for search
         this.searchTimeout = null;
+
+        // Check IPTV-ORG playlist status on startup
+        this.checkIPTVOrgPlaylistStatus();
     }
 
     // Search with debouncing for better performance
@@ -108,7 +112,7 @@ class M3UPlayer {
         // Botones principales
         this.fileBtn = document.getElementById('fileBtn');
         this.urlBtn = document.getElementById('urlBtn');
-        this.testBtn = document.getElementById('testBtn');
+        this.iptvOrgBtn = document.getElementById('iptvOrgBtn');
         // Elements that only exist in the initial interface
         this.refreshBtn = document.getElementById('refreshBtn');
         this.hideOverlayBtn = document.getElementById('hideOverlayBtn');
@@ -161,6 +165,17 @@ class M3UPlayer {
         this.settingsModal = document.getElementById('settingsModal');
         this.aboutModal = document.getElementById('aboutModal');
 
+        // Loading screen elements
+        this.loadingScreen = document.getElementById('loadingScreen');
+        this.loadingTitle = document.getElementById('loadingTitle');
+        this.loadingMessage = document.getElementById('loadingMessage');
+        this.progressFill = document.getElementById('progressFill');
+        this.progressPercent = document.getElementById('progressPercent');
+        this.progressDetails = document.getElementById('progressDetails');
+        this.channelCount = document.getElementById('channelCount');
+        this.processedCount = document.getElementById('processedCount');
+        this.elapsedTime = document.getElementById('elapsedTime');
+
         // Video overlay
         this.videoOverlay = document.getElementById('videoOverlay');
         this.loadingSpinner = document.getElementById('loadingSpinner');
@@ -173,7 +188,7 @@ class M3UPlayer {
         // Botones principales
         this.fileBtn?.addEventListener('click', () => this.openFileDialog());
         this.urlBtn?.addEventListener('click', () => this.showUrlInput());
-        this.testBtn?.addEventListener('click', () => this.loadTestFile());
+        this.iptvOrgBtn?.addEventListener('click', () => this.handleIPTVOrgButton());
         this.refreshBtn?.addEventListener('click', () => this.forceRefresh());
         this.hideOverlayBtn?.addEventListener('click', () => this.forceHideOverlay());
 
@@ -262,6 +277,10 @@ class M3UPlayer {
         // Configuración
         document.getElementById('saveSettings')?.addEventListener('click', () => this.saveSettings());
         document.getElementById('resetSettings')?.addEventListener('click', () => this.resetSettings());
+
+        // Header buttons
+        document.getElementById('settingsHeaderBtn')?.addEventListener('click', () => this.showSettings());
+        document.getElementById('aboutHeaderBtn')?.addEventListener('click', () => this.showAbout());
     }
 
     setupElectronEvents() {
@@ -434,47 +453,311 @@ class M3UPlayer {
         }
     }
 
-    loadTestFile() {
-        // Load test file with logos
-        const testContent = `#EXTM3U
-#EXTINF:-1 tvg-id="bbc1" tvg-name="BBC One" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/BBC_One_logo_%282021%29.svg/512px-BBC_One_logo_%282021%29.svg.png" group-title="UK",BBC One
-https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4
-#EXTINF:-1 tvg-id="cnn" tvg-name="CNN" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/CNN.svg/512px-CNN.svg.png" group-title="News",CNN International
-https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4
-#EXTINF:-1 tvg-id="discovery" tvg-name="Discovery Channel" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Discovery_Channel_-_Logo_2019.svg/512px-Discovery_Channel_-_Logo_2019.svg.png" group-title="Documentary",Discovery Channel
-https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
+    async checkIPTVOrgPlaylistStatus() {
+        try {
+            if (this.isElectron && window.electronAPI) {
+                const fileResult = await window.electronAPI.readFile('examples/iptv-org-channels.m3u');
+                if (fileResult.success && fileResult.data && !fileResult.data.includes('404: Not Found')) {
+                    // File exists and has valid content
+                    this.iptvOrgContent = fileResult.data;
+                    const tempData = this.parseM3U(fileResult.data);
+                    const channelCount = tempData.length;
+                    
+                    if (channelCount > 0) {
+                        this.updateIPTVOrgButton(`▶ Play IPTV-ORG (${channelCount})`, false);
+                        console.log(`✅ Found existing IPTV-ORG playlist with ${channelCount} channels`);
+                        return;
+                    }
+                }
+            }
+            
+            // No valid file found, show download button
+            this.updateIPTVOrgButton('📡 Download IPTV-ORG', false);
+            console.log('📡 IPTV-ORG playlist not found, showing download option');
+            
+        } catch (error) {
+            console.log('📡 Could not check IPTV-ORG status, showing download option');
+            this.updateIPTVOrgButton('📡 Download IPTV-ORG', false);
+        }
+    }
 
-        this.processM3UContent(testContent, 'test-with-logos.m3u');
+    async handleIPTVOrgButton() {
+        if (!this.iptvOrgBtn) return;
+        
+        const buttonText = this.iptvOrgBtn.textContent.trim();
+        
+        if (buttonText.includes('Download') || buttonText.includes('Update')) {
+            await this.downloadIPTVOrgPlaylist();
+        } else if (buttonText.includes('Play') || buttonText.includes('Reproducir')) {
+            await this.loadIPTVOrgPlaylist();
+        }
+    }
+
+    async downloadIPTVOrgPlaylist() {
+        try {
+            console.log('📡 Downloading IPTV-ORG playlist...');
+            this.showLoadingScreen('Downloading IPTV-ORG', 'Fetching the latest playlist from iptv-org.github.io...');
+            this.updateIPTVOrgButton('⏳ Downloading...', true);
+            
+            this.updateLoadingProgress(10, 'Connecting to server...');
+            
+            const iptvOrgUrl = 'https://iptv-org.github.io/iptv/index.m3u';
+            let content;
+            
+            if (this.isElectron && window.electronAPI) {
+                const response = await window.electronAPI.fetchUrl(iptvOrgUrl, {
+                    userAgent: this.config.playerSettings?.userAgent || 'M3U Player/1.0.0'
+                });
+                
+                if (response.success) {
+                    content = response.data;
+                } else {
+                    throw new Error(response.error);
+                }
+            } else {
+                const response = await fetch(iptvOrgUrl);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                content = await response.text();
+            }
+
+            this.updateLoadingProgress(50, 'Download complete, processing...');
+
+            // Save the downloaded content
+            if (this.isElectron && window.electronAPI) {
+                try {
+                    await window.electronAPI.saveFile('examples/iptv-org-channels.m3u', content);
+                    console.log('✅ IPTV-ORG playlist saved locally');
+                } catch (saveError) {
+                    console.warn('⚠️ Could not save playlist locally:', saveError);
+                }
+            }
+
+            this.updateLoadingProgress(75, 'Parsing channels...');
+
+            // Store content in memory for immediate use
+            this.iptvOrgContent = content;
+            
+            // Parse to get channel count
+            const tempData = this.parseM3U(content);
+            const channelCount = tempData.length;
+            
+            this.updateLoadingProgress(100, 'Complete!', channelCount, channelCount);
+            
+            // Show completion for a moment
+            setTimeout(() => {
+                this.hideLoadingScreen();
+                this.showFileInfo(`✅ IPTV-ORG playlist downloaded - ${channelCount} channels`, 'success');
+                this.updateIPTVOrgButton(`▶ Play IPTV-ORG (${channelCount})`, false);
+            }, 1000);
+            
+            console.log(`✅ Downloaded ${channelCount} channels from IPTV-ORG`);
+            
+        } catch (error) {
+            console.error('❌ Error downloading IPTV-ORG playlist:', error);
+            this.hideLoadingScreen();
+            this.showFileInfo(`Error downloading: ${error.message}`, 'error');
+            this.updateIPTVOrgButton('📡 Download IPTV-ORG', false);
+        }
+    }
+
+    async loadIPTVOrgPlaylist() {
+        try {
+            console.log('🎬 Loading IPTV-ORG playlist...');
+            this.showFileInfo('Loading IPTV-ORG playlist...', 'loading');
+            
+            let content = this.iptvOrgContent;
+            
+            // If not in memory, try to load from file
+            if (!content && this.isElectron && window.electronAPI) {
+                try {
+                    const fileResult = await window.electronAPI.readFile('examples/iptv-org-channels.m3u');
+                    if (fileResult.success) {
+                        content = fileResult.data;
+                        console.log('✅ Loaded IPTV-ORG from local file');
+                    }
+                } catch (fileError) {
+                    console.log('📁 Local file not found');
+                }
+            }
+            
+            // If still no content, use fallback
+            if (!content) {
+                console.log('📋 Using fallback test content');
+                content = this.getTestPlaylistContent();
+            }
+            
+            this.processM3UContent(content, 'iptv-org-channels.m3u');
+            
+        } catch (error) {
+            console.error('❌ Error loading IPTV-ORG playlist:', error);
+            this.showFileInfo(`Error: ${error.message}`, 'error');
+        }
+    }
+
+    updateIPTVOrgButton(text, disabled = false) {
+        if (this.iptvOrgBtn) {
+            this.iptvOrgBtn.textContent = text;
+            this.iptvOrgBtn.disabled = disabled;
+            
+            if (disabled) {
+                this.iptvOrgBtn.style.opacity = '0.6';
+                this.iptvOrgBtn.style.cursor = 'not-allowed';
+            } else {
+                this.iptvOrgBtn.style.opacity = '1';
+                this.iptvOrgBtn.style.cursor = 'pointer';
+            }
+        }
+    }
+
+    async loadTestFile() {
+        // Redirect to IPTV-ORG functionality
+        await this.loadIPTVOrgPlaylist();
+    }
+
+    showLoadingScreen(title = 'Processing...', message = 'Please wait while we process your request') {
+        if (this.loadingScreen) {
+            this.loadingScreen.style.display = 'flex';
+            this.loadingTitle.textContent = title;
+            this.loadingMessage.textContent = message;
+            this.resetLoadingProgress();
+            this.startLoadingTimer();
+        }
+    }
+
+    hideLoadingScreen() {
+        if (this.loadingScreen) {
+            this.loadingScreen.style.display = 'none';
+            this.stopLoadingTimer();
+        }
+    }
+
+    updateLoadingProgress(percent, details = '', channelCount = 0, processedCount = 0) {
+        if (this.progressFill) {
+            this.progressFill.style.width = `${percent}%`;
+        }
+        if (this.progressPercent) {
+            this.progressPercent.textContent = `${Math.round(percent)}%`;
+        }
+        if (this.progressDetails) {
+            this.progressDetails.textContent = details;
+        }
+        if (this.channelCount) {
+            this.channelCount.textContent = channelCount.toLocaleString();
+        }
+        if (this.processedCount) {
+            this.processedCount.textContent = processedCount.toLocaleString();
+        }
+    }
+
+    resetLoadingProgress() {
+        this.updateLoadingProgress(0, 'Starting...', 0, 0);
+    }
+
+    startLoadingTimer() {
+        this.loadingStartTime = Date.now();
+        this.loadingTimer = setInterval(() => {
+            if (this.elapsedTime) {
+                const elapsed = Math.floor((Date.now() - this.loadingStartTime) / 1000);
+                this.elapsedTime.textContent = `${elapsed}s`;
+            }
+        }, 1000);
+    }
+
+    stopLoadingTimer() {
+        if (this.loadingTimer) {
+            clearInterval(this.loadingTimer);
+            this.loadingTimer = null;
+        }
+    }
+
+    getTestPlaylistContent() {
+        return `#EXTM3U
+#EXTINF:-1 tvg-id="BBCOne.uk" tvg-logo="https://i.imgur.com/eNPIQ9f.png" group-title="General",BBC One
+https://vs-hls-push-ww-live.akamaized.net/x=4/i=urn:bbc:pips:service:bbc_one_hd/t=3840/v=pv14/b=5070016/main.m3u8
+#EXTINF:-1 tvg-id="CNN.us" tvg-logo="https://i.imgur.com/ilZJT5s.png" group-title="News",CNN International
+https://cnn-cnninternational-1-eu.rakuten.wurl.tv/playlist.m3u8
+#EXTINF:-1 tvg-id="AlJazeeraEnglish.qa" tvg-logo="https://i.imgur.com/BB93NQP.png" group-title="News",Al Jazeera English
+https://live-hls-web-aje.getaj.net/AJE/index.m3u8
+#EXTINF:-1 tvg-id="DWEnglish.de" tvg-logo="https://i.imgur.com/A1xzjOI.png" group-title="News",DW English
+https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8
+#EXTINF:-1 tvg-id="France24English.fr" tvg-logo="https://i.imgur.com/ZnmAXVv.png" group-title="News",France 24 English
+https://static.france24.com/live/F24_EN_LO_HLS/live_web.m3u8
+#EXTINF:-1 tvg-id="EuroNews.fr" tvg-logo="https://i.imgur.com/8t9mdg9.png" group-title="News",Euronews English
+https://rakuten-euronews-1-eu.rakuten.wurl.tv/playlist.m3u8
+#EXTINF:-1 tvg-id="BloombergTVEurope.uk" tvg-logo="https://i.imgur.com/OuogLHx.png" group-title="Business",Bloomberg TV Europe
+https://bloomberg.com/media-manifest/streams/eu.m3u8
+#EXTINF:-1 tvg-id="NASATelevision.us" tvg-logo="https://i.imgur.com/PjSbkWh.png" group-title="Science",NASA TV
+https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8
+#EXTINF:-1 tvg-id="WeatherChannel.us" tvg-logo="https://i.imgur.com/jDLexeM.png" group-title="Weather",The Weather Channel
+https://weather-lh.akamaihd.net/i/twc_1@92006/master.m3u8
+#EXTINF:-1 tvg-id="MTV.us" tvg-logo="https://i.imgur.com/YF2gS3M.png" group-title="Music",MTV
+https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5ca672f4e0a4456c96c4e41c/master.m3u8
+#EXTINF:-1 tvg-id="ComedyCentral.us" tvg-logo="https://i.imgur.com/ko3R7lz.png" group-title="Comedy",Comedy Central
+https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5ca3f7c61652631e36c43bb1/master.m3u8
+#EXTINF:-1 tvg-id="CartoonNetwork.us" tvg-logo="https://i.imgur.com/zmODpOG.png" group-title="Kids",Cartoon Network
+https://pluto-live.plutotv.net/egress/chandler/pluto01/live/VIACBS02/master.m3u8
+#EXTINF:-1 tvg-id="ESPN.us" tvg-logo="https://i.imgur.com/QiqKNkl.png" group-title="Sports",ESPN
+https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe3f5213/master.m3u8`;
     }
 
     processM3UContent(content, filename) {
         try {
             console.log(`📁 Processing file: ${filename}`);
 
-            this.playlistData = this.parseM3U(content);
+            // Show loading screen for large files
+            const isLargeFile = content.length > 100000; // 100KB threshold
+            if (isLargeFile) {
+                this.showLoadingScreen('Processing Playlist', `Parsing ${filename}...`);
+                this.updateLoadingProgress(10, 'Parsing M3U content...');
+            }
+
+            this.playlistData = this.parseM3U(content, isLargeFile);
             console.log(`📋 ${this.playlistData.length} elements in playlist`);
 
             if (this.playlistData.length === 0) {
+                if (isLargeFile) this.hideLoadingScreen();
                 this.showError('No valid elements found in M3U file');
                 return;
             }
 
+            if (isLargeFile) {
+                this.updateLoadingProgress(80, 'Rendering playlist...');
+                // Small delay to show progress
+                setTimeout(() => {
+                    this.renderPlaylist();
+                    this.updateLoadingProgress(100, 'Complete!');
+                    setTimeout(() => {
+                        this.hideLoadingScreen();
+                        this.showPlayerSection();
+                    }, 500);
+                }, 100);
+            } else {
+                this.renderPlaylist();
+                this.showPlayerSection();
+            }
+
             this.showFileInfo(`✅ ${filename} - ${this.playlistData.length} elements loaded`, 'success');
-            this.renderPlaylist();
-            this.showPlayerSection();
 
         } catch (error) {
+            this.hideLoadingScreen();
             console.error('Error procesando M3U:', error);
             this.showError(`Error procesando archivo: ${error.message}`);
         }
     }
 
-    parseM3U(content) {
+    parseM3U(content, showProgress = false) {
         const lines = content.split('\n').map(line => line.trim()).filter(line => line);
         const items = [];
         let currentItem = {};
 
         for (let i = 0; i < lines.length; i++) {
+            // Update progress for large files
+            if (showProgress && i % 100 === 0) {
+                const progress = 10 + (i / lines.length) * 60; // 10-70% range
+                this.updateLoadingProgress(progress, `Processing line ${i + 1}/${lines.length}...`, items.length, items.length);
+            }
             const line = lines[i];
 
             if (line.startsWith('#EXTM3U')) {
@@ -639,8 +922,7 @@ https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
 
         // Inicializar controles
         this.updatePlayPauseButton();
-        if (this.currentTimeDisplay) this.currentTimeDisplay.textContent = '00:00';
-        if (this.durationDisplay) this.durationDisplay.textContent = '00:00';
+        this.initializeTimeDisplay();
 
         console.log('🎬 Reproductor mostrado');
     }
@@ -926,7 +1208,7 @@ https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
 
     updateVolumeLabel(value) {
         if (this.volumeLabel) {
-            const icon = value == 0 ? '🔇' : value < 50 ? '🔉' : '🔊';
+            const icon = value == 0 ? '♪' : '♪';
             this.volumeLabel.textContent = `${icon} ${Math.round(value)}%`;
         }
     }
@@ -1038,11 +1320,21 @@ https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
     updatePlayPauseButton() {
         if (this.playPauseBtn && this.videoPlayer) {
             if (this.videoPlayer.paused) {
-                this.playPauseBtn.textContent = '▶️ Reproducir';
+                this.playPauseBtn.textContent = '▶ Play';
             } else {
-                this.playPauseBtn.textContent = '⏸️ Pausar';
+                this.playPauseBtn.textContent = '⏸ Pause';
             }
         }
+    }
+
+    initializeTimeDisplay() {
+        if (this.currentTimeDisplay) {
+            this.currentTimeDisplay.textContent = '00:00';
+        }
+        if (this.durationDisplay) {
+            this.durationDisplay.textContent = '00:00';
+        }
+        console.log('⏰ Time display initialized');
     }
 
     updateTimeDisplay() {
@@ -1056,6 +1348,7 @@ https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
         if (this.durationDisplay && this.videoPlayer) {
             const duration = this.formatTime(this.videoPlayer.duration);
             this.durationDisplay.textContent = duration;
+            console.log(`⏰ Duration updated: ${duration}`);
         }
     }
 
