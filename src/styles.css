@@ -1,6 +1,9 @@
 /* Import EPG Styles */
 @import url('styles/epg.css');
 
+/* Import Modern UI Enhancements */
+@import url('styles/modern-ui.css');
+
 * {
     margin: 0;
     padding: 0;
@@ -624,11 +627,44 @@ body {
 .playlist-header {
     width: 100%;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: 15px;
     margin-bottom: 15px;
-    flex-wrap: wrap;
-    gap: 10px;
+}
+
+.playlist-title-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.back-btn {
+    background: linear-gradient(135deg, #64748b, #475569);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.back-btn:hover {
+    background: linear-gradient(135deg, #475569, #334155);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.playlist-info {
+    color: #94a3b8;
+    font-size: 14px;
+    font-style: italic;
+    margin-left: auto;
 }
 
 .playlist-header h3 {

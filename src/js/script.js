@@ -9,6 +9,7 @@ class M3UPlayer {
         this.config = {};
         this.isElectron = window.appInfo?.isElectron || false;
         this.iptvOrgContent = null;
+        this.freeTvContent = null;
 
         this.initializeElements();
         this.setupEventListeners();
@@ -34,6 +35,18 @@ class M3UPlayer {
 
         // Check IPTV-ORG playlist status on startup
         this.checkIPTVOrgPlaylistStatus();
+        
+        // Check Free-TV playlist status on startup
+        this.checkFreeTvPlaylistStatus();
+
+        // Initialize dashboard features
+        this.initializeDashboard();
+        this.initializeEnhancedSearch();
+        
+        // Initialize internationalization after DOM is ready
+        setTimeout(() => {
+            this.initializeI18n();
+        }, 200);
     }
 
     // Search with debouncing for better performance
@@ -113,9 +126,27 @@ class M3UPlayer {
         this.fileBtn = document.getElementById('fileBtn');
         this.urlBtn = document.getElementById('urlBtn');
         this.iptvOrgBtn = document.getElementById('iptvOrgBtn');
+        this.freeTvBtn = document.getElementById('freeTvBtn');
+        
+        // Now Playing widget elements
+        this.nowPlayingWidget = document.getElementById('nowPlayingWidget');
+        this.minimizeNowPlayingBtn = document.getElementById('minimizeNowPlayingBtn');
+        this.returnToPlayerBtn = document.getElementById('returnToPlayerBtn');
+        this.nowPlayingTitle = document.getElementById('nowPlayingTitle');
+        this.nowPlayingGroup = document.getElementById('nowPlayingGroup');
+        this.nowPlayingType = document.getElementById('nowPlayingType');
+        this.nowPlayingLogo = document.getElementById('nowPlayingLogo');
+        this.nowPlayingIcon = document.getElementById('nowPlayingIcon');
+        
+        // Language selector
+        this.languageSelect = document.getElementById('languageSelect');
+        
         // Elements that only exist in the initial interface
         this.refreshBtn = document.getElementById('refreshBtn');
         this.hideOverlayBtn = document.getElementById('hideOverlayBtn');
+        
+        // Navigation elements
+        this.backToDashboardBtn = document.getElementById('backToDashboardBtn');
 
         // Input de URL
         this.urlInput = document.getElementById('urlInput');
@@ -189,8 +220,24 @@ class M3UPlayer {
         this.fileBtn?.addEventListener('click', () => this.openFileDialog());
         this.urlBtn?.addEventListener('click', () => this.showUrlInput());
         this.iptvOrgBtn?.addEventListener('click', () => this.handleIPTVOrgButton());
+        this.freeTvBtn?.addEventListener('click', () => this.handleFreeTvButton());
+        
+        // Now Playing widget event listeners
+        this.minimizeNowPlayingBtn?.addEventListener('click', () => this.toggleNowPlayingWidget());
+        
+        // Return to Player button with enhanced debugging and multiple attachment strategies
+        this.attachReturnToPlayerListener();
+        
+        // Language selector event listener
+        this.languageSelect?.addEventListener('change', (e) => {
+            console.log('🌐 Language selector changed to:', e.target.value);
+            this.changeLanguage(e.target.value);
+        });
         this.refreshBtn?.addEventListener('click', () => this.forceRefresh());
         this.hideOverlayBtn?.addEventListener('click', () => this.forceHideOverlay());
+        
+        // Navigation event listeners
+        this.backToDashboardBtn?.addEventListener('click', () => this.goBackToDashboard());
 
         // URL input
         this.loadUrlBtn?.addEventListener('click', () => this.loadFromUrl());
@@ -218,8 +265,14 @@ class M3UPlayer {
         // Búsqueda optimizada con debouncing
         this.searchInput?.addEventListener('input', () => this.debouncedSearch());
         this.clearSearchBtn?.addEventListener('click', () => this.clearSearch());
-        this.groupFilter?.addEventListener('change', () => this.handleSearch());
-        this.typeFilter?.addEventListener('change', () => this.handleSearch());
+        this.groupFilter?.addEventListener('change', () => {
+            this.updateFilterCounts();
+            this.handleSearch();
+        });
+        this.typeFilter?.addEventListener('change', () => {
+            this.updateFilterCounts();
+            this.handleSearch();
+        });
         this.sortBtn?.addEventListener('click', () => this.toggleSort());
 
         // Exportar y acciones
@@ -381,6 +434,155 @@ class M3UPlayer {
         if (this.urlInput) {
             this.urlInput.style.display = 'block';
             this.m3uUrl?.focus();
+            this.initializeUrlSuggestions();
+        }
+    }
+
+    initializeUrlSuggestions() {
+        if (!this.m3uUrl) return;
+
+        // Setup URL suggestions
+        this.m3uUrl.addEventListener('input', (e) => {
+            this.handleUrlInput(e.target.value);
+        });
+
+        this.m3uUrl.addEventListener('focus', () => {
+            this.showUrlSuggestions();
+        });
+
+        this.m3uUrl.addEventListener('blur', () => {
+            // Delay hiding to allow click on suggestions
+            setTimeout(() => this.hideUrlSuggestions(), 150);
+        });
+    }
+
+    handleUrlInput(value) {
+        if (value.length > 3) {
+            this.generateUrlSuggestions(value);
+            this.showUrlSuggestions();
+        } else {
+            this.hideUrlSuggestions();
+        }
+    }
+
+    generateUrlSuggestions(input) {
+        const urlSuggestions = document.getElementById('urlSuggestions');
+        if (!urlSuggestions) return;
+
+        const suggestions = [];
+
+        // Popular IPTV URLs (example suggestions)
+        const popularUrls = [
+            'https://iptv-org.github.io/iptv/index.m3u',
+            'https://raw.githubusercontent.com/iptv-org/iptv/master/index.m3u',
+            'https://example.com/playlist.m3u8',
+            'https://streams.example.com/live.m3u8'
+        ];
+
+        // Recent URLs from localStorage
+        const recentUrls = this.loadRecentUrls();
+
+        // Filter suggestions based on input
+        const inputLower = input.toLowerCase();
+        
+        // Add matching recent URLs
+        recentUrls
+            .filter(url => url.toLowerCase().includes(inputLower))
+            .slice(0, 3)
+            .forEach(url => {
+                suggestions.push({
+                    url: url,
+                    type: 'recent',
+                    icon: '🕒'
+                });
+            });
+
+        // Add matching popular URLs
+        popularUrls
+            .filter(url => url.toLowerCase().includes(inputLower))
+            .slice(0, 3)
+            .forEach(url => {
+                suggestions.push({
+                    url: url,
+                    type: 'popular',
+                    icon: '⭐'
+                });
+            });
+
+        this.renderUrlSuggestions(suggestions);
+    }
+
+    renderUrlSuggestions(suggestions) {
+        const urlSuggestions = document.getElementById('urlSuggestions');
+        if (!urlSuggestions) return;
+
+        urlSuggestions.innerHTML = '';
+
+        if (suggestions.length === 0) {
+            urlSuggestions.style.display = 'none';
+            return;
+        }
+
+        suggestions.forEach(suggestion => {
+            const suggestionItem = document.createElement('div');
+            suggestionItem.className = 'url-suggestion-item';
+            suggestionItem.innerHTML = `
+                <span class="suggestion-icon">${suggestion.icon}</span>
+                <span class="suggestion-url">${suggestion.url}</span>
+                <span class="suggestion-type">${suggestion.type}</span>
+            `;
+
+            suggestionItem.addEventListener('click', () => {
+                this.m3uUrl.value = suggestion.url;
+                this.addToRecentUrls(suggestion.url);
+                this.hideUrlSuggestions();
+            });
+
+            urlSuggestions.appendChild(suggestionItem);
+        });
+    }
+
+    showUrlSuggestions() {
+        const urlSuggestions = document.getElementById('urlSuggestions');
+        if (urlSuggestions) {
+            urlSuggestions.style.display = 'block';
+        }
+    }
+
+    hideUrlSuggestions() {
+        const urlSuggestions = document.getElementById('urlSuggestions');
+        if (urlSuggestions) {
+            urlSuggestions.style.display = 'none';
+        }
+    }
+
+    loadRecentUrls() {
+        try {
+            const stored = localStorage.getItem('m3u_recent_urls');
+            return stored ? JSON.parse(stored) : [];
+        } catch (error) {
+            console.warn('Error loading recent URLs:', error);
+            return [];
+        }
+    }
+
+    addToRecentUrls(url) {
+        let recentUrls = this.loadRecentUrls();
+        
+        // Remove if already exists
+        recentUrls = recentUrls.filter(u => u !== url);
+        
+        // Add to beginning
+        recentUrls.unshift(url);
+        
+        // Keep only last 10
+        recentUrls = recentUrls.slice(0, 10);
+        
+        // Save to localStorage
+        try {
+            localStorage.setItem('m3u_recent_urls', JSON.stringify(recentUrls));
+        } catch (error) {
+            console.warn('Error saving recent URLs:', error);
         }
     }
 
@@ -466,6 +668,7 @@ class M3UPlayer {
             }
 
             await this.processM3UContent(content, new URL(url).pathname.split('/').pop() || 'playlist.m3u');
+            this.addToRecentUrls(url);
             this.hideUrlInput();
 
         } catch (error) {
@@ -505,11 +708,13 @@ class M3UPlayer {
     async handleIPTVOrgButton() {
         if (!this.iptvOrgBtn) return;
         
-        const buttonText = this.iptvOrgBtn.textContent.trim();
+        // Check the tile title instead of full textContent
+        const tileTitle = this.iptvOrgBtn.querySelector('.tile-title');
+        const titleText = tileTitle ? tileTitle.textContent.trim() : '';
         
-        if (buttonText.includes('Download') || buttonText.includes('Update')) {
+        if (titleText.includes('Download') || titleText.includes('Update')) {
             await this.downloadIPTVOrgPlaylist();
-        } else if (buttonText.includes('Play') || buttonText.includes('Reproducir')) {
+        } else if (titleText.includes('Play') || titleText.includes('Reproducir')) {
             await this.loadIPTVOrgPlaylist();
         }
     }
@@ -589,6 +794,7 @@ class M3UPlayer {
             this.showFileInfo('Loading IPTV-ORG playlist...', 'loading');
             
             let content = this.iptvOrgContent;
+            let isLargeFile = false;
             
             // If not in memory, try to load from file
             if (!content && this.isElectron && window.electronAPI) {
@@ -596,6 +802,7 @@ class M3UPlayer {
                     const fileResult = await window.electronAPI.readFile('examples/iptv-org-channels.m3u');
                     if (fileResult.success) {
                         content = fileResult.data;
+                        isLargeFile = content.length > 50000; // Real IPTV-ORG files are large
                         console.log('✅ Loaded IPTV-ORG from local file');
                     }
                 } catch (fileError) {
@@ -607,9 +814,20 @@ class M3UPlayer {
             if (!content) {
                 console.log('📋 Using fallback test content');
                 content = this.getTestPlaylistContent();
+                isLargeFile = false; // Test content is small
             }
             
-            await this.processM3UContent(content, 'iptv-org-channels.m3u');
+            console.log(`📋 Content loaded, size: ${content.length} characters, isLarge: ${isLargeFile}`);
+            console.log(`📋 Content preview: ${content.substring(0, 200)}...`);
+            
+            // Use appropriate processing method based on content size
+            if (isLargeFile) {
+                console.log('📋 Using large file processing');
+                await this.processLargeM3UContent(content, 'iptv-org-channels.m3u');
+            } else {
+                console.log('📋 Using standard processing for small content');
+                await this.processM3UContent(content, 'iptv-org-channels.m3u');
+            }
             
         } catch (error) {
             console.error('❌ Error loading IPTV-ORG playlist:', error);
@@ -617,9 +835,89 @@ class M3UPlayer {
         }
     }
 
+
+
+
+
+
+    goBackToDashboard() {
+        console.log('🏠 Going back to dashboard...');
+        
+        // Hide player section
+        if (this.playerSection) {
+            this.playerSection.style.display = 'none';
+        }
+        
+        // Show dashboard section
+        const dashboardSection = document.getElementById('dashboardSection');
+        if (dashboardSection) {
+            dashboardSection.style.display = 'block';
+        }
+        
+        // Clear playlist data to save memory
+        if (this.playlistData && this.playlistData.length > 1000) {
+            this.playlistData = [];
+        }
+        
+        // Update dashboard stats
+        this.updateDashboardStats();
+        
+        console.log('✅ Back to dashboard complete');
+    }
+
+    updatePlaylistTitle(filename = null) {
+        const playlistTitleElement = document.getElementById('playlistTitle');
+        if (playlistTitleElement) {
+            let title = 'Loaded Playlist';
+            
+            if (filename) {
+                title = filename.replace('.m3u', '').replace('.m3u8', '');
+                // Capitalize first letter and replace dashes/underscores
+                title = title.charAt(0).toUpperCase() + title.slice(1)
+                    .replace(/[-_]/g, ' ')
+                    .replace(/\b\w/g, l => l.toUpperCase());
+            } else if (this.lastLoadedFilename) {
+                title = this.lastLoadedFilename;
+            }
+            
+            const channelCount = this.playlistData?.length || 0;
+            playlistTitleElement.textContent = `${title} (${channelCount} channels)`;
+        }
+    }
+
+
     updateIPTVOrgButton(text, disabled = false) {
         if (this.iptvOrgBtn) {
-            this.iptvOrgBtn.textContent = text;
+            // Parse the text to extract icon, title and subtitle
+            let icon = '📡';
+            let title = window.t ? window.t('iptv_org') : 'IPTV-ORG';
+            let subtitle = window.t ? window.t('free_channels') : 'Free channels';
+            
+            if (text.includes('⏳')) {
+                icon = '⏳';
+                title = window.t ? window.t('downloading') : 'Downloading...';
+                subtitle = window.t ? window.t('please_wait') : 'Please wait';
+            } else if (text.includes('▶')) {
+                icon = '▶';
+                title = window.t ? window.t('play_iptv_org') : 'Play IPTV-ORG';
+                // Extract channel count from text like "▶ Play IPTV-ORG (1234)"
+                const match = text.match(/\((\d+)\)/);
+                subtitle = match ? `${match[1]} ${window.t ? window.t('channels') : 'channels'}` : (window.t ? window.t('ready_to_play') : 'Ready to play');
+            } else if (text.includes('Download')) {
+                icon = '📡';
+                title = window.t ? window.t('download_iptv_org') : 'Download IPTV-ORG';
+                subtitle = window.t ? window.t('free_channels') : 'Free channels';
+            }
+            
+            // Update the tile structure instead of replacing textContent
+            const tileIcon = this.iptvOrgBtn.querySelector('.tile-icon');
+            const tileTitle = this.iptvOrgBtn.querySelector('.tile-title');
+            const tileSubtitle = this.iptvOrgBtn.querySelector('.tile-subtitle');
+            
+            if (tileIcon) tileIcon.textContent = icon;
+            if (tileTitle) tileTitle.textContent = title;
+            if (tileSubtitle) tileSubtitle.textContent = subtitle;
+            
             this.iptvOrgBtn.disabled = disabled;
             
             if (disabled) {
@@ -632,9 +930,562 @@ class M3UPlayer {
         }
     }
 
+    // Free-TV Methods (copied from IPTV-ORG logic)
+    async checkFreeTvPlaylistStatus() {
+        try {
+            // Check if Free-TV playlist exists and get channel count
+            if (this.isElectron && window.electronAPI) {
+                const fileResult = await window.electronAPI.readFile('examples/free-tv-channels.m3u8');
+                if (fileResult.success && fileResult.data) {
+                    const channelCount = this.countChannelsInM3U(fileResult.data);
+                    if (channelCount > 0) {
+                        this.freeTvContent = fileResult.data; // Store content in memory
+                        this.updateFreeTvButton(`▶ Play Free-TV (${channelCount})`, false);
+                        return;
+                    }
+                }
+            }
+
+            // If file doesn't exist or has no channels, show download option
+            this.updateFreeTvButton('📺 Download Free-TV', false);
+        } catch (error) {
+            console.error('Error checking Free-TV playlist status:', error);
+            this.updateFreeTvButton('📺 Download Free-TV', false);
+        }
+    }
+
+    async handleFreeTvButton() {
+        if (!this.freeTvBtn) return;
+        
+        // Check the tile title instead of full textContent
+        const tileTitle = this.freeTvBtn.querySelector('.tile-title');
+        const titleText = tileTitle ? tileTitle.textContent.trim() : '';
+        
+        if (titleText.includes('Download') || titleText.includes('Update')) {
+            await this.downloadFreeTvPlaylist();
+        } else if (titleText.includes('Play') || titleText.includes('Reproducir')) {
+            await this.loadFreeTvPlaylist();
+        }
+    }
+
+    async downloadFreeTvPlaylist() {
+        try {
+            console.log('📺 Downloading Free-TV playlist...');
+            this.showLoadingScreen(
+                window.t ? window.t('downloading_free_tv') : 'Downloading Free-TV', 
+                window.t ? window.t('fetching_free_tv_playlist') : 'Fetching the latest playlist from Free-TV/IPTV...'
+            );
+            this.updateFreeTvButton('⏳ Downloading...', true);
+            
+            this.updateLoadingProgress(10, window.t ? window.t('connecting_server') : 'Connecting to server...');
+            
+            const freeTvUrl = 'https://raw.githubusercontent.com/Free-TV/IPTV/refs/heads/master/playlist.m3u8';
+            let content;
+            
+            if (this.isElectron && window.electronAPI) {
+                const response = await window.electronAPI.fetchUrl(freeTvUrl, {
+                    userAgent: this.config.playerSettings?.userAgent || 'M3U Player/1.0.0'
+                });
+                
+                if (response.success) {
+                    content = response.data;
+                } else {
+                    throw new Error(response.error);
+                }
+            } else {
+                const response = await fetch(freeTvUrl);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                content = await response.text();
+            }
+
+            this.updateLoadingProgress(50, 'Download complete, processing...');
+
+            // Save the downloaded content
+            if (this.isElectron && window.electronAPI) {
+                try {
+                    await window.electronAPI.saveFile('examples/free-tv-channels.m3u8', content);
+                    console.log('✅ Free-TV playlist saved to local file');
+                } catch (saveError) {
+                    console.warn('⚠️  Could not save Free-TV playlist locally:', saveError.message);
+                }
+            }
+
+            // Store content in memory for immediate use
+            this.freeTvContent = content;
+
+            this.updateLoadingProgress(80, 'Validating playlist...');
+
+            // Count channels for user feedback
+            const channelCount = this.countChannelsInM3U(content);
+            console.log(`📺 Free-TV playlist downloaded: ${channelCount} channels`);
+
+            this.updateLoadingProgress(100, 'Download complete!');
+
+            setTimeout(() => {
+                this.hideLoadingScreen();
+                if (channelCount > 0) {
+                    this.showFileInfo(`✅ Free-TV playlist downloaded: ${channelCount} channels`, 'success');
+                    this.updateFreeTvButton(`▶ Play Free-TV (${channelCount})`, false);
+                } else {
+                    this.showFileInfo('⚠️ Downloaded playlist appears to be empty', 'warning');
+                    this.updateFreeTvButton('📺 Download Free-TV', false);
+                }
+            }, 500);
+
+        } catch (error) {
+            console.error('❌ Error downloading Free-TV playlist:', error);
+            this.hideLoadingScreen();
+            this.showFileInfo(`❌ Download failed: ${error.message}`, 'error');
+            this.updateFreeTvButton('📺 Download Free-TV', false);
+        }
+    }
+
+    async loadFreeTvPlaylist() {
+        try {
+            console.log('📺 Loading Free-TV playlist...');
+            this.showFileInfo('Loading Free-TV playlist...', 'loading');
+            
+            let content = this.freeTvContent;
+            let isLargeFile = false;
+            
+            // If not in memory, try to load from file
+            if (!content && this.isElectron && window.electronAPI) {
+                try {
+                    const fileResult = await window.electronAPI.readFile('examples/free-tv-channels.m3u8');
+                    if (fileResult.success) {
+                        content = fileResult.data;
+                        isLargeFile = content.length > 50000; // Real Free-TV files are large
+                        console.log('✅ Loaded Free-TV from local file');
+                    }
+                } catch (fileError) {
+                    console.log('📁 Local file not found');
+                }
+            }
+            
+            // If still no content, use fallback
+            if (!content) {
+                console.log('📋 Using fallback test content');
+                content = this.getTestPlaylistContent();
+                isLargeFile = false; // Test content is small
+            }
+            
+            console.log(`📋 Content loaded, size: ${content.length} characters, isLarge: ${isLargeFile}`);
+            console.log(`📋 Content preview: ${content.substring(0, 200)}...`);
+            
+            // Use appropriate processing method based on content size
+            if (isLargeFile) {
+                console.log('📋 Using large file processing');
+                await this.processLargeM3UContent(content, 'free-tv-channels.m3u8');
+            } else {
+                console.log('📋 Using standard processing for small content');
+                await this.processM3UContent(content, 'free-tv-channels.m3u8');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error loading Free-TV playlist:', error);
+            this.showFileInfo(`Error: ${error.message}`, 'error');
+        }
+    }
+
+    updateFreeTvButton(text, disabled = false) {
+        if (this.freeTvBtn) {
+            // Parse the text to extract icon, title and subtitle
+            let icon = '📺';
+            let title = window.t ? window.t('free_tv') : 'Free-TV';
+            let subtitle = window.t ? window.t('community_channels') : 'Community channels';
+            
+            if (text.includes('⏳')) {
+                icon = '⏳';
+                title = window.t ? window.t('downloading') : 'Downloading...';
+                subtitle = window.t ? window.t('please_wait') : 'Please wait';
+            } else if (text.includes('▶')) {
+                icon = '▶';
+                title = window.t ? window.t('play_free_tv') : 'Play Free-TV';
+                // Extract channel count from text like "▶ Play Free-TV (1234)"
+                const match = text.match(/\((\d+)\)/);
+                subtitle = match ? `${match[1]} ${window.t ? window.t('channels') : 'channels'}` : (window.t ? window.t('ready_to_play') : 'Ready to play');
+            } else if (text.includes('Download')) {
+                icon = '📺';
+                title = window.t ? window.t('download_free_tv') : 'Download Free-TV';
+                subtitle = window.t ? window.t('community_channels') : 'Community channels';
+            }
+            
+            // Update the tile structure instead of replacing textContent
+            const tileIcon = this.freeTvBtn.querySelector('.tile-icon');
+            const tileTitle = this.freeTvBtn.querySelector('.tile-title');
+            const tileSubtitle = this.freeTvBtn.querySelector('.tile-subtitle');
+            
+            if (tileIcon) tileIcon.textContent = icon;
+            if (tileTitle) tileTitle.textContent = title;
+            if (tileSubtitle) tileSubtitle.textContent = subtitle;
+            
+            this.freeTvBtn.disabled = disabled;
+            
+            if (disabled) {
+                this.freeTvBtn.style.opacity = '0.6';
+                this.freeTvBtn.style.cursor = 'not-allowed';
+            } else {
+                this.freeTvBtn.style.opacity = '1';
+                this.freeTvBtn.style.cursor = 'pointer';
+            }
+        }
+    }
+
     async loadTestFile() {
         // Redirect to IPTV-ORG functionality
         await this.loadIPTVOrgPlaylist();
+    }
+
+    countChannelsInM3U(content) {
+        if (!content || typeof content !== 'string') {
+            return 0;
+        }
+        
+        // Count #EXTINF lines, which represent individual channels
+        const extinf_matches = content.match(/#EXTINF:/g);
+        return extinf_matches ? extinf_matches.length : 0;
+    }
+
+    // Now Playing Widget Methods
+    updateNowPlayingWidget(channel = null) {
+        console.log('🎵 === NOW PLAYING WIDGET UPDATE ===');
+        console.log('🎵 Widget element found:', !!this.nowPlayingWidget);
+        
+        if (!this.nowPlayingWidget) {
+            console.error('🎵 Now Playing widget element not found!');
+            return;
+        }
+        
+        if (!channel && this.currentIndex >= 0 && this.playlistData[this.currentIndex]) {
+            channel = this.playlistData[this.currentIndex];
+            console.log('🎵 Using current channel from index:', this.currentIndex);
+        }
+        
+        console.log('🎵 Channel data:', channel ? channel.title : 'No channel');
+        
+        if (channel) {
+            console.log('🎵 Updating widget with channel:', channel.title);
+            
+            // Update widget content
+            this.nowPlayingTitle.textContent = channel.title || 'Unknown Channel';
+            this.nowPlayingGroup.textContent = channel.group || '';
+            this.nowPlayingType.textContent = channel.type || 'Stream';
+            
+            // Update thumbnail/logo
+            if (channel.logo && channel.logo.trim()) {
+                this.nowPlayingLogo.src = channel.logo;
+                this.nowPlayingLogo.style.display = 'block';
+                this.nowPlayingIcon.style.display = 'none';
+            } else {
+                this.nowPlayingLogo.style.display = 'none';
+                this.nowPlayingIcon.style.display = 'block';
+                this.nowPlayingIcon.textContent = this.getChannelIcon(channel);
+            }
+            
+            // Show the widget
+            this.nowPlayingWidget.style.display = 'block';
+            console.log('🎵 Widget shown, display set to block');
+            
+            // Ensure the Return to Player button listener is attached
+            setTimeout(() => this.attachReturnToPlayerListener(), 50);
+        } else {
+            console.log('🎵 No channel, hiding widget');
+            // Hide the widget if no channel is playing
+            this.nowPlayingWidget.style.display = 'none';
+        }
+        
+        console.log('🎵 === NOW PLAYING WIDGET UPDATE END ===');
+    }
+    
+    getChannelIcon(channel) {
+        if (!channel) return '📺';
+        
+        const title = (channel.title || '').toLowerCase();
+        const group = (channel.group || '').toLowerCase();
+        
+        // Icon mapping based on content
+        if (group.includes('news') || title.includes('news')) return '📰';
+        if (group.includes('sports') || title.includes('sport')) return '⚽';
+        if (group.includes('music') || title.includes('music')) return '🎵';
+        if (group.includes('movie') || title.includes('movie')) return '🎬';
+        if (group.includes('kids') || title.includes('cartoon')) return '🧸';
+        if (group.includes('documentary')) return '🎓';
+        if (group.includes('religion')) return '⛪';
+        if (channel.type === 'Radio' || title.includes('radio')) return '📻';
+        
+        return '📺'; // Default TV icon
+    }
+    
+    toggleNowPlayingWidget() {
+        if (!this.nowPlayingWidget) return;
+        
+        this.nowPlayingWidget.classList.toggle('minimized');
+        
+        // Update minimize button text
+        const isMinimized = this.nowPlayingWidget.classList.contains('minimized');
+        this.minimizeNowPlayingBtn.textContent = isMinimized ? '+' : '−';
+        this.minimizeNowPlayingBtn.title = isMinimized ? 'Expand' : 'Minimize';
+    }
+    
+    returnToPlayer() {
+        console.log('🎬 === RETURN TO PLAYER DEBUG ===');
+        console.log('🎬 Method called successfully');
+        
+        // Debug current state
+        const dashboardSection = document.getElementById('dashboardSection');
+        const playerSection = document.getElementById('playerSection');
+        
+        console.log('🎬 Dashboard section:', dashboardSection ? 'found' : 'NOT FOUND');
+        console.log('🎬 Dashboard display:', dashboardSection?.style.display || 'not set');
+        console.log('🎬 Player section:', playerSection ? 'found' : 'NOT FOUND');
+        console.log('🎬 Player display:', playerSection?.style.display || 'not set');
+        console.log('🎬 Playlist data available:', this.playlistData ? `Yes (${this.playlistData.length} items)` : 'No');
+        console.log('🎬 Current index:', this.currentIndex);
+        
+        const isInDashboard = dashboardSection && (dashboardSection.style.display !== 'none');
+        console.log('🎬 Is in dashboard:', isInDashboard);
+        
+        // If we have a playlist loaded, show the player section
+        if (this.playlistData && this.playlistData.length > 0) {
+            console.log('🎬 Playlist available, proceeding...');
+            
+            if (isInDashboard) {
+                // We're in dashboard, need to navigate to player
+                console.log('🎬 In dashboard, calling showPlayerSection...');
+                this.showPlayerSection();
+                console.log('🎬 showPlayerSection called');
+            } else {
+                // We're already in player section, just close the widget
+                console.log('🎬 Already in player section');
+            }
+            
+            // Hide the now playing widget
+            if (this.nowPlayingWidget) {
+                console.log('🎬 Hiding Now Playing widget');
+                this.nowPlayingWidget.style.display = 'none';
+            }
+        } else {
+            console.log('🎬 No playlist data available');
+            // No playlist loaded, just hide the widget and show message
+            if (this.nowPlayingWidget) {
+                this.nowPlayingWidget.style.display = 'none';
+            }
+            this.showFileInfo(window.t ? window.t('no_playlist_loaded') : 'No playlist currently loaded', 'warning');
+        }
+        
+        console.log('🎬 === RETURN TO PLAYER DEBUG END ===');
+    }
+
+    // Enhanced method to attach Return to Player listener with multiple strategies
+    attachReturnToPlayerListener() {
+        console.log('🎬 === ATTACHING RETURN TO PLAYER LISTENER ===');
+        
+        const attachListener = () => {
+            this.returnToPlayerBtn = document.getElementById('returnToPlayerBtn');
+            
+            if (this.returnToPlayerBtn) {
+                console.log('✅ Return to Player button found');
+                
+                // Remove any existing listeners to prevent duplicates
+                this.returnToPlayerBtn.replaceWith(this.returnToPlayerBtn.cloneNode(true));
+                this.returnToPlayerBtn = document.getElementById('returnToPlayerBtn');
+                
+                // Add click event listener
+                this.returnToPlayerBtn.addEventListener('click', (e) => {
+                    console.log('🎬 Return to Player button clicked!', e);
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.returnToPlayer();
+                });
+                
+                // Add enter key support
+                this.returnToPlayerBtn.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        console.log('🎬 Return to Player activated via keyboard');
+                        e.preventDefault();
+                        this.returnToPlayer();
+                    }
+                });
+                
+                // Mark as having listeners attached
+                this.returnToPlayerBtn.dataset.listenerAttached = 'true';
+                
+                console.log('✅ Return to Player event listeners attached successfully');
+                return true;
+            } else {
+                console.error('❌ Return to Player button NOT found');
+                return false;
+            }
+        };
+        
+        // Try to attach immediately
+        if (!attachListener()) {
+            // If not found, try again after DOM is fully loaded
+            console.log('🎬 Retrying Return to Player attachment after DOM load...');
+            
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', attachListener);
+            } else {
+                // Try with a small delay
+                setTimeout(attachListener, 100);
+            }
+            
+            // Also try with MutationObserver to watch for DOM changes
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'childList') {
+                        const returnBtn = document.getElementById('returnToPlayerBtn');
+                        if (returnBtn && !returnBtn.dataset.listenerAttached) {
+                            console.log('🎬 Return to Player button found via MutationObserver');
+                            returnBtn.dataset.listenerAttached = 'true';
+                            observer.disconnect();
+                            attachListener();
+                        }
+                    }
+                });
+            });
+            
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+            
+            // Stop observing after 5 seconds
+            setTimeout(() => observer.disconnect(), 5000);
+        }
+    }
+
+    // Internationalization Methods
+    initializeI18n() {
+        console.log('🌐 Initializing i18n system...');
+        
+        if (typeof window.i18n !== 'undefined') {
+            // Set the language selector to current language
+            if (this.languageSelect) {
+                this.languageSelect.value = window.i18n.currentLanguage;
+            }
+            
+            // Initialize UI with current language
+            setTimeout(() => {
+                window.i18n.updateUI();
+            }, 100);
+        } else {
+            console.error('🌐 i18n system not available!');
+        }
+    }
+    
+    changeLanguage(languageCode) {
+        console.log('🌐 Changing language to:', languageCode);
+        
+        if (typeof window.i18n !== 'undefined') {
+            window.i18n.setLanguage(languageCode);
+            
+            // Update dynamic content that's not handled by data-i18n attributes
+            this.updateDynamicTranslations();
+        } else {
+            console.error('🌐 i18n system not available during language change!');
+        }
+    }
+    
+    // Debug method to force translation update (can be called from console)
+    forceTranslationUpdate() {
+        console.log('🌐 Forcing translation update...');
+        if (typeof window.i18n !== 'undefined') {
+            window.i18n.updateUI();
+            this.updateDynamicTranslations();
+            console.log('🌐 Translation update forced successfully');
+        } else {
+            console.error('🌐 i18n system not available!');
+        }
+    }
+    
+    // Debug method to test Return to Player functionality
+    testReturnToPlayer() {
+        console.log('🎬 === TESTING RETURN TO PLAYER ===');
+        
+        // Re-scan for button
+        this.returnToPlayerBtn = document.getElementById('returnToPlayerBtn');
+        
+        console.log('🎬 returnToPlayerBtn element:', this.returnToPlayerBtn);
+        console.log('🎬 Button visible:', this.returnToPlayerBtn ? window.getComputedStyle(this.returnToPlayerBtn).display : 'N/A');
+        console.log('🎬 nowPlayingWidget element:', this.nowPlayingWidget);
+        console.log('🎬 Widget visible:', this.nowPlayingWidget ? window.getComputedStyle(this.nowPlayingWidget).display : 'N/A');
+        console.log('🎬 Playlist data length:', this.playlistData?.length || 0);
+        console.log('🎬 Current index:', this.currentIndex);
+        
+        if (this.returnToPlayerBtn) {
+            console.log('🎬 Button found, testing click event...');
+            
+            // Test if event listeners are properly attached
+            const hasListeners = this.returnToPlayerBtn.dataset.listenerAttached === 'true';
+            console.log('🎬 Has listeners attached:', hasListeners);
+            
+            if (!hasListeners) {
+                console.log('🎬 Re-attaching listeners...');
+                this.attachReturnToPlayerListener();
+            }
+            
+            // Simulate click
+            console.log('🎬 Simulating button click...');
+            this.returnToPlayer();
+        } else {
+            console.error('🎬 Return to Player button not found! Re-attaching...');
+            this.attachReturnToPlayerListener();
+        }
+        
+        console.log('🎬 === TEST COMPLETE ===');
+    }
+    
+    // Debug method to force show Now Playing widget for testing
+    forceShowNowPlayingWidget() {
+        console.log('🎵 Forcing Now Playing widget to show...');
+        
+        if (this.nowPlayingWidget) {
+            // Show the widget regardless of state
+            this.nowPlayingWidget.style.display = 'block';
+            
+            // Add some test content
+            if (this.nowPlayingTitle) {
+                this.nowPlayingTitle.textContent = 'Test Channel';
+            }
+            if (this.nowPlayingGroup) {
+                this.nowPlayingGroup.textContent = 'Test Group';
+            }
+            if (this.nowPlayingType) {
+                this.nowPlayingType.textContent = 'Test Stream';
+            }
+            
+            console.log('🎵 Widget forced to show with test content');
+        } else {
+            console.error('🎵 Now Playing widget element not found!');
+        }
+    }
+    
+    updateDynamicTranslations() {
+        // Update dashboard stats labels if they need dynamic updates
+        this.updateDashboardStats();
+        
+        // Update any dynamic content in Now Playing widget
+        if (this.nowPlayingTitle && this.nowPlayingTitle.textContent === 'No channel selected') {
+            this.nowPlayingTitle.textContent = window.t('no_channel_selected');
+        }
+        
+        // Update placeholder texts and other dynamic content
+        if (this.languageSelect) {
+            this.languageSelect.title = window.t('language_setting');
+        }
+        
+        // Update any error messages or status texts that might be visible
+        const fileInfo = document.getElementById('fileInfo');
+        if (fileInfo && fileInfo.textContent) {
+            // Re-translate common status messages
+            const text = fileInfo.textContent.toLowerCase();
+            if (text.includes('loading') || text.includes('cargando')) {
+                this.showFileInfo(window.t('loading'), 'loading');
+            }
+        }
     }
 
     showLoadingScreen(title = 'Processing...', message = 'Please wait while we process your request') {
@@ -726,6 +1577,9 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
     async processM3UContent(content, filename) {
         try {
             console.log(`📁 Processing file: ${filename}`);
+            
+            // Store filename for playlist title
+            this.lastLoadedFilename = filename;
 
             // Show loading screen for large files
             const isLargeFile = content.length > 100000; // 100KB threshold
@@ -736,6 +1590,9 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
             this.playlistData = await this.parseM3U(content, isLargeFile);
             console.log(`📋 ${this.playlistData.length} elements in playlist`);
+
+            // Update dashboard stats after loading playlist
+            this.updateDashboardStats();
 
             if (this.playlistData.length === 0) {
                 if (isLargeFile) this.hideLoadingScreen();
@@ -765,6 +1622,60 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             this.hideLoadingScreen();
             console.error('Error procesando M3U:', error);
             this.showError(`Error procesando archivo: ${error.message}`);
+        }
+    }
+
+    async processLargeM3UContent(content, filename) {
+        try {
+            console.log(`📁 Processing large file: ${filename} (${Math.round(content.length / 1024)}KB)`);
+            
+            // Store filename for playlist title
+            this.lastLoadedFilename = filename;
+
+            // Always show loading screen for large files
+            this.showLoadingScreen('Processing Large Playlist', `Parsing ${filename}...`);
+            this.updateLoadingProgress(5, 'Initializing parser...');
+
+            // Show skeleton loading in playlist area
+            this.showSkeletonLoading();
+
+            // Use chunked parsing for better performance
+            this.playlistData = await this.parseM3UChunked(content);
+            console.log(`📋 ${this.playlistData.length} elements in playlist`);
+
+            // Update dashboard stats after loading playlist
+            this.updateDashboardStats();
+
+            if (this.playlistData.length === 0) {
+                this.hideLoadingScreen();
+                this.hideSkeletonLoading();
+                this.showError('No valid elements found in M3U file');
+                return;
+            }
+
+            this.updateLoadingProgress(85, 'Rendering playlist...');
+            
+            // Use requestAnimationFrame for smooth rendering
+            await new Promise(resolve => {
+                requestAnimationFrame(() => {
+                    this.renderPlaylist();
+                    this.updateLoadingProgress(100, 'Complete!');
+                    
+                    setTimeout(() => {
+                        this.hideLoadingScreen();
+                        this.showPlayerSection();
+                        resolve();
+                    }, 300);
+                });
+            });
+
+            this.showFileInfo(`✅ ${filename} - ${this.playlistData.length} elements loaded`, 'success');
+
+        } catch (error) {
+            this.hideLoadingScreen();
+            this.hideSkeletonLoading();
+            console.error('Error processing large M3U:', error);
+            this.showError(`Error processing file: ${error.message}`);
         }
     }
 
@@ -838,6 +1749,86 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         return items;
     }
 
+    async parseM3UChunked(content) {
+        const lines = content.split('\n');
+        const items = [];
+        let currentItem = {};
+        const chunkSize = 500; // Process 500 lines at a time
+        const totalLines = lines.length;
+        
+        console.log(`📋 Processing ${totalLines} lines in chunks of ${chunkSize}`);
+
+        for (let startIdx = 0; startIdx < totalLines; startIdx += chunkSize) {
+            const endIdx = Math.min(startIdx + chunkSize, totalLines);
+            const progress = 10 + (startIdx / totalLines) * 70; // 10-80% range
+            
+            this.updateLoadingProgress(
+                progress, 
+                `Processing chunk ${Math.floor(startIdx / chunkSize) + 1}/${Math.ceil(totalLines / chunkSize)}...`, 
+                items.length,
+                totalLines
+            );
+
+            // Process current chunk
+            for (let i = startIdx; i < endIdx; i++) {
+                const line = lines[i].trim();
+                if (!line || line.startsWith('#EXTM3U')) continue;
+
+                if (line.startsWith('#EXTINF:')) {
+                    // Optimized parsing with single regex
+                    const extinf = line.match(/#EXTINF:([^,]*),(.*)$/);
+                    if (!extinf) continue;
+
+                    currentItem = {
+                        duration: extinf[1],
+                        title: extinf[2].trim(),
+                        group: '',
+                        logo: '',
+                        tvgId: '',
+                        tvgName: ''
+                    };
+
+                    // Fast attribute parsing with optimized regex
+                    const attrMatches = line.matchAll(/(\w+(?:-\w+)*)="([^"]*)"/g);
+                    for (const match of attrMatches) {
+                        const [, key, value] = match;
+                        switch (key.toLowerCase()) {
+                            case 'group-title':
+                                currentItem.group = value;
+                                break;
+                            case 'tvg-logo':
+                                currentItem.logo = value;
+                                break;
+                            case 'tvg-id':
+                                currentItem.tvgId = value;
+                                break;
+                            case 'tvg-name':
+                                currentItem.tvgName = value;
+                                break;
+                        }
+                    }
+
+                    // Use tvgName as fallback title
+                    if (!currentItem.title && currentItem.tvgName) {
+                        currentItem.title = currentItem.tvgName;
+                    }
+                } else if (line && !line.startsWith('#') && currentItem.title) {
+                    // Optimized stream type detection
+                    currentItem.url = line;
+                    currentItem.type = this.detectStreamType(line);
+                    items.push(currentItem);
+                    currentItem = {};
+                }
+            }
+
+            // Yield to UI thread after each chunk to prevent blocking
+            await new Promise(resolve => requestAnimationFrame(resolve));
+        }
+
+        console.log(`✅ Chunked parsing complete: ${items.length} items processed`);
+        return items;
+    }
+
     detectStreamType(url) {
         const urlLower = url.toLowerCase();
         
@@ -899,40 +1890,114 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
     }
 
     renderPlaylist() {
-        if (!this.playlist || !this.playlistData) return;
+        if (!this.playlist || !this.playlistData) {
+            console.error('❌ Cannot render playlist - missing elements:', {
+                playlist: !!this.playlist,
+                playlistData: !!this.playlistData,
+                dataLength: this.playlistData?.length || 0
+            });
+            return;
+        }
 
         console.log(`📋 Rendering ${this.playlistData.length} elements...`);
+        
+        // Show skeleton loading for better UX
+        this.showSkeletonLoading();
 
         // For large playlists, use virtual scrolling
         if (this.playlistData.length > 1000) {
+            console.log('🚀 Using virtual scrolling for large playlist');
             this.initVirtualScrolling();
+            
+            // Configure filters and counter for virtual scrolling too
+            this.populateGroupFilter();
+            this.updateFilterCounts();
+            this.updateChannelCount(this.playlistData.length, this.playlistData.length);
+            
             return;
         }
 
         // For smaller playlists, use optimized batch rendering
+        console.log('📋 Using batched rendering for smaller playlist');
         this.renderBatchedPlaylist();
 
         // Configure filters and counter
         this.populateGroupFilter();
+        this.updateFilterCounts();
         this.updateChannelCount(this.playlistData.length, this.playlistData.length);
 
+        // Hide skeleton loading after rendering
+        setTimeout(() => {
+            this.hideSkeletonLoading();
+            console.log('✅ Playlist rendering complete, skeleton hidden');
+        }, 100);
+        
         // Preload logos in background (limited for performance)
-        setTimeout(() => this.preloadLogos(), 100);
+        setTimeout(() => this.preloadLogos(), 200);
+    }
+
+    showSkeletonLoading() {
+        const playlistSkeleton = document.getElementById('playlistSkeleton');
+        const playlist = document.getElementById('playlist');
+        
+        if (playlistSkeleton && playlist) {
+            playlistSkeleton.style.display = 'block';
+            playlist.style.display = 'none';
+        }
+    }
+
+    hideSkeletonLoading() {
+        const playlistSkeleton = document.getElementById('playlistSkeleton');
+        const playlist = document.getElementById('playlist');
+        
+        console.log('🔄 Hiding skeleton loading...');
+        
+        if (playlistSkeleton && playlist) {
+            // Force hide skeleton
+            playlistSkeleton.style.display = 'none';
+            playlistSkeleton.style.visibility = 'hidden';
+            
+            // Force show playlist
+            playlist.style.display = 'block';
+            playlist.style.visibility = 'visible';
+            
+            console.log('✅ Skeleton hidden, playlist shown');
+            console.log('Playlist has', playlist.children.length, 'children');
+        } else {
+            console.error('❌ Could not hide skeleton - elements missing:', {
+                skeleton: !!playlistSkeleton,
+                playlist: !!playlist
+            });
+        }
     }
 
     renderBatchedPlaylist() {
         const fragment = document.createDocumentFragment();
         const batchSize = 100; // Increased batch size
         let currentBatch = 0;
+        let totalItemsRendered = 0;
+
+        console.log(`📋 Starting batched rendering with ${this.playlistData.length} items, batch size: ${batchSize}`);
 
         const renderBatch = () => {
             const start = currentBatch * batchSize;
             const end = Math.min(start + batchSize, this.playlistData.length);
 
+            console.log(`📋 Rendering batch ${currentBatch + 1}, items ${start}-${end-1}`);
+
             for (let i = start; i < end; i++) {
                 const item = this.playlistData[i];
-                const playlistItem = this.createPlaylistItem(item, i);
-                fragment.appendChild(playlistItem);
+                try {
+                    const playlistItem = this.createPlaylistItem(item, i);
+                    if (playlistItem) {
+                        fragment.appendChild(playlistItem);
+                        totalItemsRendered++;
+                    } else {
+                        console.warn(`⚠️ Failed to create playlist item for index ${i}:`, item);
+                    }
+                } catch (error) {
+                    console.error(`❌ Error creating playlist item ${i}:`, error, item);
+                }
             }
 
             currentBatch++;
@@ -942,9 +2007,20 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
                 requestAnimationFrame(renderBatch);
             } else {
                 // Insert everything at once at the end
-                this.playlist.innerHTML = '';
-                this.playlist.appendChild(fragment);
-                console.log(`✅ Playlist rendered completely`);
+                if (this.playlist) {
+                    this.playlist.innerHTML = '';
+                    this.playlist.appendChild(fragment);
+                    console.log(`✅ Playlist rendered completely: ${totalItemsRendered}/${this.playlistData.length} items`);
+                    
+                    // Verify the playlist is visible
+                    if (this.playlist.children.length > 0) {
+                        console.log(`✅ Playlist container has ${this.playlist.children.length} visible items`);
+                    } else {
+                        console.error('❌ Playlist container is empty after rendering!');
+                    }
+                } else {
+                    console.error('❌ Playlist element not found during rendering!');
+                }
             }
         };
 
@@ -954,6 +2030,8 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
     initVirtualScrolling() {
         console.log(`🚀 Using virtual scrolling for ${this.playlistData.length} items`);
         
+        // CRITICAL: Ensure playlist is visible
+        this.playlist.style.display = 'block';
         this.playlist.innerHTML = '';
         this.playlist.style.height = '400px';
         this.playlist.style.overflow = 'auto';
@@ -965,6 +2043,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         this.visibleItemCount = Math.ceil(this.containerHeight / this.itemHeight) + 5; // Add buffer
         this.startIndex = 0;
         this.endIndex = Math.min(this.visibleItemCount, this.playlistData.length);
+
 
         // Create virtual container
         this.virtualContainer = document.createElement('div');
@@ -982,6 +2061,11 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
         // Render initial items
         this.renderVirtualItems();
+        
+        // CRITICAL: Hide skeleton loading after virtual scroll setup
+        setTimeout(() => {
+            this.hideSkeletonLoading();
+        }, 100);
 
         // Add scroll listener with throttling
         let scrollTimeout;
@@ -996,18 +2080,24 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
     renderVirtualItems() {
         const fragment = document.createDocumentFragment();
+        let itemsRendered = 0;
+        
         
         for (let i = this.startIndex; i < this.endIndex; i++) {
             if (i >= this.playlistData.length) break;
             
             const item = this.playlistData[i];
-            const playlistItem = this.createPlaylistItem(item, i);
-            playlistItem.style.position = 'absolute';
-            playlistItem.style.top = `${(i - this.startIndex) * this.itemHeight}px`;
-            playlistItem.style.height = `${this.itemHeight}px`;
-            playlistItem.style.width = '100%';
-            playlistItem.style.boxSizing = 'border-box';
-            fragment.appendChild(playlistItem);
+            try {
+                const playlistItem = this.createPlaylistItem(item, i);
+                playlistItem.style.position = 'absolute';
+                playlistItem.style.top = `${(i - this.startIndex) * this.itemHeight}px`;
+                playlistItem.style.height = `${this.itemHeight}px`;
+                playlistItem.style.width = '100%';
+                playlistItem.style.boxSizing = 'border-box';
+                fragment.appendChild(playlistItem);
+                itemsRendered++;
+            } catch (error) {
+            }
         }
 
         this.visibleContainer.innerHTML = '';
@@ -1015,6 +2105,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         
         // Update container position
         this.visibleContainer.style.transform = `translateY(${this.startIndex * this.itemHeight}px)`;
+        
     }
 
     handleVirtualScroll() {
@@ -1057,29 +2148,62 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
     }
 
     showPlayerSection() {
+        console.log('🎬 Attempting to show player section...');
+        
         if (this.playerSection) {
-            // Ocultar sección de carga
-            const uploadSection = document.getElementById('uploadSection');
-            if (uploadSection) {
-                uploadSection.style.display = 'none';
+            console.log('✅ Player section element found');
+            
+            // Ocultar sección de dashboard
+            const dashboardSection = document.getElementById('dashboardSection');
+            if (dashboardSection) {
+                dashboardSection.style.display = 'none';
+                console.log('📱 Dashboard section hidden');
+            } else {
+                console.warn('⚠️ Dashboard section not found');
             }
 
             // Mostrar reproductor con animación
             this.playerSection.style.display = 'block';
             this.playerSection.style.opacity = '0';
             this.playerSection.style.transform = 'translateY(20px)';
+            console.log('🎬 Player section display set to block');
 
             requestAnimationFrame(() => {
                 this.playerSection.style.transition = 'all 0.5s ease';
                 this.playerSection.style.opacity = '1';
                 this.playerSection.style.transform = 'translateY(0)';
+                console.log('🎬 Player section animation applied');
             });
+            
+            // Verify playlist element is visible within player section
+            if (this.playlist) {
+                const childrenCount = this.playlist.children.length;
+                const displayStyle = getComputedStyle(this.playlist).display;
+                const visibility = getComputedStyle(this.playlist).visibility;
+                
+                console.log(`📋 Playlist element found with ${childrenCount} children`);
+                console.log(`📋 Playlist display style: ${displayStyle}`);
+                console.log(`📋 Playlist visibility: ${visibility}`);
+                
+            } else {
+                console.error('❌ Playlist element not found in player section!');
+            }
+        } else {
+            console.error('❌ Player section element not found!');
         }
 
         // Inicializar controles
-        this.updatePlayPauseButton();
-        this.initializeTimeDisplay();
+        try {
+            this.updatePlayPauseButton();
+            this.initializeTimeDisplay();
+            console.log('✅ Player controls initialized');
+        } catch (error) {
+            console.error('❌ Error initializing player controls:', error);
+        }
 
+        // Update playlist title info
+        this.updatePlaylistTitle();
+        
         console.log('🎬 Reproductor mostrado');
     }
 
@@ -1095,6 +2219,9 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         this.currentIndex = index;
         this.updateCurrentInfo(item);
         this.updatePlaylistSelection();
+        
+        // Update Now Playing widget
+        this.updateNowPlayingWidget(item);
 
         try {
             await this.loadStream(item);
@@ -2227,8 +3354,70 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
                 const matchesGroup = !selectedGroup || group.includes(selectedGroup.toLowerCase());
                 const matchesType = !selectedType || type.includes(selectedType.toLowerCase());
+                
+                // Apply advanced filters if they exist
+                let matchesAdvanced = true;
+                if (this.advancedFiltersState) {
+                    const filters = this.advancedFiltersState;
+                    
+                    // Quality filters (check title and URL for quality indicators)
+                    if (filters.hd || filters.fhd || filters.fourK) {
+                        const qualityText = (title + ' ' + item.url).toLowerCase();
+                        let matchesQuality = false;
+                        
+                        if (filters.hd && (qualityText.includes('hd') || qualityText.includes('720'))) {
+                            matchesQuality = true;
+                        }
+                        if (filters.fhd && (qualityText.includes('fhd') || qualityText.includes('1080'))) {
+                            matchesQuality = true;
+                        }
+                        if (filters.fourK && (qualityText.includes('4k') || qualityText.includes('2160'))) {
+                            matchesQuality = true;
+                        }
+                        
+                        if (!matchesQuality) matchesAdvanced = false;
+                    }
+                    
+                    // Language filter (check title and group for language indicators)
+                    if (filters.language) {
+                        const languageText = (title + ' ' + group).toLowerCase();
+                        const langMap = {
+                            'en': ['english', 'en', 'usa', 'uk', 'america'],
+                            'es': ['spanish', 'español', 'es', 'spain', 'mexico'],
+                            'fr': ['french', 'français', 'france', 'fr'],
+                            'de': ['german', 'deutsch', 'germany', 'de'],
+                            'it': ['italian', 'italiano', 'italy', 'it']
+                        };
+                        
+                        const langIndicators = langMap[filters.language] || [filters.language];
+                        const hasLanguage = langIndicators.some(indicator => 
+                            languageText.includes(indicator)
+                        );
+                        
+                        if (!hasLanguage) matchesAdvanced = false;
+                    }
+                    
+                    // Country filter (similar to language but more specific)
+                    if (filters.country) {
+                        const countryText = (title + ' ' + group).toLowerCase();
+                        const countryMap = {
+                            'US': ['usa', 'america', 'united states', 'us'],
+                            'UK': ['uk', 'britain', 'england', 'united kingdom'],
+                            'ES': ['spain', 'españa', 'spanish', 'es'],
+                            'FR': ['france', 'french', 'français', 'fr'],
+                            'DE': ['germany', 'german', 'deutsch', 'de']
+                        };
+                        
+                        const countryIndicators = countryMap[filters.country] || [filters.country.toLowerCase()];
+                        const hasCountry = countryIndicators.some(indicator => 
+                            countryText.includes(indicator)
+                        );
+                        
+                        if (!hasCountry) matchesAdvanced = false;
+                    }
+                }
 
-                if (matchesSearch && matchesGroup && matchesType) {
+                if (matchesSearch && matchesGroup && matchesType && matchesAdvanced) {
                     filteredData.push({ item, originalIndex });
                 }
             });
@@ -2283,6 +3472,9 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
                 </div>
             </div>
             <div class="playlist-item-actions">
+                <button class="favorite-btn" title="Add to favorites" data-url="${item.url}">
+                    ${this.isFavoriteChannel(item.url) ? '⭐' : '☆'}
+                </button>
                 <button class="test-stream-btn" title="Probar stream">🔧</button>
             </div>
         `;
@@ -2291,7 +3483,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         
         // Event listeners optimizados
         playlistItem.addEventListener('click', (e) => {
-            if (!e.target.classList.contains('test-stream-btn')) {
+            if (!e.target.classList.contains('test-stream-btn') && !e.target.classList.contains('favorite-btn')) {
                 this.playItem(originalIndex);
             }
         });
@@ -2300,6 +3492,12 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         testBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             this.testStream(originalIndex);
+        });
+        
+        const favoriteBtn = playlistItem.querySelector('.favorite-btn');
+        favoriteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleFavorite(originalIndex);
         });
 
         return playlistItem;
@@ -2377,6 +3575,40 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         });
 
         console.log(`📂 ${groups.length} grupos encontrados`);
+    }
+
+    updateFilterCounts() {
+        if (!this.playlistData) return;
+
+        // Update group filter count
+        const groupFilterCount = document.getElementById('groupFilterCount');
+        if (groupFilterCount && this.groupFilter) {
+            const selectedGroup = this.groupFilter.value;
+            if (selectedGroup) {
+                const count = this.playlistData.filter(item => 
+                    (item.group || '').toLowerCase().includes(selectedGroup.toLowerCase())
+                ).length;
+                groupFilterCount.textContent = count;
+                groupFilterCount.style.display = 'inline';
+            } else {
+                groupFilterCount.style.display = 'none';
+            }
+        }
+
+        // Update type filter count
+        const typeFilterCount = document.getElementById('typeFilterCount');
+        if (typeFilterCount && this.typeFilter) {
+            const selectedType = this.typeFilter.value;
+            if (selectedType) {
+                const count = this.playlistData.filter(item => 
+                    item.type && item.type.toLowerCase().includes(selectedType.toLowerCase())
+                ).length;
+                typeFilterCount.textContent = count;
+                typeFilterCount.style.display = 'inline';
+            } else {
+                typeFilterCount.style.display = 'none';
+            }
+        }
     }
 
     toggleSort() {
@@ -2551,6 +3783,849 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
         alert('Configuración restaurada');
     }
+
+    // ===== DASHBOARD FUNCTIONALITY =====
+    
+    initializeDashboard() {
+        // Initialize dashboard elements
+        this.dashboardSection = document.getElementById('dashboardSection');
+        this.totalChannelsCount = document.getElementById('totalChannelsCount');
+        this.audioChannelsCount = document.getElementById('audioChannelsCount');
+        this.connectionStatus = document.getElementById('connectionStatus');
+        this.favoritesCount = document.getElementById('favoritesCount');
+        this.recentChannelsWidget = document.getElementById('recentChannelsWidget');
+        this.favoritesWidget = document.getElementById('favoritesWidget');
+        this.recentChannelsList = document.getElementById('recentChannelsList');
+        this.favoritesList = document.getElementById('favoritesList');
+        
+        // Initialize recent channels and favorites from localStorage
+        this.recentChannels = this.loadRecentChannels();
+        this.favoriteChannels = this.loadFavoriteChannels();
+        
+        // Setup dashboard event listeners
+        this.setupDashboardEventListeners();
+        
+        // Update dashboard stats
+        this.updateDashboardStats();
+        
+        console.log('📊 Dashboard initialized');
+    }
+
+    setupDashboardEventListeners() {
+        // Recent button functionality
+        const recentBtn = document.getElementById('recentBtn');
+        if (recentBtn) {
+            recentBtn.addEventListener('click', () => this.showRecentChannels());
+        }
+        
+        // Update original button listeners to work with new tile structure
+        const fileBtnTile = document.getElementById('fileBtn');
+        const urlBtnTile = document.getElementById('urlBtn');
+        const iptvOrgBtnTile = document.getElementById('iptvOrgBtn');
+        
+        // These should already be handled by the original setupEventListeners
+        // but we ensure they work with the new tile design
+    }
+
+    updateDashboardStats() {
+        if (!this.playlistData) {
+            return;
+        }
+
+        const totalChannels = this.playlistData.length;
+        const audioChannels = this.playlistData.filter(item => 
+            item.title.toLowerCase().includes('radio') || 
+            item.group.toLowerCase().includes('radio') ||
+            item.url.includes('audio')
+        ).length;
+
+        if (this.totalChannelsCount) {
+            this.totalChannelsCount.textContent = totalChannels.toLocaleString();
+        }
+        
+        if (this.audioChannelsCount) {
+            this.audioChannelsCount.textContent = audioChannels.toLocaleString();
+        }
+        
+        if (this.connectionStatus) {
+            this.connectionStatus.textContent = '●';
+            this.connectionStatus.style.color = '#10b981'; // Green for connected
+        }
+        
+        if (this.favoritesCount) {
+            this.favoritesCount.textContent = this.favoriteChannels.length.toLocaleString();
+        }
+
+        // Show/hide widgets based on data availability
+        this.updateWidgetVisibility();
+    }
+
+    updateWidgetVisibility() {
+        if (this.recentChannels.length > 0 && this.recentChannelsWidget) {
+            this.recentChannelsWidget.style.display = 'block';
+            this.renderRecentChannels();
+        }
+        
+        if (this.favoriteChannels.length > 0 && this.favoritesWidget) {
+            this.favoritesWidget.style.display = 'block';
+            this.renderFavoriteChannels();
+        }
+    }
+
+    showRecentChannels() {
+        if (this.recentChannels.length === 0) {
+            alert('No recent channels found');
+            return;
+        }
+        
+        // Show recent channels widget if hidden
+        if (this.recentChannelsWidget) {
+            this.recentChannelsWidget.style.display = 'block';
+            this.recentChannelsWidget.scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+
+    renderRecentChannels() {
+        if (!this.recentChannelsList) return;
+        
+        this.recentChannelsList.innerHTML = '';
+        
+        this.recentChannels.slice(0, 6).forEach(channel => {
+            const channelItem = document.createElement('div');
+            channelItem.className = 'recent-channel-item';
+            channelItem.innerHTML = `
+                <div class="channel-avatar">${this.getChannelIcon(channel)}</div>
+                <div class="channel-info">
+                    <div class="channel-name">${this.escapeHtml(channel.title)}</div>
+                    <div class="channel-meta">${this.escapeHtml(channel.group)} • ${this.formatLastPlayed(channel.lastPlayed)}</div>
+                </div>
+            `;
+            
+            channelItem.addEventListener('click', () => {
+                const index = this.playlistData.findIndex(item => item.url === channel.url);
+                if (index !== -1) {
+                    this.playItem(index);
+                }
+            });
+            
+            this.recentChannelsList.appendChild(channelItem);
+        });
+    }
+
+    renderFavoriteChannels() {
+        if (!this.favoritesList) return;
+        
+        this.favoritesList.innerHTML = '';
+        
+        this.favoriteChannels.slice(0, 6).forEach(channel => {
+            const channelItem = document.createElement('div');
+            channelItem.className = 'favorite-channel-item';
+            channelItem.innerHTML = `
+                <div class="channel-avatar">${this.getChannelIcon(channel)}</div>
+                <div class="channel-info">
+                    <div class="channel-name">${this.escapeHtml(channel.title)}</div>
+                    <div class="channel-meta">${this.escapeHtml(channel.group)}</div>
+                </div>
+                <div class="channel-actions">
+                    <button class="play-favorite-btn" title="Play channel">▶️</button>
+                    <button class="remove-favorite-btn" title="Remove from favorites">🗑️</button>
+                </div>
+            `;
+            
+            // Play favorite channel
+            const playBtn = channelItem.querySelector('.play-favorite-btn');
+            playBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.playFavoriteChannel(channel);
+            });
+            
+            // Remove from favorites
+            const removeBtn = channelItem.querySelector('.remove-favorite-btn');
+            removeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.removeFavoriteChannel(channel.url);
+            });
+            
+            // Click on item also plays the channel
+            channelItem.addEventListener('click', () => {
+                this.playFavoriteChannel(channel);
+            });
+            
+            this.favoritesList.appendChild(channelItem);
+        });
+    }
+
+    getChannelIcon(channel) {
+        // Return appropriate icon based on channel type/group
+        if (channel.group.toLowerCase().includes('sport')) return '⚽';
+        if (channel.group.toLowerCase().includes('news')) return '📰';
+        if (channel.group.toLowerCase().includes('movie')) return '🎬';
+        if (channel.group.toLowerCase().includes('music') || channel.group.toLowerCase().includes('radio')) return '🎵';
+        if (channel.group.toLowerCase().includes('kids')) return '🧸';
+        return '📺';
+    }
+
+    playFavoriteChannel(channel) {
+        console.log('🎬 Playing favorite channel:', channel.title);
+        
+        // First, try to find the channel in current playlist
+        if (this.playlistData && this.playlistData.length > 0) {
+            const index = this.playlistData.findIndex(item => item.url === channel.url);
+            if (index !== -1) {
+                // Channel found in current playlist, play it
+                this.playItem(index);
+                return;
+            }
+        }
+        
+        // If not found in current playlist, create temporary playlist with this channel
+        this.playlistData = [{
+            title: channel.title,
+            url: channel.url,
+            group: channel.group,
+            logo: channel.logo || '',
+            type: this.detectStreamType(channel.url)
+        }];
+        
+        // Show player section
+        this.showPlayerSection();
+        
+        // Update dashboard stats
+        this.updateDashboardStats();
+        
+        // Render the single-item playlist
+        this.renderPlaylist();
+        
+        // Play the channel
+        this.playItem(0);
+        
+        // Add to recent channels
+        this.addToRecentChannels(channel);
+        
+        // Show feedback
+        this.showBriefFeedback(`Playing: ${channel.title}`);
+    }
+
+    removeFavoriteChannel(url) {
+        console.log('🗑️ Removing favorite channel with URL:', url);
+        
+        const initialLength = this.favoriteChannels.length;
+        this.favoriteChannels = this.favoriteChannels.filter(channel => channel.url !== url);
+        
+        if (this.favoriteChannels.length < initialLength) {
+            // Save updated favorites
+            this.saveFavoriteChannels();
+            
+            // Re-render favorites list
+            this.renderFavoriteChannels();
+            
+            // Update dashboard stats
+            this.updateDashboardStats();
+            
+            // Show feedback
+            this.showBriefFeedback('Removed from favorites');
+            
+            console.log('✅ Favorite channel removed successfully');
+        } else {
+            console.warn('⚠️ Channel not found in favorites');
+        }
+    }
+
+    formatLastPlayed(timestamp) {
+        if (!timestamp) return 'Never';
+        
+        const now = Date.now();
+        const diff = now - timestamp;
+        const minutes = Math.floor(diff / (1000 * 60));
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
+        
+        if (minutes < 1) return 'Just now';
+        if (minutes < 60) return `${minutes}m ago`;
+        if (hours < 24) return `${hours}h ago`;
+        return `${days}d ago`;
+    }
+
+    addToRecentChannels(item) {
+        const channel = {
+            title: item.title,
+            url: item.url,
+            group: item.group || 'Unknown',
+            lastPlayed: Date.now()
+        };
+        
+        // Remove if already exists
+        this.recentChannels = this.recentChannels.filter(ch => ch.url !== channel.url);
+        
+        // Add to beginning
+        this.recentChannels.unshift(channel);
+        
+        // Keep only last 10
+        this.recentChannels = this.recentChannels.slice(0, 10);
+        
+        // Save to localStorage
+        this.saveRecentChannels();
+        
+        // Update dashboard
+        this.updateDashboardStats();
+    }
+
+    loadRecentChannels() {
+        try {
+            const stored = localStorage.getItem('m3u_recent_channels');
+            return stored ? JSON.parse(stored) : [];
+        } catch (error) {
+            console.warn('Error loading recent channels:', error);
+            return [];
+        }
+    }
+
+    saveRecentChannels() {
+        try {
+            localStorage.setItem('m3u_recent_channels', JSON.stringify(this.recentChannels));
+        } catch (error) {
+            console.warn('Error saving recent channels:', error);
+        }
+    }
+
+    loadFavoriteChannels() {
+        try {
+            const stored = localStorage.getItem('m3u_favorite_channels');
+            return stored ? JSON.parse(stored) : [];
+        } catch (error) {
+            console.warn('Error loading favorite channels:', error);
+            return [];
+        }
+    }
+
+    saveFavoriteChannels() {
+        try {
+            localStorage.setItem('m3u_favorite_channels', JSON.stringify(this.favoriteChannels));
+        } catch (error) {
+            console.warn('Error saving favorite channels:', error);
+        }
+    }
+
+    isFavoriteChannel(url) {
+        return this.favoriteChannels.some(channel => channel.url === url);
+    }
+
+    toggleFavorite(index) {
+        if (index < 0 || index >= this.playlistData.length) return;
+        
+        const item = this.playlistData[index];
+        const isCurrentlyFavorite = this.isFavoriteChannel(item.url);
+        
+        if (isCurrentlyFavorite) {
+            // Remove from favorites
+            this.favoriteChannels = this.favoriteChannels.filter(channel => channel.url !== item.url);
+            console.log(`💔 Removed from favorites: ${item.title}`);
+        } else {
+            // Add to favorites
+            const favoriteChannel = {
+                title: item.title,
+                url: item.url,
+                group: item.group || 'Unknown',
+                logo: item.logo || '',
+                addedAt: Date.now()
+            };
+            this.favoriteChannels.push(favoriteChannel);
+            console.log(`⭐ Added to favorites: ${item.title}`);
+        }
+        
+        // Save to localStorage
+        this.saveFavoriteChannels();
+        
+        // Update dashboard stats
+        this.updateDashboardStats();
+        
+        // Update the playlist item button
+        this.updateFavoriteButton(index, !isCurrentlyFavorite);
+        
+        // Show brief feedback
+        this.showBriefFeedback(isCurrentlyFavorite ? 'Removed from favorites' : 'Added to favorites');
+    }
+
+    updateFavoriteButton(index, isFavorite) {
+        const playlistItems = document.querySelectorAll('.playlist-item');
+        playlistItems.forEach(item => {
+            const itemIndex = parseInt(item.dataset.index);
+            if (itemIndex === index) {
+                const favoriteBtn = item.querySelector('.favorite-btn');
+                if (favoriteBtn) {
+                    favoriteBtn.textContent = isFavorite ? '⭐' : '☆';
+                    favoriteBtn.title = isFavorite ? 'Remove from favorites' : 'Add to favorites';
+                }
+            }
+        });
+    }
+
+    showBriefFeedback(message) {
+        // Create a temporary feedback element
+        const feedback = document.createElement('div');
+        feedback.className = 'brief-feedback';
+        feedback.textContent = message;
+        feedback.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 10000;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        `;
+        
+        document.body.appendChild(feedback);
+        
+        // Animate in
+        setTimeout(() => {
+            feedback.style.opacity = '1';
+            feedback.style.transform = 'translateY(0)';
+        }, 10);
+        
+        // Animate out and remove
+        setTimeout(() => {
+            feedback.style.opacity = '0';
+            feedback.style.transform = 'translateY(-10px)';
+            setTimeout(() => {
+                if (feedback.parentNode) {
+                    feedback.parentNode.removeChild(feedback);
+                }
+            }, 300);
+        }, 2000);
+    }
+
+    // ===== ENHANCED SEARCH FUNCTIONALITY =====
+    
+    initializeEnhancedSearch() {
+        // Initialize search elements
+        this.searchSuggestions = document.getElementById('searchSuggestions');
+        this.suggestionsList = document.getElementById('suggestionsList');
+        this.suggestionsCount = document.getElementById('suggestionsCount');
+        this.voiceSearchBtn = document.getElementById('voiceSearchBtn');
+        this.filtersBtn = document.getElementById('filtersBtn');
+        this.advancedFilters = document.getElementById('advancedFilters');
+        
+        // Search state
+        this.searchSuggestionIndex = -1;
+        this.searchHistory = this.loadSearchHistory();
+        
+        // Setup enhanced search event listeners
+        this.setupEnhancedSearchEventListeners();
+        
+        console.log('🔍 Enhanced search initialized');
+    }
+
+    setupEnhancedSearchEventListeners() {
+        // Enhanced search input with suggestions
+        if (this.searchInput) {
+            this.searchInput.addEventListener('input', (e) => {
+                this.handleEnhancedSearch(e.target.value);
+            });
+            
+            this.searchInput.addEventListener('keydown', (e) => {
+                this.handleSearchKeydown(e);
+            });
+            
+            this.searchInput.addEventListener('focus', () => {
+                if (this.searchInput.value) {
+                    this.showSearchSuggestions();
+                }
+            });
+            
+            this.searchInput.addEventListener('blur', () => {
+                // Delay hiding to allow click on suggestions
+                setTimeout(() => this.hideSearchSuggestions(), 150);
+            });
+        }
+
+        // Voice search button
+        if (this.voiceSearchBtn) {
+            this.voiceSearchBtn.addEventListener('click', () => this.startVoiceSearch());
+        }
+
+        // Advanced filters button
+        if (this.filtersBtn) {
+            this.filtersBtn.addEventListener('click', () => this.toggleAdvancedFilters());
+        }
+
+        // Advanced filters form
+        const applyFiltersBtn = document.getElementById('applyFilters');
+        const resetFiltersBtn = document.getElementById('resetFilters');
+        
+        if (applyFiltersBtn) {
+            applyFiltersBtn.addEventListener('click', () => this.applyAdvancedFilters());
+        }
+        
+        if (resetFiltersBtn) {
+            resetFiltersBtn.addEventListener('click', () => this.resetAdvancedFilters());
+        }
+
+        // Close suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-input-wrapper')) {
+                this.hideSearchSuggestions();
+            }
+        });
+    }
+
+    handleEnhancedSearch(query) {
+        // Clear existing timeout
+        clearTimeout(this.searchTimeout);
+        
+        // Show suggestions for non-empty queries
+        if (query.trim()) {
+            this.generateSearchSuggestions(query);
+            this.showSearchSuggestions();
+        } else {
+            this.hideSearchSuggestions();
+        }
+        
+        // Debounced search
+        this.searchTimeout = setTimeout(() => {
+            this.handleSearch();
+        }, 150);
+    }
+
+    generateSearchSuggestions(query) {
+        if (!this.playlistData || !this.suggestionsList) return;
+        
+        const suggestions = [];
+        const queryLower = query.toLowerCase();
+        const maxSuggestions = 8;
+        
+        // Search in channel names
+        const channelMatches = this.playlistData
+            .filter(item => item.title.toLowerCase().includes(queryLower))
+            .slice(0, 4)
+            .map(item => ({
+                text: item.title,
+                type: 'channel',
+                icon: '📺',
+                item: item
+            }));
+        
+        // Search in groups
+        const groupMatches = [...new Set(this.playlistData
+            .filter(item => item.group && item.group.toLowerCase().includes(queryLower))
+            .map(item => item.group))]
+            .slice(0, 3)
+            .map(group => ({
+                text: group,
+                type: 'group',
+                icon: '📂',
+                group: group
+            }));
+        
+        // Add search history matches
+        const historyMatches = this.searchHistory
+            .filter(term => term.toLowerCase().includes(queryLower))
+            .slice(0, 2)
+            .map(term => ({
+                text: term,
+                type: 'history',
+                icon: '🕒',
+                term: term
+            }));
+        
+        suggestions.push(...channelMatches, ...groupMatches, ...historyMatches);
+        
+        // Render suggestions
+        this.renderSearchSuggestions(suggestions.slice(0, maxSuggestions));
+        
+        // Update suggestions count
+        if (this.suggestionsCount) {
+            this.suggestionsCount.textContent = `${suggestions.length} results`;
+        }
+    }
+
+    renderSearchSuggestions(suggestions) {
+        if (!this.suggestionsList) return;
+        
+        this.suggestionsList.innerHTML = '';
+        
+        suggestions.forEach((suggestion, index) => {
+            const suggestionItem = document.createElement('div');
+            suggestionItem.className = 'suggestion-item';
+            suggestionItem.innerHTML = `
+                <span class="suggestion-icon">${suggestion.icon}</span>
+                <span class="suggestion-text">${this.escapeHtml(suggestion.text)}</span>
+                <span class="suggestion-type">${suggestion.type}</span>
+            `;
+            
+            suggestionItem.addEventListener('click', () => {
+                this.selectSuggestion(suggestion);
+            });
+            
+            suggestionItem.addEventListener('mouseenter', () => {
+                this.highlightSuggestion(index);
+            });
+            
+            this.suggestionsList.appendChild(suggestionItem);
+        });
+        
+        this.searchSuggestionIndex = -1;
+    }
+
+    selectSuggestion(suggestion) {
+        if (suggestion.type === 'channel' && suggestion.item) {
+            // Play the suggested channel directly
+            const index = this.playlistData.findIndex(item => item.url === suggestion.item.url);
+            if (index !== -1) {
+                this.playItem(index);
+            }
+        } else {
+            // Set search term and perform search
+            this.searchInput.value = suggestion.text;
+            this.addToSearchHistory(suggestion.text);
+            this.handleSearch();
+        }
+        
+        this.hideSearchSuggestions();
+    }
+
+    handleSearchKeydown(e) {
+        if (!this.searchSuggestions || this.searchSuggestions.style.display === 'none') {
+            return;
+        }
+        
+        const suggestions = this.suggestionsList.querySelectorAll('.suggestion-item');
+        
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                this.searchSuggestionIndex = Math.min(this.searchSuggestionIndex + 1, suggestions.length - 1);
+                this.highlightSuggestion(this.searchSuggestionIndex);
+                break;
+                
+            case 'ArrowUp':
+                e.preventDefault();
+                this.searchSuggestionIndex = Math.max(this.searchSuggestionIndex - 1, -1);
+                if (this.searchSuggestionIndex === -1) {
+                    this.clearSuggestionHighlight();
+                } else {
+                    this.highlightSuggestion(this.searchSuggestionIndex);
+                }
+                break;
+                
+            case 'Enter':
+                e.preventDefault();
+                if (this.searchSuggestionIndex >= 0 && suggestions[this.searchSuggestionIndex]) {
+                    suggestions[this.searchSuggestionIndex].click();
+                } else {
+                    this.addToSearchHistory(this.searchInput.value);
+                    this.handleSearch();
+                    this.hideSearchSuggestions();
+                }
+                break;
+                
+            case 'Escape':
+                this.hideSearchSuggestions();
+                this.searchInput.blur();
+                break;
+        }
+    }
+
+    highlightSuggestion(index) {
+        this.clearSuggestionHighlight();
+        const suggestions = this.suggestionsList.querySelectorAll('.suggestion-item');
+        if (suggestions[index]) {
+            suggestions[index].classList.add('selected');
+        }
+    }
+
+    clearSuggestionHighlight() {
+        const suggestions = this.suggestionsList.querySelectorAll('.suggestion-item');
+        suggestions.forEach(item => item.classList.remove('selected'));
+    }
+
+    showSearchSuggestions() {
+        if (this.searchSuggestions) {
+            this.searchSuggestions.style.display = 'block';
+        }
+    }
+
+    hideSearchSuggestions() {
+        if (this.searchSuggestions) {
+            this.searchSuggestions.style.display = 'none';
+        }
+        this.searchSuggestionIndex = -1;
+    }
+
+    startVoiceSearch() {
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            alert('Voice search is not supported in this browser');
+            return;
+        }
+        
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+        
+        recognition.onstart = () => {
+            this.voiceSearchBtn.style.color = '#ef4444';
+            this.voiceSearchBtn.title = 'Listening...';
+        };
+        
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            this.searchInput.value = transcript;
+            this.addToSearchHistory(transcript);
+            this.handleEnhancedSearch(transcript);
+        };
+        
+        recognition.onerror = (event) => {
+            console.error('Voice search error:', event.error);
+            alert('Voice search error: ' + event.error);
+        };
+        
+        recognition.onend = () => {
+            this.voiceSearchBtn.style.color = '';
+            this.voiceSearchBtn.title = 'Voice search';
+        };
+        
+        recognition.start();
+    }
+
+    toggleAdvancedFilters() {
+        if (!this.advancedFilters) return;
+        
+        const isVisible = this.advancedFilters.style.display !== 'none';
+        this.advancedFilters.style.display = isVisible ? 'none' : 'block';
+        
+        // Update button state
+        if (this.filtersBtn) {
+            this.filtersBtn.classList.toggle('active', !isVisible);
+        }
+    }
+
+    applyAdvancedFilters() {
+        // Get filter values
+        const hdFilter = document.getElementById('filterHD')?.checked;
+        const fhdFilter = document.getElementById('filterFHD')?.checked;
+        const fourKFilter = document.getElementById('filter4K')?.checked;
+        const languageFilter = document.getElementById('languageFilter')?.value;
+        const countryFilter = document.getElementById('countryFilter')?.value;
+        
+        // Store advanced filters in instance for use in search
+        this.advancedFiltersState = {
+            hd: hdFilter,
+            fhd: fhdFilter,
+            fourK: fourKFilter,
+            language: languageFilter,
+            country: countryFilter
+        };
+        
+        console.log('Advanced filters applied:', this.advancedFiltersState);
+        
+        // Trigger search with current filters
+        this.handleSearch();
+        
+        // Hide advanced filters
+        this.toggleAdvancedFilters();
+        
+        // Show brief feedback
+        const activeFilters = Object.values(this.advancedFiltersState).filter(v => v && v !== '').length;
+        this.showBriefFeedback(`${activeFilters} advanced filters applied`);
+    }
+
+    resetAdvancedFilters() {
+        // Reset all advanced filter controls
+        document.getElementById('filterHD').checked = false;
+        document.getElementById('filterFHD').checked = false;
+        document.getElementById('filter4K').checked = false;
+        
+        if (document.getElementById('languageFilter')) {
+            document.getElementById('languageFilter').value = '';
+        }
+        
+        if (document.getElementById('countryFilter')) {
+            document.getElementById('countryFilter').value = '';
+        }
+        
+        // Clear advanced filters state
+        this.advancedFiltersState = null;
+        
+        // Trigger search
+        this.handleSearch();
+        
+        // Show feedback
+        this.showBriefFeedback('Advanced filters cleared');
+    }
+
+    addToSearchHistory(term) {
+        if (!term || term.trim().length < 2) return;
+        
+        const normalizedTerm = term.trim();
+        
+        // Remove if already exists
+        this.searchHistory = this.searchHistory.filter(t => t !== normalizedTerm);
+        
+        // Add to beginning
+        this.searchHistory.unshift(normalizedTerm);
+        
+        // Keep only last 20
+        this.searchHistory = this.searchHistory.slice(0, 20);
+        
+        // Save to localStorage
+        this.saveSearchHistory();
+    }
+
+    loadSearchHistory() {
+        try {
+            const stored = localStorage.getItem('m3u_search_history');
+            return stored ? JSON.parse(stored) : [];
+        } catch (error) {
+            console.warn('Error loading search history:', error);
+            return [];
+        }
+    }
+
+    saveSearchHistory() {
+        try {
+            localStorage.setItem('m3u_search_history', JSON.stringify(this.searchHistory));
+        } catch (error) {
+            console.warn('Error saving search history:', error);
+        }
+    }
+
+    // Override the original playItem to add to recent channels
+    async playItem(index) {
+        if (index < 0 || index >= this.playlistData.length) return;
+
+        const item = this.playlistData[index];
+        console.log(`🎬 Cargando: ${item.title}`);
+
+        // Add to recent channels
+        this.addToRecentChannels(item);
+
+        // Clear any previous audio-only styling
+        this.clearAudioOnlyDisplay();
+
+        this.currentIndex = index;
+        this.updateCurrentInfo(item);
+        this.updatePlaylistSelection();
+        
+        // Update Now Playing widget
+        this.updateNowPlayingWidget(item);
+
+        try {
+            await this.loadStream(item);
+        } catch (error) {
+            console.error('Error cargando stream:', error);
+            this.handleStreamError(error);
+        }
+    }
 }
 
 // Función para forzar visibilidad de controles
@@ -2617,11 +4692,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Inicializar el reproductor
     window.player = new M3UPlayer();
+    
+    // Make debugging methods globally accessible
+    window.testI18n = () => {
+        console.log('🌐 Testing i18n system...');
+        if (window.i18n && window.i18n.testTranslations) {
+            window.i18n.testTranslations();
+        }
+        if (window.player && window.player.forceTranslationUpdate) {
+            window.player.forceTranslationUpdate();
+        }
+    };
+    
+    window.testReturnToPlayer = () => {
+        if (window.player && window.player.testReturnToPlayer) {
+            window.player.testReturnToPlayer();
+        } else {
+            console.error('Player or testReturnToPlayer method not available');
+        }
+    };
+    
+    window.forceShowNowPlaying = () => {
+        if (window.player && window.player.forceShowNowPlayingWidget) {
+            window.player.forceShowNowPlayingWidget();
+        } else {
+            console.error('Player or forceShowNowPlayingWidget method not available');
+        }
+    };
 
     // Forzar visibilidad cada 2 segundos como medida de emergencia
     setInterval(forceControlsVisibility, 2000);
 
-    // Mostrar mensaje de debug
     setTimeout(() => {
         const controlsDiv = document.querySelector('.controls');
         if (controlsDiv) {

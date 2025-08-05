@@ -81,42 +81,159 @@
             </div>
         </div>
 
-        <div class="upload-section" id="uploadSection">
-            <div class="upload-intro">
-                <div class="upload-icon">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/>
-                        <path d="M8 21l4-4 4 4" stroke="currentColor" stroke-width="1.5"/>
-                        <circle cx="8" cy="8" r="1" fill="currentColor"/>
-                        <circle cx="12" cy="8" r="1" fill="currentColor"/>
-                        <circle cx="16" cy="8" r="1" fill="currentColor"/>
-                    </svg>
+        <div class="dashboard-section" id="dashboardSection">
+            <!-- Quick Stats Dashboard -->
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">📺</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="totalChannelsCount">0</div>
+                        <div class="stat-label" data-i18n="total_channels">Total Channels</div>
+                    </div>
                 </div>
-                <h2>Load M3U Playlist</h2>
-                <p>Select a local file or enter a URL to get started</p>
-            </div>
-            
-            <div class="upload-buttons">
-                <button id="fileBtn" class="upload-btn primary">
-                    📁 Open Local File
-                </button>
-                <button id="urlBtn" class="upload-btn secondary">
-                    🌐 Load from URL
-                </button>
-                <button id="iptvOrgBtn" class="upload-btn tertiary">
-                    📡 Download IPTV-ORG
-                </button>
+                <div class="stat-card">
+                    <div class="stat-icon">🎵</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="audioChannelsCount">0</div>
+                        <div class="stat-label" data-i18n="audio_streams">Audio Streams</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🔗</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="connectionStatus">●</div>
+                        <div class="stat-label" data-i18n="connection">Connection</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⭐</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="favoritesCount">0</div>
+                        <div class="stat-label" data-i18n="favorites">Favorites</div>
+                    </div>
+                </div>
             </div>
 
-            <div id="urlInput" class="url-input" style="display: none">
-                <input type="url" id="m3uUrl" placeholder="https://m3u-player.eu/playlist.m3u" />
+            <!-- Now Playing Widget -->
+            <div class="now-playing-widget" id="nowPlayingWidget" style="display: none;">
+                <div class="now-playing-header">
+                    <h3 data-i18n="now_playing">Now Playing</h3>
+                    <button id="minimizeNowPlayingBtn" class="minimize-btn" data-i18n-title="minimize" title="Minimize">−</button>
+                </div>
+                <div class="now-playing-content" id="nowPlayingContent">
+                    <div class="now-playing-thumbnail">
+                        <img id="nowPlayingLogo" src="" alt="" onerror="this.style.display='none';">
+                        <div class="now-playing-icon" id="nowPlayingIcon">📺</div>
+                    </div>
+                    <div class="now-playing-info">
+                        <div class="now-playing-title" id="nowPlayingTitle" data-i18n="no_channel_selected">No channel selected</div>
+                        <div class="now-playing-details">
+                            <span class="now-playing-group" id="nowPlayingGroup"></span>
+                            <span class="now-playing-type" id="nowPlayingType"></span>
+                        </div>
+                    </div>
+                    <div class="now-playing-actions">
+                        <button id="returnToPlayerBtn" class="action-btn primary">
+                            <span class="btn-icon">📺</span>
+                            <span class="btn-text" data-i18n="return_to_player">Return to Player</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Language Selector -->
+            <div class="language-selector">
+                <label for="languageSelect" data-i18n="language_setting">Language</label>
+                <select id="languageSelect" class="language-select">
+                    <option value="es">Español</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <h3 data-i18n="quick_actions">Quick Actions</h3>
+                <div class="action-grid">
+                    <button id="fileBtn" class="action-tile primary">
+                        <div class="tile-icon">📁</div>
+                        <div class="tile-content">
+                            <div class="tile-title" data-i18n="open_file">Open File</div>
+                            <div class="tile-subtitle" data-i18n="load_local_m3u">Load local M3U</div>
+                        </div>
+                    </button>
+                    <button id="urlBtn" class="action-tile secondary">
+                        <div class="tile-icon">🌐</div>
+                        <div class="tile-content">
+                            <div class="tile-title" data-i18n="load_url">Load URL</div>
+                            <div class="tile-subtitle" data-i18n="stream_from_web">Stream from web</div>
+                        </div>
+                    </button>
+                    <button id="iptvOrgBtn" class="action-tile tertiary">
+                        <div class="tile-icon">📡</div>
+                        <div class="tile-content">
+                            <div class="tile-title" data-i18n="iptv_org">IPTV-ORG</div>
+                            <div class="tile-subtitle" data-i18n="free_channels">Free channels</div>
+                        </div>
+                    </button>
+                    <button id="freeTvBtn" class="action-tile tertiary">
+                        <div class="tile-icon">📺</div>
+                        <div class="tile-content">
+                            <div class="tile-title" data-i18n="free_tv">Free-TV</div>
+                            <div class="tile-subtitle" data-i18n="community_channels">Community channels</div>
+                        </div>
+                    </button>
+                    <button id="recentBtn" class="action-tile quaternary">
+                        <div class="tile-icon">🕒</div>
+                        <div class="tile-content">
+                            <div class="tile-title" data-i18n="recent">Recent</div>
+                            <div class="tile-subtitle" data-i18n="last_played">Last played</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recently Played Widget -->
+            <div class="recent-channels-widget" id="recentChannelsWidget" style="display: none;">
+                <h3 data-i18n="recently_played">Recently Played</h3>
+                <div class="recent-channels-list" id="recentChannelsList">
+                    <!-- Recent channels will be populated here -->
+                </div>
+            </div>
+
+            <!-- Favorites Widget -->
+            <div class="favorites-widget" id="favoritesWidget" style="display: none;">
+                <h3 data-i18n="favorite_channels">Favorite Channels</h3>
+                <div class="favorites-list" id="favoritesList">
+                    <!-- Favorite channels will be populated here -->
+                </div>
+            </div>
+
+            <!-- URL Input (Enhanced) -->
+            <div id="urlInput" class="url-input-modern" style="display: none">
+                <div class="url-input-header">
+                    <h3 data-i18n="load_from_url">Load from URL</h3>
+                    <p data-i18n="enter_url_description">Enter the URL of your M3U/M3U8 playlist</p>
+                </div>
+                <div class="url-input-field">
+                    <input type="url" id="m3uUrl" data-i18n-placeholder="url_placeholder" placeholder="https://example.com/playlist.m3u8" />
+                    <div class="url-suggestions" id="urlSuggestions" style="display: none;">
+                        <!-- URL suggestions will be populated here -->
+                    </div>
+                </div>
                 <div class="url-actions">
-                    <button id="loadUrlBtn" class="upload-btn primary">Load</button>
-                    <button id="cancelUrlBtn" class="upload-btn secondary">Cancel</button>
+                    <button id="loadUrlBtn" class="action-btn primary">
+                        <span class="btn-icon">🚀</span>
+                        <span class="btn-text" data-i18n="load_playlist">Load Playlist</span>
+                    </button>
+                    <button id="cancelUrlBtn" class="action-btn secondary">
+                        <span class="btn-icon">✕</span>
+                        <span class="btn-text" data-i18n="cancel">Cancel</span>
+                    </button>
                 </div>
             </div>
 
-            <div id="fileInfo" class="file-info"></div>
+            <!-- File Info (Enhanced) -->
+            <div id="fileInfo" class="file-info-modern"></div>
         </div>
 
         <div class="player-section" id="playerSection" style="display: none">
@@ -139,24 +256,124 @@
 
             <div class="playlist-container">
                 <div class="playlist-header">
-                    <h3>📺 Channel List</h3>
+                    <div class="playlist-title-section">
+                        <button id="backToDashboardBtn" class="back-btn" title="Back to Dashboard">
+                            ← Back
+                        </button>
+                        <h3>📺 Channel List</h3>
+                        <div class="playlist-info">
+                            <span id="playlistTitle">Loaded Playlist</span>
+                        </div>
+                    </div>
                     <div class="playlist-controls">
-                        <div class="search-container">
+                        <div class="search-container-enhanced">
                             <div class="search-input-wrapper">
-                                <input type="text" id="searchInput" placeholder="Search by name, group or type..." />
+                                <div class="search-icon">🔍</div>
+                                <input type="text" id="searchInput" placeholder="Search channels, groups, or stream types..." autocomplete="off" />
+                                <button id="voiceSearchBtn" class="voice-search-btn" title="Voice search">🎤</button>
                                 <button id="clearSearchBtn" class="clear-search-btn" title="Clear search">✕</button>
+                                
+                                <!-- Search Suggestions Dropdown -->
+                                <div class="search-suggestions" id="searchSuggestions" style="display: none;">
+                                    <div class="suggestions-header">
+                                        <span class="suggestions-title">Suggestions</span>
+                                        <span class="suggestions-count" id="suggestionsCount">0 results</span>
+                                    </div>
+                                    <div class="suggestions-list" id="suggestionsList">
+                                        <!-- Suggestions will be populated dynamically -->
+                                    </div>
+                                    <div class="suggestions-footer">
+                                        <div class="search-shortcuts">
+                                            <span class="shortcut">↑↓ Navigate</span>
+                                            <span class="shortcut">Enter Select</span>
+                                            <span class="shortcut">Esc Close</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="search-filters">
-                                <select id="groupFilter" class="filter-select">
-                                    <option value="">All groups</option>
-                                </select>
-                                <select id="typeFilter" class="filter-select">
-                                    <option value="">All types</option>
-                                    <option value="HLS">HLS</option>
-                                    <option value="Direct">Direct</option>
-                                    <option value="Stream">Stream</option>
-                                </select>
-                                <button id="sortBtn" class="sort-btn" title="Sort list">⇅</button>
+                            
+                            <div class="search-filters-enhanced">
+                                <div class="filter-group">
+                                    <select id="groupFilter" class="filter-select">
+                                        <option value="">All Groups</option>
+                                    </select>
+                                    <span class="filter-count" id="groupFilterCount">0</span>
+                                </div>
+                                <div class="filter-group">
+                                    <select id="typeFilter" class="filter-select">
+                                        <option value="">All Types</option>
+                                        <option value="HLS">HLS</option>
+                                        <option value="Direct">Direct</option>
+                                        <option value="Stream">Stream</option>
+                                        <option value="Audio">Audio Only</option>
+                                    </select>
+                                    <span class="filter-count" id="typeFilterCount">0</span>
+                                </div>
+                                <div class="search-actions">
+                                    <button id="sortBtn" class="sort-btn" title="Sort options">
+                                        <span class="sort-icon">⇅</span>
+                                        <span class="sort-text">Sort</span>
+                                    </button>
+                                    <button id="filtersBtn" class="filters-btn" title="Advanced filters">
+                                        <span class="filter-icon">🔧</span>
+                                        <span class="filter-text">Filters</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Advanced Filters Panel -->
+                            <div class="advanced-filters" id="advancedFilters" style="display: none;">
+                                <div class="filters-content">
+                                    <div class="filter-section">
+                                        <label>Quality:</label>
+                                        <div class="quality-filters">
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" id="filterHD" />
+                                                <span class="checkmark"></span>
+                                                HD (720p+)
+                                            </label>
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" id="filterFHD" />
+                                                <span class="checkmark"></span>
+                                                Full HD (1080p+)
+                                            </label>
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" id="filter4K" />
+                                                <span class="checkmark"></span>
+                                                4K (2160p+)
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="filter-section">
+                                        <label>Language:</label>
+                                        <select id="languageFilter" class="filter-select">
+                                            <option value="">All Languages</option>
+                                            <option value="en">English</option>
+                                            <option value="es">Spanish</option>
+                                            <option value="fr">French</option>
+                                            <option value="de">German</option>
+                                            <option value="it">Italian</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="filter-section">
+                                        <label>Country:</label>
+                                        <select id="countryFilter" class="filter-select">
+                                            <option value="">All Countries</option>
+                                            <option value="US">United States</option>
+                                            <option value="UK">United Kingdom</option>
+                                            <option value="ES">Spain</option>
+                                            <option value="FR">France</option>
+                                            <option value="DE">Germany</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="filters-actions">
+                                    <button id="applyFilters" class="apply-filters-btn">Apply Filters</button>
+                                    <button id="resetFilters" class="reset-filters-btn">Reset All</button>
+                                </div>
                             </div>
                         </div>
                         <div class="playlist-actions">
@@ -168,6 +385,42 @@
                         </div>
                     </div>
                 </div>
+                <!-- Skeleton Loading for Playlist -->
+                <div class="playlist-skeleton" id="playlistSkeleton" style="display: none;">
+                    <div class="skeleton-item">
+                        <div class="skeleton-avatar"></div>
+                        <div class="skeleton-content">
+                            <div class="skeleton-title"></div>
+                            <div class="skeleton-subtitle"></div>
+                        </div>
+                        <div class="skeleton-actions"></div>
+                    </div>
+                    <div class="skeleton-item">
+                        <div class="skeleton-avatar"></div>
+                        <div class="skeleton-content">
+                            <div class="skeleton-title"></div>
+                            <div class="skeleton-subtitle"></div>
+                        </div>
+                        <div class="skeleton-actions"></div>
+                    </div>
+                    <div class="skeleton-item">
+                        <div class="skeleton-avatar"></div>
+                        <div class="skeleton-content">
+                            <div class="skeleton-title"></div>
+                            <div class="skeleton-subtitle"></div>
+                        </div>
+                        <div class="skeleton-actions"></div>
+                    </div>
+                    <div class="skeleton-item">
+                        <div class="skeleton-avatar"></div>
+                        <div class="skeleton-content">
+                            <div class="skeleton-title"></div>
+                            <div class="skeleton-subtitle"></div>
+                        </div>
+                        <div class="skeleton-actions"></div>
+                    </div>
+                </div>
+                
                 <div class="playlist" id="playlist"></div>
             </div>
 
@@ -487,6 +740,7 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.5/dist/hls.min.js"></script>
     
     <!-- Original Script - Restored for functionality -->
+    <script src="js/i18n.js"></script>
     <script src="js/script.js?v=1.2.0"></script>
     
     <!-- Debug Script -->
@@ -518,6 +772,33 @@
                 window.player.playItem(0);
             } else {
                 console.log('❌ No hay datos de playlist para testear');
+            }
+        };
+        
+        // Direct playlist test function
+        window.testDirectPlaylist = function() {
+            if (window.player) {
+                window.player.testDirectPlaylistLoad();
+            } else {
+                console.error('❌ Player not available');
+            }
+        };
+        
+        // Force IPTV-ORG load test
+        window.testIPTVOrg = function() {
+            if (window.player) {
+                window.player.loadIPTVOrgPlaylist();
+            } else {
+                console.error('❌ Player not available');
+            }
+        };
+        
+        // Simple IPTV-ORG test
+        window.testSimpleIPTVOrg = function() {
+            if (window.player) {
+                window.player.testSimpleIPTVOrgLoad();
+            } else {
+                console.error('❌ Player not available');
             }
         };
         

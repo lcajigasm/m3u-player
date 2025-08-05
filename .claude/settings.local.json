@@ -15,7 +15,9 @@
       "Bash(true)",
       "Bash(open test-solanaflix.html)",
       "Bash(curl:*)",
-      "Bash(open test-final-url.html)"
+      "Bash(open test-final-url.html)",
+      "Bash(grep:*)",
+      "Bash(sed:*)"
     ],
     "deny": []
   }
