@@ -1,12 +1,13 @@
-/* Import Professional Styles */
+/* Import Modern Design System */
+@import url('styles/variables.css');
+
+/* Import Existing Styles */
 @import url('styles/professional.css');
-
-/* Import EPG Styles */
 @import url('styles/epg.css');
-
-/* Import Modern UI Enhancements */
 @import url('styles/modern-ui.css');
+@import url('styles/components.css');
 
+/* Base Styles (keep existing) */
 * {
     margin: 0;
     padding: 0;
@@ -20,6 +21,24 @@ body {
     color: #e2e8f0;
     font-weight: 400;
     line-height: 1.6;
+    /* Enhanced with theme support */
+    transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+/* ========================================
+   ☀️ Light Theme Body
+======================================== */
+[data-theme="light"] body {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 30%, #e2e8f0 100%);
+    color: var(--text-primary);
+}
+
+/* ========================================
+   🌙 Dark Theme Body (explicit)
+======================================== */
+[data-theme="dark"] body {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    color: #e2e8f0;
 }
 
 .container {
@@ -30,7 +49,279 @@ body {
     min-width: 800px;
 }
 
-/* Responsive adjustments */
+/* ========================================
+   ☀️ Enhanced Light Theme Components
+======================================== */
+
+/* Header styling for light theme */
+[data-theme="light"] .app-header {
+    background: var(--bg-header-glass);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .app-title h1 {
+    color: var(--text-primary);
+    text-shadow: none;
+}
+
+[data-theme="light"] .app-subtitle {
+    color: var(--text-secondary);
+}
+
+/* Cards and panels */
+[data-theme="light"] .stat-card,
+[data-theme="light"] .action-tile,
+[data-theme="light"] .now-playing-widget {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .stat-card:hover,
+[data-theme="light"] .action-tile:hover {
+    background: var(--bg-card-hover);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+/* Buttons */
+[data-theme="light"] .header-btn,
+[data-theme="light"] .action-btn {
+    background: var(--bg-button);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="light"] .header-btn:hover,
+[data-theme="light"] .action-btn:hover {
+    background: var(--bg-button-hover);
+    border-color: var(--border-focus);
+    color: var(--text-primary);
+}
+
+[data-theme="light"] .action-btn.primary,
+[data-theme="light"] .upload-btn {
+    background: var(--bg-button-primary);
+    color: var(--text-inverse);
+    border-color: var(--bg-button-primary);
+}
+
+[data-theme="light"] .action-btn.primary:hover,
+[data-theme="light"] .upload-btn:hover {
+    background: var(--bg-button-primary-hover);
+    border-color: var(--bg-button-primary-hover);
+}
+
+/* Input fields */
+[data-theme="light"] input[type="text"],
+[data-theme="light"] input[type="url"],
+[data-theme="light"] input[type="search"],
+[data-theme="light"] select,
+[data-theme="light"] textarea {
+    background: var(--bg-input);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-xs);
+}
+
+[data-theme="light"] input[type="text"]:focus,
+[data-theme="light"] input[type="url"]:focus,
+[data-theme="light"] input[type="search"]:focus,
+[data-theme="light"] select:focus,
+[data-theme="light"] textarea:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    outline: none;
+}
+
+/* Playlist styling */
+[data-theme="light"] .playlist-container {
+    background: var(--bg-playlist);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="light"] .playlist-header {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--shadow-xs);
+}
+
+[data-theme="light"] .playlist-item {
+    background: var(--bg-playlist-item);
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="light"] .playlist-item:hover {
+    background: var(--bg-playlist-item-hover);
+}
+
+[data-theme="light"] .playlist-item.active {
+    background: var(--bg-playlist-item-active);
+    border-left: 4px solid var(--color-primary);
+}
+
+[data-theme="light"] .playlist-item h4 {
+    color: var(--text-primary);
+}
+
+[data-theme="light"] .playlist-item p {
+    color: var(--text-secondary);
+}
+
+/* Modal styling */
+[data-theme="light"] .modal {
+    background: var(--bg-overlay);
+}
+
+[data-theme="light"] .modal-content {
+    background: var(--bg-modal);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-2xl);
+    color: var(--text-primary);
+}
+
+[data-theme="light"] .modal-header {
+    border-bottom: 1px solid var(--border-color);
+}
+
+[data-theme="light"] .modal-footer {
+    border-top: 1px solid var(--border-color);
+}
+
+/* Status indicators */
+[data-theme="light"] .status-indicator {
+    color: var(--color-online);
+}
+
+[data-theme="light"] .status-indicator.offline {
+    color: var(--color-offline);
+}
+
+[data-theme="light"] .status-indicator.buffering {
+    color: var(--color-buffering);
+}
+
+/* Search components */
+[data-theme="light"] .search-container-enhanced,
+[data-theme="light"] .search-input-wrapper {
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .search-suggestions {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-lg);
+}
+
+[data-theme="light"] .suggestions-list .suggestion-item:hover {
+    background: var(--bg-card-hover);
+}
+
+/* Video player controls */
+[data-theme="light"] .controls {
+    background: var(--bg-card);
+    border-top: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md);
+}
+
+[data-theme="light"] .control-btn {
+    background: var(--bg-button);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="light"] .control-btn:hover {
+    background: var(--bg-button-hover);
+    border-color: var(--border-focus);
+}
+
+/* Loading screens */
+[data-theme="light"] .loading-screen {
+    background: var(--bg-modal);
+    color: var(--text-primary);
+}
+
+[data-theme="light"] .loading-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-xl);
+    color: var(--text-primary);
+}
+
+/* EPG components */
+[data-theme="light"] .epg-modal .epg-container {
+    background: var(--bg-modal);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="light"] .epg-header {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+}
+
+[data-theme="light"] .epg-grid-container {
+    background: var(--bg-card);
+}
+
+/* Scrollbars for light theme */
+[data-theme="light"] ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 4px;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+    background: var(--neutral-400);
+    border-radius: 4px;
+    border: 2px solid var(--bg-secondary);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+    background: var(--neutral-500);
+}
+
+/* Enhanced Theme Toggle Button */
+#themeToggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: #94a3b8;
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+#themeToggle:hover {
+    background: rgba(148, 163, 184, 0.1);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    transform: translateY(-1px);
+}
+
+[data-theme="light"] #themeToggle {
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+[data-theme="light"] #themeToggle:hover {
+    background: var(--bg-button-hover);
+    border-color: var(--border-focus);
+    color: var(--color-primary);
+}
+
+/* Responsive adjustments (keep existing) */
 @media (max-width: 1200px) {
     .container {
         max-width: 95%;
@@ -1673,7 +1964,9 @@ footer {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
-/* Modales */
+/* ========================================
+   🎯 Modal System - Centered Layout
+======================================== */
 .modal {
     position: fixed;
     top: 0;
@@ -1685,7 +1978,9 @@ footer {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: var(--z-modal);
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 .modal-content {
@@ -1693,10 +1988,38 @@ footer {
     border: 1px solid rgba(75, 85, 99, 0.3);
     border-radius: 16px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    width: 100%;
     max-width: 500px;
-    width: 90%;
-    max-height: 80vh;
+    max-height: calc(100vh - 40px);
     overflow: hidden;
+    margin: auto;
+    position: relative;
+    animation: modalSlideIn 0.3s ease;
+}
+
+/* Modal Animation */
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Light Theme Modal Enhancement */
+[data-theme="light"] .modal {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(8px);
+}
+
+[data-theme="light"] .modal-content {
+    background: var(--bg-modal);
+    border-color: var(--border-color);
+    box-shadow: var(--shadow-2xl);
+    color: var(--text-primary);
 }
 
 .modal-header {
@@ -1708,6 +2031,11 @@ footer {
     background: rgba(31, 41, 55, 0.5);
 }
 
+[data-theme="light"] .modal-header {
+    border-bottom-color: var(--border-color);
+    background: var(--bg-secondary);
+}
+
 .modal-header h2 {
     margin: 0;
     color: #f9fafb;
@@ -1716,6 +2044,10 @@ footer {
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+[data-theme="light"] .modal-header h2 {
+    color: var(--text-primary);
 }
 
 .close-btn {
@@ -1740,9 +2072,21 @@ footer {
     color: #d1d5db;
 }
 
+[data-theme="light"] .close-btn {
+    background: var(--bg-button);
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+[data-theme="light"] .close-btn:hover {
+    background: var(--bg-button-hover);
+    border-color: var(--border-focus);
+    color: var(--text-primary);
+}
+
 .modal-body {
     padding: 24px;
-    max-height: 60vh;
+    max-height: calc(100vh - 200px);
     overflow-y: auto;
 }
 
@@ -1753,6 +2097,76 @@ footer {
     display: flex;
     gap: 12px;
     justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+[data-theme="light"] .modal-footer {
+    border-top-color: var(--border-color);
+    background: var(--bg-secondary);
+}
+
+/* Settings Modal Specific Improvements */
+#settingsModal .modal-content {
+    max-width: 600px;
+}
+
+#aboutModal .modal-content {
+    max-width: 550px;
+}
+
+/* Responsive Modal Centering */
+@media (max-width: 768px) {
+    .modal {
+        padding: 10px;
+        align-items: flex-start;
+        padding-top: 40px;
+    }
+    
+    .modal-content {
+        width: 100%;
+        max-width: none;
+        max-height: calc(100vh - 80px);
+        margin: 0;
+    }
+    
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding: 16px;
+    }
+    
+    .modal-footer {
+        flex-direction: column;
+    }
+    
+    .modal-footer .upload-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal {
+        padding: 5px;
+        padding-top: 20px;
+    }
+    
+    .modal-content {
+        border-radius: 12px;
+    }
+    
+    .modal-header {
+        padding: 12px 16px;
+    }
+    
+    .modal-body {
+        padding: 16px;
+        max-height: calc(100vh - 160px);
+    }
+    
+    .modal-footer {
+        padding: 12px 16px;
+    }
 }
 
 .setting-group {
@@ -1767,6 +2181,10 @@ footer {
     font-size: 0.9rem;
 }
 
+[data-theme="light"] .setting-group label {
+    color: var(--text-primary);
+}
+
 .setting-group input[type="text"],
 .setting-group input[type="url"] {
     width: 100%;
@@ -1778,13 +2196,33 @@ footer {
     background: rgba(31, 41, 55, 0.6);
     color: #f9fafb;
     transition: all 0.2s ease;
+    box-sizing: border-box;
 }
 
 .setting-group input[type="text"]:focus,
 .setting-group input[type="url"]:focus {
     border-color: #60a5fa;
     box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
-    background: rgba(31, 41, 55, 0.8);
+}
+
+[data-theme="light"] .setting-group input[type="text"],
+[data-theme="light"] .setting-group input[type="url"] {
+    background: var(--bg-input);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+[data-theme="light"] .setting-group input[type="text"]:focus,
+[data-theme="light"] .setting-group input[type="url"]:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.setting-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-right: 8px;
+    accent-color: #60a5fa;
 }
 
 .setting-group input[type="text"]::placeholder,
@@ -1792,11 +2230,9 @@ footer {
     color: #6b7280;
 }
 
-.setting-group input[type="checkbox"] {
-    margin-right: 8px;
-    width: 16px;
-    height: 16px;
-    accent-color: #60a5fa;
+[data-theme="light"] .setting-group input[type="text"]::placeholder,
+[data-theme="light"] .setting-group input[type="url"]::placeholder {
+    color: var(--text-muted);
 }
 
 .setting-group label:has(input[type="checkbox"]) {
@@ -1841,7 +2277,6 @@ footer {
         padding: 8px;
     }
 }
-}
 
 /* Estados adicionales */
 .playlist-item.playing {
@@ -1864,10 +2299,6 @@ footer {
         opacity: 1;
         transform: translateY(0);
     }
-}
-
-.modal-content {
-    animation: slideIn 0.3s ease-out;
 }
 
 /* Mejoras de accesibilidad */

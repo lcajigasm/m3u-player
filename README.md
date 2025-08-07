@@ -2,7 +2,7 @@
 
 A modern, professional IPTV player built with Electron that bypasses CORS limitations found in web browsers.
 
-![M3U Player](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![M3U Player](https://img.shields.io/badge/version-2.0.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)
 
@@ -13,15 +13,19 @@ A modern, professional IPTV player built with Electron that bypasses CORS limita
 - 🎥 **Multiple formats** - MP4, WebM, HLS (.m3u8) and more
 - 🔧 **Integrated diagnostics** - Test streams before playing
 - ⚙️ **Advanced configuration** - Custom headers, User-Agent, Referer
-- 📱 **Modern interface** - Responsive design with dark theme
+- 📱 **Modern interface** - Responsive design with dual theme support
 - 💾 **Export playlists** - Save modified lists
 - 🔍 **Advanced search** - Filter by name, group, or type with instant results
 - 📺 **Picture-in-Picture** - Floating window playback
 - ⛶ **Fullscreen mode** - Immersive experience
-- ☀️ **Video controls** - Real-time brightness and contrast adjustment
+- ☀️ **Dual theme system** - Professional light and dark themes with smart switching
+- 🎨 **Enhanced UI/UX** - Modern design system with glassmorphism effects
+- 🎯 **Perfect modal centering** - All dialogs properly centered across devices
 - 📡 **IPTV-ORG integration** - Download and play official IPTV channels
 - ⏳ **Real-time loading** - Progress tracking for large playlists
-- 🎨 **Professional interface** - Dark theme with modern design
+- � **Theme persistence** - Remembers your preferred theme across sessions
+- 🔄 **Smooth transitions** - Animated theme switching with visual feedback
+- ♿ **Enhanced accessibility** - Better contrast ratios and keyboard navigation
 
 ## 🚀 Quick Start
 
@@ -101,10 +105,12 @@ https://m3u-player.eu/stream.m3u8
 - **☀️ Brightness** - Adjust video brightness
 - **🔆 Contrast** - Improve image definition
 
-### Keyboard Shortcuts:
+### Keyboard Shortcuts
+
 - **Space** - Play/Pause
 - **P** - Toggle Picture-in-Picture
 - **F** - Toggle fullscreen
+- **Ctrl+Shift+T** - Toggle theme (Light/Dark)
 - **+/-** - Adjust brightness
 - **↑/↓** - Volume control
 - **M** - Mute

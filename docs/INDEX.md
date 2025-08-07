@@ -4,12 +4,6 @@
 
 This directory contains organized documentation for the M3U Player project.
 
-### 📁 **improvements/**
-Documentation related to UI/UX improvements and feature enhancements:
-- [`CHANNEL-LIST-IMPROVEMENTS.md`](improvements/CHANNEL-LIST-IMPROVEMENTS.md) - Channel list design enhancements
-- [`RED-FIXES-SUMMARY.md`](improvements/RED-FIXES-SUMMARY.md) - Fixes for red-marked UI issues
-- [`CLEANUP-SUMMARY.md`](improvements/CLEANUP-SUMMARY.md) - Project cleanup and organization
-
 ### 📁 **development/**
 Technical documentation for developers:
 - [`BUILD-FIXES-SUMMARY.md`](development/BUILD-FIXES-SUMMARY.md) - Build system fixes and improvements
@@ -56,7 +50,7 @@ Core documentation files:
 - **Release Process**: See [releases/](releases/)
 
 ### For Contributors
-- **UI Improvements**: See [improvements/](improvements/)
+- **Theme Development**: See [development/](development/) for theme system guidelines
 - **Development Setup**: See [development/](development/)
 - **Contributing**: See [../CONTRIBUTING.md](../CONTRIBUTING.md)
 

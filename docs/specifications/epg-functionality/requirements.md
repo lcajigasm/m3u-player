@@ -1,84 +1,84 @@
-# Requisitos del EPG (Electronic Program Guide)
+# EPG (Electronic Program Guide) Requirements
 
-## Introducción
+## Introduction
 
-Esta funcionalidad añadirá un sistema de guía electrónica de programas (EPG) al reproductor M3U existente, permitiendo a los usuarios ver información detallada sobre la programación actual y futura de los canales IPTV. El EPG proporcionará una experiencia más rica y profesional, similar a la de los reproductores de televisión tradicionales.
+This feature will add an Electronic Program Guide (EPG) system to the existing M3U player, allowing users to view detailed information about current and future programming of IPTV channels. The EPG will provide a richer and more professional experience, similar to traditional television players.
 
-## Requisitos
+## Requirements
 
-### Requisito 1
+### Requirement 1
 
-**Historia de Usuario:** Como usuario del reproductor M3U, quiero ver la programación actual y futura de los canales IPTV, para poder saber qué contenido está disponible y planificar mi visualización.
+**User Story:** As a user of the M3U player, I want to see the current and future programming of IPTV channels, so I can know what content is available and plan my viewing.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. CUANDO el usuario seleccione un canal THEN el sistema DEBERÁ mostrar la información del programa actual si está disponible
-2. CUANDO el usuario acceda al EPG THEN el sistema DEBERÁ mostrar una grilla de programación con al menos 24 horas de contenido futuro
-3. CUANDO no haya información de EPG disponible THEN el sistema DEBERÁ mostrar un mensaje informativo apropiado
-4. CUANDO el sistema cargue datos de EPG THEN DEBERÁ actualizar automáticamente la información cada 30 minutos
+1. WHEN the user selects a channel THEN the system MUST display current program information if available
+2. WHEN the user accesses the EPG THEN the system MUST display a programming grid with at least 24 hours of future content
+3. WHEN no EPG information is available THEN the system MUST display an appropriate informative message
+4. WHEN the system loads EPG data THEN it MUST automatically update the information every 30 minutes
 
-### Requisito 2
+### Requirement 2
 
-**Historia de Usuario:** Como usuario, quiero poder navegar fácilmente por la programación de diferentes canales y horarios, para encontrar rápidamente el contenido que me interesa.
+**User Story:** As a user, I want to easily navigate through programming of different channels and time slots, to quickly find the content that interests me.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. CUANDO el usuario abra el EPG THEN el sistema DEBERÁ mostrar una interfaz de grilla con canales en filas y horarios en columnas
-2. CUANDO el usuario haga clic en un programa THEN el sistema DEBERÁ mostrar información detallada del programa (título, descripción, duración, género)
-3. CUANDO el usuario navegue por la grilla THEN el sistema DEBERÁ permitir desplazamiento horizontal por tiempo y vertical por canales
-4. CUANDO el usuario seleccione un programa futuro THEN el sistema DEBERÁ ofrecer la opción de configurar un recordatorio
+1. WHEN the user opens the EPG THEN the system MUST display a grid interface with channels in rows and time slots in columns
+2. WHEN the user clicks on a program THEN the system MUST show detailed program information (title, description, duration, genre)
+3. WHEN the user navigates the grid THEN the system MUST allow horizontal scrolling by time and vertical scrolling by channels
+4. WHEN the user selects a future program THEN the system MUST offer the option to set a reminder
 
-### Requisito 3
+### Requirement 3
 
-**Historia de Usuario:** Como usuario, quiero que el EPG se integre perfectamente con la interfaz existente del reproductor, para mantener una experiencia de usuario consistente.
+**User Story:** As a user, I want the EPG to integrate seamlessly with the existing player interface, to maintain a consistent user experience.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. CUANDO el usuario acceda al EPG THEN el sistema DEBERÁ mantener el tema visual oscuro y profesional existente
-2. CUANDO el EPG esté abierto THEN el sistema DEBERÁ permitir cambiar de canal directamente desde la grilla
-3. CUANDO el usuario cierre el EPG THEN el sistema DEBERÁ volver a la vista del reproductor sin interrumpir la reproducción
-4. CUANDO el EPG esté visible THEN el sistema DEBERÁ mostrar un indicador visual del programa actualmente en reproducción
+1. WHEN the user accesses the EPG THEN the system MUST maintain the existing dark and professional visual theme
+2. WHEN the EPG is open THEN the system MUST allow changing channels directly from the grid
+3. WHEN the user closes the EPG THEN the system MUST return to the player view without interrupting playback
+4. WHEN the EPG is visible THEN the system MUST show a visual indicator of the currently playing program
 
-### Requisito 4
+### Requirement 4
 
-**Historia de Usuario:** Como usuario, quiero que el sistema obtenga automáticamente los datos de EPG de fuentes confiables, para tener información actualizada sin configuración manual.
+**User Story:** As a user, I want the system to automatically obtain EPG data from reliable sources, to have updated information without manual configuration.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. CUANDO el sistema cargue una playlist M3U THEN DEBERÁ intentar obtener datos de EPG automáticamente usando los identificadores de canal
-2. CUANDO los datos de EPG estén disponibles THEN el sistema DEBERÁ cachearlos localmente para mejorar el rendimiento
-3. CUANDO el sistema no pueda obtener datos de EPG THEN DEBERÁ continuar funcionando normalmente sin afectar la reproducción
-4. CUANDO haya múltiples fuentes de EPG disponibles THEN el sistema DEBERÁ priorizar las fuentes más confiables y actualizadas
+1. WHEN the system loads an M3U playlist THEN it MUST attempt to obtain EPG data automatically using channel identifiers
+2. WHEN EPG data is available THEN the system MUST cache it locally to improve performance
+3. WHEN the system cannot obtain EPG data THEN it MUST continue functioning normally without affecting playback
+4. WHEN multiple EPG sources are available THEN the system MUST prioritize the most reliable and up-to-date sources
 
-### Requisito 5
+### Requirement 5
 
-**Historia de Usuario:** Como usuario, quiero poder buscar programas específicos en el EPG, para encontrar rápidamente el contenido que me interesa sin navegar manualmente.
+**User Story:** As a user, I want to be able to search for specific programs in the EPG, to quickly find the content that interests me without manual navigation.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. CUANDO el usuario ingrese texto en la búsqueda del EPG THEN el sistema DEBERÁ filtrar los programas que coincidan con el título o descripción
-2. CUANDO el usuario seleccione un resultado de búsqueda THEN el sistema DEBERÁ navegar automáticamente al canal y horario correspondiente
-3. CUANDO no haya resultados de búsqueda THEN el sistema DEBERÁ mostrar un mensaje informativo apropiado
-4. CUANDO el usuario borre la búsqueda THEN el sistema DEBERÁ volver a mostrar la grilla completa del EPG
+1. WHEN the user enters text in the EPG search THEN the system MUST filter programs that match the title or description
+2. WHEN the user selects a search result THEN the system MUST automatically navigate to the corresponding channel and time slot
+3. WHEN there are no search results THEN the system MUST display an appropriate informative message
+4. WHEN the user clears the search THEN the system MUST return to showing the complete EPG grid
 
-### Requisito 6
+### Requirement 6
 
-**Historia de Usuario:** Como usuario, quiero poder configurar recordatorios para programas futuros, para no perder el contenido que me interesa.
+**User Story:** As a user, I want to be able to set reminders for future programs, so I don't miss the content that interests me.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. CUANDO el usuario seleccione un programa futuro THEN el sistema DEBERÁ ofrecer la opción de crear un recordatorio
-2. CUANDO se acerque la hora de un programa con recordatorio THEN el sistema DEBERÁ mostrar una notificación
-3. CUANDO el usuario confirme un recordatorio THEN el sistema DEBERÁ cambiar automáticamente al canal correspondiente
-4. CUANDO el usuario tenga recordatorios activos THEN el sistema DEBERÁ mostrar una lista de recordatorios pendientes
+1. WHEN the user selects a future program THEN the system MUST offer the option to create a reminder
+2. WHEN the time approaches for a program with a reminder THEN the system MUST show a notification
+3. WHEN the user confirms a reminder THEN the system MUST automatically switch to the corresponding channel
+4. WHEN the user has active reminders THEN the system MUST show a list of pending reminders
 
-### Requisito 7
+### Requirement 7
 
-**Historia de Usuario:** Como usuario, quiero que el EPG funcione tanto en modo online como offline, para tener acceso a la información de programación incluso con conectividad limitada.
+**User Story:** As a user, I want the EPG to work both in online and offline modes, to have access to programming information even with limited connectivity.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. CUANDO el sistema esté online THEN DEBERÁ descargar y actualizar automáticamente los datos de EPG
-2. CUANDO el sistema esté offline THEN DEBERÁ usar los datos de EPG cacheados localmente
-3. CUANDO los datos cacheados estén desactualizados THEN el sistema DEBERÁ mostrar un indicador de la fecha de última actualización
-4. CUANDO se restablezca la conexión THEN el sistema DEBERÁ sincronizar automáticamente los datos de EPG
+1. WHEN the system is online THEN it MUST automatically download and update EPG data
+2. WHEN the system is offline THEN it MUST use locally cached EPG data
+3. WHEN cached data is outdated THEN the system MUST show an indicator of the last update date
+4. WHEN connection is restored THEN the system MUST automatically synchronize EPG data

@@ -30,13 +30,18 @@
                     <span class="app-subtitle">Professional IPTV Streaming Platform</span>
                 </div>
                 <div class="app-actions">
-                    <button class="header-btn premium" id="settingsHeaderBtn" title="Settings">
+                    <button class="header-btn" id="themeToggle" title="Toggle Theme" aria-label="Toggle dark/light theme">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                    <button class="header-btn premium" id="settingsHeaderBtn" title="Settings" aria-label="Open settings">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
                             <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" stroke="currentColor" stroke-width="2"/>
                         </svg>
                     </button>
-                    <button class="header-btn premium" id="aboutHeaderBtn" title="About">
+                    <button class="header-btn premium" id="aboutHeaderBtn" title="About" aria-label="About M3U Player">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
                             <path d="M12 16v-4m0-4h.01" stroke="currentColor" stroke-width="2"/>
@@ -932,6 +937,9 @@
             }
         });
     </script>
+
+    <!-- UI Enhancements -->
+    <script src="js/core/UIEnhancements.js"></script>
 </body>
 
 </html>

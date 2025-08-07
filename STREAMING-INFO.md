@@ -1,83 +1,83 @@
-# 📺 M3U Player - Información de Streaming
+# 📺 M3U Player - Streaming Information
 
-## ⚠️ Warnings de Certificado SSL
+## ⚠️ SSL Certificate Warnings
 
-Los siguientes warnings son **NORMALES** en aplicaciones IPTV y **NO afectan la funcionalidad**:
+The following warnings are **NORMAL** in IPTV applications and **DO NOT affect functionality**:
 
 ```
-ERROR:cert_verify_proc_builtin.cc CertVerifyProcBuiltin for [dominio] failed:
+ERROR:cert_verify_proc_builtin.cc CertVerifyProcBuiltin for [domain] failed:
 ----- Certificate i=1 (CN=allot.com/...) -----
 ERROR: No matching issuer found
 ```
 
-### ¿Por qué ocurren?
+### Why do they occur?
 
-1. **Servidores IPTV**: Muchos proveedores de streaming usan certificados auto-firmados o caducados
-2. **Redes CDN**: Algunos usan configuraciones SSL no estándar
-3. **Geolocalización**: Servidores pueden usar certificados regionales
+1. **IPTV Servers**: Many streaming providers use self-signed or expired certificates
+2. **CDN Networks**: Some use non-standard SSL configurations
+3. **Geolocation**: Servers may use regional certificates
 
-### ¿Son peligrosos?
+### Are they dangerous?
 
-**NO**. Estos warnings:
-- ✅ Son esperados en aplicaciones IPTV profesionales
-- ✅ No comprometen la seguridad de tu sistema
-- ✅ No afectan la calidad del streaming
-- ✅ No causan problemas de rendimiento
+**NO**. These warnings:
+- ✅ Are expected in professional IPTV applications
+- ✅ Do not compromise your system security
+- ✅ Do not affect streaming quality
+- ✅ Do not cause performance issues
 
-## 🚀 Opciones de Inicio
+## 🚀 Start Options
 
-### Inicio Normal
+### Normal Start
 ```bash
 npm start
 ```
-Muestra todos los logs incluyendo warnings de certificados.
+Shows all logs including certificate warnings.
 
-### Inicio Silencioso
+### Quiet Start
 ```bash
 npm run start-quiet
 ```
-Suprime los warnings pero mantiene logs importantes.
+Suppresses warnings but keeps important logs.
 
-### Inicio Completamente Silencioso
+### Completely Silent Start
 ```bash
 npm run start-silent
 ```
-Sin ningún output en consola (solo para uso final).
+No console output (for end-user use only).
 
-### Desarrollo
+### Development
 ```bash
 npm run dev
 ```
-Con herramientas de desarrollo y logs completos.
+With development tools and complete logs.
 
-## 🔧 Configuraciones de Seguridad
+## 🔧 Security Configurations
 
-La aplicación incluye:
+The application includes:
 
-- ✅ Ignora certificados SSL inválidos (necesario para IPTV)
-- ✅ Desactiva verificación web (permite CORS bypass)
-- ✅ Optimizaciones de GPU habilitadas
-- ✅ Memoria aumentada a 4GB para listas grandes
+- ✅ Ignores invalid SSL certificates (necessary for IPTV)
+- ✅ Disables web security (allows CORS bypass)
+- ✅ GPU optimizations enabled
+- ✅ Memory increased to 4GB for large playlists
 
-## 📊 Rendimiento Optimizado
+## 📊 Performance Optimized
 
-- **Listas pequeñas (<1000)**: Rendering por lotes optimizado
-- **Listas grandes (>1000)**: Virtualización automática
-- **Parsing M3U**: Asíncrono sin bloquear UI
-- **Memoria**: Gestión optimizada para archivos grandes
+- **Small lists (<1000)**: Optimized batch rendering
+- **Large lists (>1000)**: Automatic virtualization
+- **M3U Parsing**: Asynchronous without blocking UI
+- **Memory**: Optimized management for large files
 
 ## 🧪 Testing
 
-Funciones de debug disponibles en consola del navegador:
-- `debugStream()` - Diagnóstico del sistema
-- `quickTest()` - Test rápido de reproducción
+Debug functions available in browser console:
+- `debugStream()` - System diagnostics
+- `quickTest()` - Quick playback test
 
-## ❓ Problemas Conocidos
+## ❓ Known Issues
 
-1. **Warnings AVCaptureDevice**: Normal en macOS, relacionado con cámaras
-2. **Certificate errors**: Esperados con servidores IPTV
-3. **CoreText warnings**: Relacionados con fuentes del sistema (reducidos)
+1. **AVCaptureDevice warnings**: Normal on macOS, camera-related
+2. **Certificate errors**: Expected with IPTV servers
+3. **CoreText warnings**: System font-related (reduced)
 
 ---
 
-💡 **Recomendación**: Para uso diario, utiliza `npm run start-quiet` para una experiencia más limpia.
+💡 **Recommendation**: For daily use, use `npm run start-quiet` for a cleaner experience.

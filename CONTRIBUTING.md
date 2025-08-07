@@ -52,11 +52,13 @@ npm run dev
 - Follow existing code patterns
 
 **CSS:**
-- Use the existing dark theme color palette
-- Follow BEM methodology when possible
-- Use CSS custom properties for theming
-- Ensure responsive design
-- Test on different screen sizes
+- Use the existing design system with CSS custom properties
+- Support both light and dark themes using `[data-theme]` selectors
+- Follow the established color palette and semantic naming
+- Use CSS custom properties for theming (e.g., `var(--text-primary)`)
+- Ensure responsive design and test on different screen sizes
+- Follow modern CSS patterns (Flexbox, Grid, custom properties)
+- Test theme switching functionality thoroughly
 
 **HTML:**
 - Use semantic HTML elements

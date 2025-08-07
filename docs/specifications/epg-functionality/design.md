@@ -1,12 +1,12 @@
-# Diseño del EPG (Electronic Program Guide)
+# EPG (Electronic Program Guide) Design
 
-## Visión General
+## Overview
 
-El EPG se integrará como una nueva funcionalidad en el reproductor M3U existente, proporcionando una interfaz de grilla para mostrar la programación de canales IPTV. El diseño se basa en una arquitectura modular que se integra perfectamente con el sistema existente sin afectar la funcionalidad actual del reproductor.
+The EPG will be integrated as a new feature in the existing M3U player, providing a grid interface to display IPTV channel programming. The design is based on a modular architecture that integrates seamlessly with the existing system without affecting the player's current functionality.
 
-## Arquitectura
+## Architecture
 
-### Arquitectura General
+### General Architecture
 
 ```mermaid
 graph TB
@@ -31,23 +31,23 @@ graph TB
     F --> P[ScheduleManager]
 ```
 
-### Integración con el Sistema Existente
+### Integration with Existing System
 
-El EPG se integrará con la clase `M3UPlayer` existente mediante:
+The EPG will integrate with the existing `M3UPlayer` class through:
 
-1. **Extensión de la clase principal**: Añadir métodos EPG a `M3UPlayer`
-2. **Nuevos elementos UI**: Integrar componentes EPG en el HTML existente
-3. **Gestión de eventos**: Conectar eventos EPG con el sistema de eventos actual
-4. **Persistencia**: Utilizar el sistema de configuración existente para preferencias EPG
+1. **Extension of main class**: Add EPG methods to `M3UPlayer`
+2. **New UI elements**: Integrate EPG components into existing HTML
+3. **Event management**: Connect EPG events with current event system
+4. **Persistence**: Use existing configuration system for EPG preferences
 
-## Componentes e Interfaces
+## Components and Interfaces
 
-### 1. EPGManager (Gestor Principal)
+### 1. EPGManager (Main Manager)
 
-**Responsabilidades:**
-- Coordinar todas las operaciones EPG
-- Gestionar el ciclo de vida de los datos EPG
-- Integrar con el reproductor principal
+**Responsibilities:**
+- Coordinate all EPG operations
+- Manage EPG data lifecycle
+- Integrate with main player
 
 **Interfaz:**
 ```javascript

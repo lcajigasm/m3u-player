@@ -1,8 +1,8 @@
-# Release Notes - v0.1.0
+# Release Notes - v2.0.0
 
-## 🎉 First Official Release
+## 🎉 Major Release - Enhanced Player Features
 
-This is the first official release of M3U Player, featuring automated builds for Windows, macOS, and Linux platforms.
+This is a major release of M3U Player featuring dual theme system, enhanced UI, and comprehensive improvements for 2025.
 
 ## ✨ New Features
 
@@ -34,18 +34,18 @@ This is the first official release of M3U Player, featuring automated builds for
 ## 📦 Available Downloads
 
 ### Windows
-- `m3u-player-Setup-0.1.0.exe` - NSIS installer (recommended)
-- `m3u-player-0.1.0-win.zip` - Portable version
+- `m3u-player-Setup-2.0.0.exe` - NSIS installer (recommended)
+- `m3u-player-2.0.0-win.zip` - Portable version
 
 ### macOS
-- `m3u-player-0.1.0.dmg` - Disk image (recommended)
-- `m3u-player-0.1.0-mac.zip` - ZIP archive
+- `m3u-player-2.0.0.dmg` - Disk image (recommended)
+- `m3u-player-2.0.0-mac.zip` - ZIP archive
 - Universal builds supporting both Intel and Apple Silicon
 
 ### Linux
-- `m3u-player-0.1.0.AppImage` - Universal executable (recommended)
-- `m3u-player_0.1.0_amd64.deb` - Debian/Ubuntu package
-- `m3u-player-0.1.0.x86_64.rpm` - Red Hat/Fedora package
+- `m3u-player-2.0.0.AppImage` - Universal executable (recommended)
+- `m3u-player_2.0.0_amd64.deb` - Debian/Ubuntu package
+- `m3u-player-2.0.0.x86_64.rpm` - Red Hat/Fedora package
 
 ## 🔧 Technical Improvements
 

@@ -1,53 +1,53 @@
-# Plan de Implementación del EPG
+# EPG Implementation Plan
 
-- [x] 1. Configurar estructura base y modelos de datos
+- [x] 1. Set up base structure and data models
 
-  - Crear archivos base para las clases EPG
-  - Definir interfaces TypeScript para modelos de datos EPG
-  - Integrar estructura EPG en el proyecto existente
-  - _Requisitos: 1.1, 4.1_
+  - Create base files for EPG classes
+  - Define TypeScript interfaces for EPG data models
+  - Integrate EPG structure into existing project
+  - _Requirements: 1.1, 4.1_
 
-- [x] 2. Implementar sistema de caché EPG
-- [x] 2.1 Crear clase EPGCache con almacenamiento local
+- [x] 2. Implement EPG cache system
+- [x] 2.1 Create EPGCache class with local storage
 
-  - Implementar EPGCache con soporte para LocalStorage e IndexedDB
-  - Crear métodos para almacenar, recuperar y limpiar datos EPG
-  - Implementar lógica de expiración y limpieza automática
-  - Escribir tests unitarios para operaciones de caché
-  - _Requisitos: 4.2, 7.2, 7.3_
+  - Implement EPGCache with LocalStorage and IndexedDB support
+  - Create methods to store, retrieve and clear EPG data
+  - Implement expiration logic and automatic cleanup
+  - Write unit tests for cache operations
+  - _Requirements: 4.2, 7.2, 7.3_
 
-- [x] 2.2 Implementar estrategia de caché multinivel
+- [x] 2.2 Implement multi-level cache strategy
 
-  - Crear sistema de caché en memoria para datos frecuentes
-  - Implementar fallback entre diferentes niveles de caché
-  - Optimizar acceso a datos según patrones de uso
-  - Crear métricas de rendimiento del caché
-  - _Requisitos: 4.2, 7.2_
+  - Create in-memory cache system for frequent data
+  - Implement fallback between different cache levels
+  - Optimize data access according to usage patterns
+  - Create cache performance metrics
+  - _Requirements: 4.2, 7.2_
 
-- [x] 3. Desarrollar proveedor de datos EPG
-- [x] 3.1 Crear clase EPGDataProvider base
+- [x] 3. Develop EPG data provider
+- [x] 3.1 Create base EPGDataProvider class
 
-  - Implementar estructura base para obtener datos EPG
-  - Crear sistema de priorización de fuentes de datos
-  - Implementar manejo de errores y reintentos
-  - Escribir tests para la lógica de priorización
-  - _Requisitos: 4.1, 4.3, 4.4_
+  - Implement base structure for obtaining EPG data
+  - Create data source prioritization system
+  - Implement error handling and retries
+  - Write tests for prioritization logic
+  - _Requirements: 4.1, 4.3, 4.4_
 
-- [x] 3.2 Implementar parser XMLTV
+- [x] 3.2 Implement XMLTV parser
 
-  - Crear XMLTVParser para procesar formato XMLTV estándar
-  - Implementar conversión de datos XMLTV a modelos internos
-  - Manejar diferentes variantes del formato XMLTV
-  - Crear tests con archivos XMLTV de ejemplo
-  - _Requisitos: 4.1, 4.4_
+  - Create XMLTVParser to process standard XMLTV format
+  - Implement conversion from XMLTV data to internal models
+  - Handle different XMLTV format variants
+  - Create tests with sample XMLTV files
+  - _Requirements: 4.1, 4.4_
 
-- [x] 3.3 Implementar parser JSON EPG
+- [x] 3.3 Implement JSON EPG parser
 
-  - Crear JSONEPGParser para formato JSON personalizado
-  - Implementar validación de esquema JSON
-  - Optimizar parseo para archivos grandes
-  - Escribir tests con diferentes estructuras JSON
-  - _Requisitos: 4.1, 4.4_
+  - Create JSONEPGParser for custom JSON format
+  - Implement JSON schema validation
+  - Optimize parsing for large files
+  - Write tests with different JSON structures
+  - _Requirements: 4.1, 4.4_
 
 - [x] 3.4 Integrar extracción de EPG embebido en M3U
 
