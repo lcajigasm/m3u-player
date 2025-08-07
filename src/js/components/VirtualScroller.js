@@ -412,7 +412,7 @@ class VirtualScroller {
             fragment.appendChild(element);
         });
         
-        this.itemContainer.innerHTML = '';
+    this.itemContainer.innerHTML = '';
         this.itemContainer.appendChild(fragment);
     }
 
@@ -496,7 +496,7 @@ class VirtualScroller {
         if (this.renderFunction) {
             const content = this.renderFunction(item, index);
             if (typeof content === 'string') {
-                element.innerHTML = content;
+                element.innerHTML = this.sanitizeHTML(content);
             } else if (content instanceof HTMLElement) {
                 element.innerHTML = '';
                 element.appendChild(content);
@@ -528,6 +528,16 @@ class VirtualScroller {
         // Agregar al pool si reciclaje está habilitado
         if (this.config.recycleItems && this.itemPool.length < 50) {
             element.innerHTML = '';
+    /**
+     * Sanitiza HTML para evitar XSS
+     * @param {string} html
+     * @returns {string}
+     */
+    sanitizeHTML(html) {
+        const div = document.createElement('div');
+        div.textContent = html;
+        return div.innerHTML;
+    }
             element.removeAttribute('data-index');
             this.itemPool.push(element);
         }
