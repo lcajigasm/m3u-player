@@ -1,75 +1,57 @@
+
 const { contextBridge, ipcRenderer } = require('electron');
 
-// Safe API for the renderer process
-contextBridge.exposeInMainWorld('electronAPI', {
-  // Configuration
-  loadConfig: () => ipcRenderer.invoke('load-config'),
-  saveConfig: (config) => ipcRenderer.invoke('save-config', config),
-  
-  // Files
-  openFileDialog: () => ipcRenderer.invoke('open-file-dialog'),
-  showSaveDialog: (options) => ipcRenderer.invoke('show-save-dialog', options),
-  writeFile: (filePath, content) => ipcRenderer.invoke('write-file', filePath, content),
-  readFile: (filePath) => ipcRenderer.invoke('read-file', filePath),
-  saveFile: (relativePath, content) => ipcRenderer.invoke('save-file', relativePath, content),
-  
-  // Network (without CORS restrictions)
-  fetchUrl: (url, options) => ipcRenderer.invoke('fetch-url', url, options),
-  getProxyUrl: (url) => ipcRenderer.invoke('get-proxy-url', url),
-  
-  // App information
-  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
-  
-  // Eventos del main process
-  onFileLoaded: (callback) => {
-    ipcRenderer.on('file-loaded', (event, data) => callback(data));
-  },
-  
-  onShowUrlDialog: (callback) => {
-    ipcRenderer.on('show-url-dialog', () => callback());
-  },
-  
-  onShowSettings: (callback) => {
-    ipcRenderer.on('show-settings', () => callback());
-  },
-  
-  onShowAbout: (callback) => {
-    ipcRenderer.on('show-about', () => callback());
-  },
-  
-  onTogglePlayback: (callback) => {
-    ipcRenderer.on('toggle-playback', () => callback());
-  },
-  
-  onStopPlayback: (callback) => {
-    ipcRenderer.on('stop-playback', () => callback());
-  },
-  
-  onVolumeUp: (callback) => {
-    ipcRenderer.on('volume-up', () => callback());
-  },
-  
-  onVolumeDown: (callback) => {
-    ipcRenderer.on('volume-down', () => callback());
-  },
-  
-  onToggleMute: (callback) => {
-    ipcRenderer.on('toggle-mute', () => callback());
-  },
-  
-  // Limpiar listeners
-  removeAllListeners: (channel) => {
-    ipcRenderer.removeAllListeners(channel);
-  }
-});
+/**
+ * @typedef {Object} SettingsAPI
+ * @property {(key: string) => Promise<any>} get
+ * @property {(key: string, value: any) => Promise<void>} put
+ */
+/**
+ * @typedef {Object} PlaylistsAPI
+ * @property {(file: File) => Promise<any>} importFromFile
+ * @property {(url: string) => Promise<any>} importFromUrl
+ */
+/**
+ * @typedef {Object} StreamsAPI
+ * @property {(url: string, headers?: object) => Promise<boolean>} test
+ */
 
-// Información del entorno
-contextBridge.exposeInMainWorld('appInfo', {
-  platform: process.platform,
-  isElectron: true,
-  versions: {
-    electron: process.versions.electron,
-    chrome: process.versions.chrome,
-    node: process.versions.node
+contextBridge.exposeInMainWorld('api', {
+  /** @type {SettingsAPI} */
+  settings: {
+    /** @param {string} key */
+    get: (key) => {
+      if (typeof key !== 'string') throw new TypeError('settings.get: key must be string');
+      return ipcRenderer.invoke('settings-get', key);
+    },
+    /** @param {string} key @param {any} value */
+    put: (key, value) => {
+      if (typeof key !== 'string') throw new TypeError('settings.put: key must be string');
+      return ipcRenderer.invoke('settings-put', key, value);
+    }
+  },
+  /** @type {PlaylistsAPI} */
+  playlists: {
+    /** @param {File} file */
+    importFromFile: (file) => {
+      if (!file || typeof file !== 'object') throw new TypeError('playlists.importFromFile: file must be File');
+      return ipcRenderer.invoke('playlists-import-file', file);
+    },
+    /** @param {string} url */
+    importFromUrl: (url) => {
+      if (typeof url !== 'string') throw new TypeError('playlists.importFromUrl: url must be string');
+      if (!/^https?:\/\//.test(url)) throw new Error('playlists.importFromUrl: only http/https allowed');
+      return ipcRenderer.invoke('playlists-import-url', url);
+    }
+  },
+  /** @type {StreamsAPI} */
+  streams: {
+    /** @param {string} url @param {object} [headers] */
+    test: (url, headers = {}) => {
+      if (typeof url !== 'string') throw new TypeError('streams.test: url must be string');
+      if (!/^https?:\/\//.test(url)) throw new Error('streams.test: only http/https allowed');
+      if (headers && typeof headers !== 'object') throw new TypeError('streams.test: headers must be object');
+      return ipcRenderer.invoke('streams-test', url, headers);
+    }
   }
 });

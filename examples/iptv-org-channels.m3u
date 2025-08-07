@@ -20896,7 +20896,7 @@ https://kino-1.catcast.tv/content/37742/index.m3u8
 https://kino-1.catcast.tv/content/37739/index.m3u8
 #EXTINF:-1 tvg-id="MuzykaPervogo.ru" tvg-logo="https://i.imgur.com/U0vKj3P.png" group-title="Music",Музыка Первого
 http://31.148.48.15/Muzika_Pervogo/index.m3u8
-#EXTINF:-1 tvg-id="Mult.ru" tvg-logo="https://i.imgur.com/xi351Fx.png" group-title="Kids",Мульт
+#EXTINF:-1 tvg-id="Mult.ru" tvg-logo="https://i.imgur.com/xi351Fx.png" group-title="Kids",��ульт
 http://stv.mediacdn.ru/live/cdn/mult/playlist.m3u8
 #EXTINF:-1 tvg-id="Multimuzyka.ru" tvg-logo="https://i.imgur.com/SYt6BZP.png" group-title="Kids",Мульт и музыка
 http://stv.mediacdn.ru/live/cdn/multimuzika/playlist.m3u8
@@ -22083,7 +22083,7 @@ http://sdqz.chinashadt.com:2036/live/stream:1.stream/playlist.m3u8
 http://live.geermurmt.com/qhws/sd/live.m3u8
 #EXTINF:-1 tvg-id="" tvg-logo="" group-title="Undefined",靖江新闻綜合 (480p) [Not 24/7]
 http://visit.jjbctv.com:1935/live/xwzhmb/playlist.m3u8
-#EXTINF:-1 tvg-id="" tvg-logo="" group-title="Undefined",静宁综合 (1080p)
+#EXTINF:-1 tvg-id="" tvg-logo="" group-title="Undefined",���宁综合 (1080p)
 http://117.156.28.119/270000001111/1110000147/index.m3u8
 #EXTINF:-1 tvg-id="FengshangShoppingChannel.cn@SD" tvg-logo="https://i.imgur.com/WNhfnUR.png" group-title="Shop",风尚购物 (1080p)
 http://183.207.248.71/cntv/live1/fengshanggw/fengshanggw

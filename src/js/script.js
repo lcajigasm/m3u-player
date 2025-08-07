@@ -897,13 +897,14 @@ class M3UPlayer {
             dashboardSection.style.display = 'block';
         }
         
-        // Clear playlist data to save memory
-        if (this.playlistData && this.playlistData.length > 1000) {
-            this.playlistData = [];
-        }
+        // Note: Don't clear playlist data - users expect to return to their loaded playlist
+        // The memory savings aren't worth losing the user's playlist
         
         // Update dashboard stats
         this.updateDashboardStats();
+        
+        // Update now playing widget since we're now in dashboard
+        this.updateNowPlayingWidget();
         
         // Back to dashboard complete
     }
@@ -1255,12 +1256,24 @@ class M3UPlayer {
                 this.nowPlayingIcon.textContent = this.getChannelIcon(channel);
             }
             
-            // Show the widget
-            this.nowPlayingWidget.style.display = 'block';
-            console.log('🎵 Widget shown, display set to block');
+            // Only show the widget if we're in dashboard - simple check
+            const dashboardSection = document.getElementById('dashboardSection');
+            const playerSection = document.getElementById('playerSection');
+            const isInDashboard = dashboardSection && (window.getComputedStyle(dashboardSection).display !== 'none');
+            const isInPlayer = playerSection && (window.getComputedStyle(playerSection).display !== 'none');
             
-            // Ensure the Return to Player button listener is attached
-            setTimeout(() => this.attachReturnToPlayerListener(), 50);
+            if (isInDashboard && !isInPlayer) {
+                // Show the widget only when in dashboard
+                this.nowPlayingWidget.style.display = 'block';
+                console.log('🎵 Widget shown, display set to block');
+                
+                // Ensure the Return to Player button listener is attached
+                setTimeout(() => this.attachReturnToPlayerListener(), 50);
+            } else {
+                // Hide the widget when in player section
+                this.nowPlayingWidget.style.display = 'none';
+                console.log('🎵 Widget hidden - in player section');
+            }
         } else {
             console.log('🎵 No channel, hiding widget');
             // Hide the widget if no channel is playing
@@ -1309,33 +1322,41 @@ class M3UPlayer {
         const playerSection = document.getElementById('playerSection');
         
         console.log('🎬 Dashboard section:', dashboardSection ? 'found' : 'NOT FOUND');
-        console.log('🎬 Dashboard display:', dashboardSection?.style.display || 'not set');
+        console.log('🎬 Dashboard display style:', dashboardSection?.style.display || 'not set');
+        console.log('🎬 Dashboard computed display:', dashboardSection ? window.getComputedStyle(dashboardSection).display : 'not found');
         console.log('🎬 Player section:', playerSection ? 'found' : 'NOT FOUND');
-        console.log('🎬 Player display:', playerSection?.style.display || 'not set');
+        console.log('🎬 Player display style:', playerSection?.style.display || 'not set');
+        console.log('🎬 Player computed display:', playerSection ? window.getComputedStyle(playerSection).display : 'not found');
         console.log('🎬 Playlist data available:', this.playlistData ? `Yes (${this.playlistData.length} items)` : 'No');
         console.log('🎬 Current index:', this.currentIndex);
         
-        const isInDashboard = dashboardSection && (dashboardSection.style.display !== 'none');
+        const isInDashboard = dashboardSection && (window.getComputedStyle(dashboardSection).display !== 'none');
+        const isInPlayer = playerSection && (window.getComputedStyle(playerSection).display !== 'none');
         console.log('🎬 Is in dashboard:', isInDashboard);
+        console.log('🎬 Is in player:', isInPlayer);
         
-        // If we have a playlist loaded, show the player section
+        // If we have a playlist loaded
         if (this.playlistData && this.playlistData.length > 0) {
             console.log('🎬 Playlist available, proceeding...');
             
-            if (isInDashboard) {
+            // Always hide the now playing widget first
+            if (this.nowPlayingWidget) {
+                console.log('🎬 Hiding Now Playing widget');
+                this.nowPlayingWidget.style.display = 'none';
+            }
+            
+            if (isInDashboard && !isInPlayer) {
                 // We're in dashboard, need to navigate to player
                 console.log('🎬 In dashboard, calling showPlayerSection...');
                 this.showPlayerSection();
                 console.log('🎬 showPlayerSection called');
+            } else if (isInPlayer) {
+                // We're already in player section
+                console.log('🎬 Already in player section - just hiding widget');
             } else {
-                // We're already in player section, just close the widget
-                console.log('🎬 Already in player section');
-            }
-            
-            // Hide the now playing widget
-            if (this.nowPlayingWidget) {
-                console.log('🎬 Hiding Now Playing widget');
-                this.nowPlayingWidget.style.display = 'none';
+                // Neither dashboard nor player is visible, force show player
+                console.log('🎬 Neither section visible, forcing player section...');
+                this.showPlayerSection();
             }
         } else {
             console.log('🎬 No playlist data available');
@@ -4979,3 +5000,12 @@ window.addEventListener('error', (e) => {
 window.addEventListener('unhandledrejection', (e) => {
     console.error('Promise rechazada:', e.reason);
 });
+
+// Debug function for testing Return to Player functionality
+window.debugReturnToPlayer = function() {
+    if (window.player) {
+        window.player.testReturnToPlayer();
+    } else {
+        console.error('Player not available');
+    }
+};

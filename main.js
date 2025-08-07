@@ -83,12 +83,13 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      sandbox: true,
       enableRemoteModule: false,
       preload: path.join(__dirname, 'preload.js'),
-      webSecurity: false, // Required for loading IPTV streams
-      cache: false, // Disable cache for development
+      webSecurity: true,
+      cache: false,
       enableWebSQL: false,
-      allowRunningInsecureContent: true
+      allowRunningInsecureContent: false
     },
     titleBarStyle: 'default',
     show: false,
@@ -110,8 +111,6 @@ function createWindow() {
   // Show window when ready
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
-    
-    // Open DevTools in development mode only
     if (process.env.NODE_ENV === 'development') {
       mainWindow.webContents.openDevTools();
     }
@@ -142,13 +141,41 @@ function createWindow() {
     saveConfig(config);
   });
 
-  // Handle external links
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
-    return { action: 'deny' };
+  // Bloquear navegación fuera de la app
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (!isSafeAppUrl(url)) {
+      event.preventDefault();
+      console.warn('Bloqueo de navegación a origen externo:', url);
+    }
   });
 
-  // Create application menu
+  // Bloquear apertura de nuevas ventanas a orígenes externos
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (!isSafeAppUrl(url)) {
+      return { action: 'deny' };
+    }
+    return { action: 'allow' };
+  });
+
+  // Filtrar URLs aceptadas (http/https) para listas/streams
+  function isSafeAppUrl(url) {
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  }
+
+  // webRequest: sólo si hay headers por canal y sólo para dominios de la playlist activa
+  const { session } = mainWindow.webContents;
+  session.webRequest.onBeforeSendHeaders((details, callback) => {
+    // Implementar lógica para permitir headers sólo si son del dominio de la playlist activa
+    // Ejemplo: if (isPlaylistDomain(details.url)) { /* set headers */ }
+    callback({ cancel: false });
+  });
+
+  // ...existing code...
   createMenu();
 }
 
