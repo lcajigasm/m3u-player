@@ -61,7 +61,7 @@ class EPGManager {
         this.channels = new Map();
         this.eventListeners = {};
         
-        console.log('📺 EPGManager inicializado');
+        // EPGManager initialized
     }
 
     /**
@@ -76,6 +76,8 @@ class EPGManager {
             const { EPGRenderer } = await import('./EPGRenderer.js');
             const { ReminderManager } = await import('./reminders/ReminderManager.js');
             const { EPGSearchManager } = await import('./EPGSearchManager.js');
+            const { IPTVOrgIntegration } = await import('./IPTVOrgIntegration.js');
+            const { AutoEPGDownloader } = await import('./AutoEPGDownloader.js');
 
             // Inicializar componentes
             this.dataProvider = new EPGDataProvider(this.getEPGConfig());
@@ -83,6 +85,14 @@ class EPGManager {
             this.renderer = new EPGRenderer(this.getEPGContainer());
             this.reminderManager = new ReminderManager(this.player);
             this.searchManager = new EPGSearchManager();
+            
+            // Inicializar integración con iptv-org
+            this.iptvOrgIntegration = new IPTVOrgIntegration();
+            await this.iptvOrgIntegration.initialize();
+            
+            // Inicializar descargador automático
+            this.autoDownloader = new AutoEPGDownloader(this.iptvOrgIntegration);
+            await this.autoDownloader.initialize();
 
             // Configurar eventos
             this.setupEventListeners();
@@ -94,7 +104,7 @@ class EPGManager {
             this.setupAutoUpdate();
 
             this.isInitialized = true;
-            console.log('✅ Sistema EPG inicializado correctamente');
+            // EPG system initialized
 
         } catch (error) {
             console.error('❌ Error inicializando EPG:', error);
@@ -113,51 +123,75 @@ class EPGManager {
         }
 
         try {
-            console.log(`📡 Cargando datos EPG para ${channels.length} canales...`);
-
-            // Intentar cargar desde caché primero
-            const cachedData = await this.cache.retrieveMultiple(
-                channels.map(ch => ch.tvgId || ch.name),
-                this.getTimeRange()
-            );
-
-            // Identificar canales que necesitan actualización
-            const channelsToUpdate = channels.filter(channel => {
-                const channelId = channel.tvgId || channel.name;
-                const cached = cachedData.get(channelId);
-                return !cached || this.cache.isExpired(cached.lastUpdated);
-            });
-
-            if (channelsToUpdate.length > 0) {
-                console.log(`🔄 Actualizando ${channelsToUpdate.length} canales...`);
-                
-                // Obtener datos frescos
-                const freshData = await this.dataProvider.fetchEPGData(channelsToUpdate);
-                
-                // Almacenar en caché
-                for (const [channelId, programs] of freshData) {
-                    await this.cache.store(channelId, programs);
-                    this.channels.set(channelId, {
-                        id: channelId,
-                        name: this.findChannelName(channelId, channels),
-                        programs: programs,
-                        lastUpdated: new Date()
-                    });
-                }
-            }
-
-            // Combinar datos cacheados y frescos
-            for (const [channelId, data] of cachedData) {
-                if (!this.channels.has(channelId)) {
-                    this.channels.set(channelId, data);
-                }
-            }
-
-            console.log(`✅ Datos EPG cargados para ${this.channels.size} canales`);
+            // Loading EPG data for channels
             
-            // Construir índice de búsqueda
+            // Debug: Mostrar estructura de los primeros canales
+            if (channels.length > 0) {
+                console.log('🔍 Estructura del primer canal:', channels[0]);
+                console.log('🔍 Propiedades disponibles:', Object.keys(channels[0] || {}));
+            }
+
+            // 1. Mapear canales M3U con iptv-org
+            // Mapping channels with iptv-org database
+            const channelMapping = this.iptvOrgIntegration.mapM3UChannels(channels);
+            // Channels mapped successfully
+
+            // 2. Intentar cargar desde caché local primero
+            const cachedData = new Map();
+            const channelsNeedingUpdate = [];
+
+            for (const channel of channels) {
+                const channelId = channel.tvgId || channel.name;
+                const iptvOrgId = channelMapping.get(channelId);
+                
+                if (iptvOrgId) {
+                    // Verificar cache local del descargador automático
+                    const cachedPrograms = this.autoDownloader.getEPGFromCache(iptvOrgId);
+                    
+                    if (cachedPrograms && cachedPrograms.length > 0) {
+                        cachedData.set(channelId, {
+                            id: channelId,
+                            name: channel.name,
+                            programs: cachedPrograms,
+                            lastUpdated: new Date(),
+                            source: 'iptv-org-cache'
+                        });
+                        // EPG loaded from cache
+                    } else {
+                        channelsNeedingUpdate.push({
+                            ...channel,
+                            iptvOrgId: iptvOrgId
+                        });
+                    }
+                } else {
+                    // Canal no mapeado, intentar con fuentes tradicionales
+                    channelsNeedingUpdate.push(channel);
+                }
+            }
+
+            // 3. Descargar datos faltantes
+            if (channelsNeedingUpdate.length > 0) {
+                // Downloading EPG for channels needing update
+                
+                await this.downloadMissingEPGData(channelsNeedingUpdate, cachedData);
+            }
+
+            // 4. Aplicar datos cacheados y nuevos
+            for (const [channelId, data] of cachedData) {
+                this.channels.set(channelId, data);
+            }
+
+            // EPG data loaded
+            
+            // 5. Construir índice de búsqueda
             if (this.searchManager) {
                 this.searchManager.buildSearchIndex(Array.from(this.channels.values()));
+            }
+            
+            // 6. Programar descarga automática si no está configurada
+            if (this.autoDownloader && channelMapping.size > 0) {
+                // Scheduling automatic EPG download
+                // No forzar descarga inmediata, dejar que el programador lo maneje
             }
             
             // Emitir evento de datos cargados
@@ -171,11 +205,79 @@ class EPGManager {
     }
 
     /**
+     * Descarga datos EPG faltantes
+     * @param {Array} channels - Canales que necesitan descarga
+     * @param {Map} cachedData - Datos ya cacheados
+     * @returns {Promise<void>}
+     */
+    async downloadMissingEPGData(channels, cachedData) {
+        const downloadPromises = [];
+        const maxConcurrent = 3; // Limitar descargas concurrentes
+        
+        for (let i = 0; i < channels.length; i += maxConcurrent) {
+            const batch = channels.slice(i, i + maxConcurrent);
+            
+            const batchPromises = batch.map(async (channel) => {
+                try {
+                    const channelId = channel.tvgId || channel.name;
+                    let programs = [];
+                    
+                    if (channel.iptvOrgId) {
+                        // Usar integración iptv-org
+                        // Downloading EPG from iptv-org
+                        programs = await this.iptvOrgIntegration.getChannelEPG(channel.iptvOrgId);
+                        
+                        if (programs.length > 0) {
+                            // Guardar en cache del descargador
+                            await this.autoDownloader.saveEPGToCache(channel.iptvOrgId, programs);
+                        }
+                    }
+                    
+                    // Fallback a fuentes tradicionales si no se obtuvieron datos
+                    if (programs.length === 0) {
+                        // Fallback to traditional sources
+                        const traditionalData = await this.dataProvider.fetchEPGData([channel]);
+                        programs = traditionalData.get(channelId) || [];
+                    }
+                    
+                    if (programs.length > 0) {
+                        cachedData.set(channelId, {
+                            id: channelId,
+                            name: channel.name,
+                            programs: programs,
+                            lastUpdated: new Date(),
+                            source: channel.iptvOrgId ? 'iptv-org' : 'traditional'
+                        });
+                        
+                        // Almacenar en caché tradicional también
+                        await this.cache.store(channelId, programs);
+                        
+                        // EPG downloaded successfully
+                    } else {
+                        console.warn(`⚠️ No se pudo obtener EPG para: ${channel.name}`);
+                    }
+                    
+                } catch (error) {
+                    console.error(`❌ Error descargando EPG para ${channel.name}:`, error);
+                }
+            });
+            
+            await Promise.allSettled(batchPromises);
+            
+            // Pausa entre lotes para evitar sobrecargar servidores
+            if (i + maxConcurrent < channels.length) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+    }
+
+    /**
      * Muestra la grilla EPG
      */
     showEPGGrid() {
         if (!this.isInitialized || !this.renderer) {
-            console.warn('⚠️ EPG no inicializado');
+            console.warn('⚠️ EPG no inicializado, mostrando modal básico...');
+            this.showBasicEPGModal();
             return;
         }
 
@@ -185,7 +287,125 @@ class EPGManager {
         this.renderer.renderGrid(channelsArray, timeRange);
         this.renderer.show();
         
-        console.log('📺 Grilla EPG mostrada');
+        // EPG grid shown
+    }
+
+    /**
+     * Muestra modal EPG básico cuando el sistema no está inicializado
+     */
+    showBasicEPGModal() {
+        const epgModal = document.getElementById('epgModal');
+        if (!epgModal) {
+            console.error('❌ Modal EPG no encontrado');
+            return;
+        }
+
+        // Mostrar modal
+        epgModal.style.display = 'flex';
+        epgModal.classList.add('show');
+
+        // Obtener información del canal actual
+        const currentChannel = this.getCurrentChannelInfo();
+        const channelCount = this.player.playlistData ? this.player.playlistData.length : 0;
+        const loadedChannels = this.channels.size;
+
+        // Agregar contenido básico
+        const container = epgModal.querySelector('.epg-grid-container');
+        if (container) {
+            container.innerHTML = `
+                <div style="padding: 40px; text-align: center; color: white;">
+                    <div style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border-radius: 15px; padding: 30px; margin: 20px 0;">
+                        <h2 style="margin: 0 0 20px 0; font-size: 2rem;">📺 Electronic Program Guide</h2>
+                        
+                        ${currentChannel ? `
+                            <div style="background: rgba(255,255,255,0.15); border-radius: 10px; padding: 20px; margin: 20px 0;">
+                                <h3 style="margin: 0 0 10px 0; color: #fbbf24;">📡 Canal Actual:</h3>
+                                <p style="font-size: 1.2rem; margin: 5px 0; font-weight: bold;">${currentChannel.name}</p>
+                                ${currentChannel.group ? `<p style="opacity: 0.8; margin: 5px 0;">Grupo: ${currentChannel.group}</p>` : ''}
+                            </div>
+                        ` : ''}
+                        
+                        <div style="background: rgba(255,255,255,0.1); border-radius: 10px; padding: 20px; margin: 25px 0; text-align: left;">
+                            <h3 style="margin: 0 0 15px 0; color: #fbbf24;">🔄 Estado del Sistema:</h3>
+                            <p style="margin: 8px 0;">✅ Modal EPG funcionando</p>
+                            <p style="margin: 8px 0;">� Canales en playlist: ${channelCount}</p>
+                            <p style="margin: 8px 0;">${loadedChannels > 0 ? `✅ Canales con EPG: ${loadedChannels}` : '�🔄 Cargando datos de programación...'}</p>
+                            <p style="margin: 8px 0;">⏳ Descargando guía de iptv.org...</p>
+                        </div>
+                        
+                        <div style="margin: 25px 0;">
+                            <button onclick="document.getElementById('epgModal').style.display='none'" 
+                                    style="background: #4ade80; color: white; border: none; padding: 12px 24px; border-radius: 8px; margin: 5px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                                ✅ Cerrar
+                            </button>
+                            <button onclick="window.player.epgManager.retryEPGLoad()" 
+                                    style="background: #3b82f6; color: white; border: none; padding: 12px 24px; border-radius: 8px; margin: 5px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                                🔄 Reintentar EPG
+                            </button>
+                            <button onclick="location.reload()" 
+                                    style="background: #ef4444; color: white; border: none; padding: 12px 24px; border-radius: 8px; margin: 5px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                                🔄 Recargar App
+                            </button>
+                        </div>
+                        
+                        <p style="font-size: 0.9rem; opacity: 0.7; margin-top: 20px;">
+                            ${channelCount > 0 ? 
+                                'El EPG se está cargando en segundo plano para los canales de la playlist.<br>La funcionalidad completa estará disponible pronto.' :
+                                'Carga una playlist primero para ver la guía de programación.<br>Ve a Dashboard → Load File o Load URL.'
+                            }
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Basic EPG modal shown
+    }
+
+    /**
+     * Obtiene información del canal actual
+     * @returns {Object|null}
+     */
+    getCurrentChannelInfo() {
+        if (!this.player.playlistData || this.player.currentIndex < 0) {
+            return null;
+        }
+
+        const current = this.player.playlistData[this.player.currentIndex];
+        return current ? {
+            name: current.name || 'Canal sin nombre',
+            group: current.group || null,
+            index: this.player.currentIndex
+        } : null;
+    }
+
+    /**
+     * Reintenta la carga de EPG
+     */
+    async retryEPGLoad() {
+        // Retrying EPG load
+        
+        if (!this.player.playlistData || this.player.playlistData.length === 0) {
+            alert('⚠️ No hay playlist cargada.\nCarga una playlist primero desde Dashboard.');
+            return;
+        }
+
+        try {
+            await this.loadEPGData(this.player.playlistData);
+            // EPG reloaded successfully
+            
+            // Cerrar modal y abrir EPG normal
+            document.getElementById('epgModal').style.display = 'none';
+            
+            // Esperar un momento y mostrar EPG real
+            setTimeout(() => {
+                this.showEPGGrid();
+            }, 1000);
+            
+        } catch (error) {
+            console.error('❌ Error reintentando carga EPG:', error);
+            alert('❌ Error cargando EPG: ' + error.message);
+        }
     }
 
     /**
@@ -194,7 +414,7 @@ class EPGManager {
     hideEPGGrid() {
         if (this.renderer) {
             this.renderer.hide();
-            console.log('📺 Grilla EPG ocultada');
+            // EPG grid hidden
         }
     }
 
@@ -376,7 +596,7 @@ class EPGManager {
 
         // Escuchar eventos del reproductor
         this.player.on('playlistLoaded', (channels) => {
-            console.log('📺 EPG: Playlist cargada, iniciando carga de datos EPG');
+            // EPG: Playlist loaded, starting EPG data load
             this.loadEPGData(channels);
         });
 
@@ -731,7 +951,7 @@ class EPGManager {
      * @returns {Object}
      */
     getUpdateStats() {
-        return {
+        const baseStats = {
             lastUpdateTime: this.lastUpdateTime,
             channelCount: this.channels.size,
             autoUpdateEnabled: this.getEPGConfig().autoUpdate,
@@ -739,6 +959,180 @@ class EPGManager {
             playlistHash: this.lastPlaylistHash,
             cacheStats: this.cache?.getStorageStats() || null
         };
+        
+        // Agregar estadísticas de iptv-org si está disponible
+        if (this.iptvOrgIntegration) {
+            baseStats.iptvOrgStats = this.iptvOrgIntegration.getStats();
+        }
+        
+        // Agregar estadísticas del descargador automático
+        if (this.autoDownloader) {
+            baseStats.downloadStats = this.autoDownloader.getDownloadStats();
+        }
+        
+        return baseStats;
+    }
+
+    /**
+     * Busca canales en la base de datos iptv-org
+     * @param {string} query - Consulta de búsqueda
+     * @param {Object} filters - Filtros opcionales
+     * @returns {Array} Canales encontrados
+     */
+    searchIPTVOrgChannels(query, filters = {}) {
+        if (!this.iptvOrgIntegration) {
+            console.warn('⚠️ Integración iptv-org no disponible');
+            return [];
+        }
+        
+        return this.iptvOrgIntegration.searchChannels(query, filters);
+    }
+
+    /**
+     * Fuerza descarga inmediata de EPG
+     * @param {Array} channels - Canales específicos (opcional)
+     * @returns {Promise<void>}
+     */
+    async forceEPGDownload(channels = null) {
+        if (!this.autoDownloader) {
+            console.warn('⚠️ Descargador automático no disponible');
+            return;
+        }
+        
+        try {
+            console.log('⚡ Forzando descarga inmediata de EPG...');
+            await this.autoDownloader.forceDownload(channels);
+            
+            // Recargar datos después de la descarga
+            if (this.player.playlistData) {
+                await this.loadEPGData(this.player.playlistData);
+            }
+            
+            this.emit('forceDownloadCompleted', {
+                timestamp: new Date(),
+                channelCount: channels ? channels.length : 'all'
+            });
+            
+            console.log('✅ Descarga forzada completada');
+            
+        } catch (error) {
+            console.error('❌ Error en descarga forzada:', error);
+            this.emit('forceDownloadError', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Configura el descargador automático
+     * @param {Object} config - Nueva configuración
+     */
+    configureAutoDownloader(config) {
+        if (!this.autoDownloader) {
+            console.warn('⚠️ Descargador automático no disponible');
+            return;
+        }
+        
+        this.autoDownloader.updateConfig(config);
+        console.log('⚙️ Configuración del descargador automático actualizada');
+    }
+
+    /**
+     * Obtiene información sobre el mapeo de canales
+     * @returns {Object} Información de mapeo
+     */
+    getChannelMappingInfo() {
+        if (!this.iptvOrgIntegration) {
+            return { mapped: 0, total: 0, mappings: [] };
+        }
+        
+        const mappings = [];
+        for (const [m3uChannel, iptvOrgId] of this.iptvOrgIntegration.channelMapping) {
+            mappings.push({
+                m3uChannel: m3uChannel,
+                iptvOrgId: iptvOrgId,
+                hasEPG: this.autoDownloader ? 
+                    !!this.autoDownloader.getEPGFromCache(iptvOrgId) : false
+            });
+        }
+        
+        return {
+            mapped: this.iptvOrgIntegration.channelMapping.size,
+            total: this.player.playlistData ? this.player.playlistData.length : 0,
+            mappings: mappings
+        };
+    }
+
+    /**
+     * Limpia el cache de EPG
+     * @returns {Promise<void>}
+     */
+    async clearEPGCache() {
+        try {
+            // Limpiar cache tradicional
+            if (this.cache) {
+                await this.cache.clear();
+            }
+            
+            // Limpiar cache del descargador automático
+            if (this.autoDownloader) {
+                await this.autoDownloader.cleanupOldData();
+            }
+            
+            // Limpiar channels en memoria
+            this.channels.clear();
+            
+            console.log('🗑️ Cache de EPG limpiado');
+            
+            this.emit('cacheCleared');
+            
+        } catch (error) {
+            console.error('❌ Error limpiando cache:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Exporta configuración de EPG
+     * @returns {Object} Configuración exportable
+     */
+    exportEPGConfig() {
+        const config = {
+            epgConfig: this.getEPGConfig(),
+            channelMappings: this.getChannelMappingInfo(),
+            stats: this.getUpdateStats()
+        };
+        
+        if (this.autoDownloader) {
+            config.downloaderConfig = this.autoDownloader.getDownloadStats().config;
+        }
+        
+        return config;
+    }
+
+    /**
+     * Importa configuración de EPG
+     * @param {Object} config - Configuración a importar
+     * @returns {Promise<void>}
+     */
+    async importEPGConfig(config) {
+        try {
+            // Importar configuración del descargador si está disponible
+            if (config.downloaderConfig && this.autoDownloader) {
+                this.autoDownloader.updateConfig(config.downloaderConfig);
+            }
+            
+            // Aplicar configuración EPG
+            if (config.epgConfig) {
+                // La configuración EPG se maneja en el player principal
+                this.emit('configImported', config.epgConfig);
+            }
+            
+            console.log('📥 Configuración EPG importada exitosamente');
+            
+        } catch (error) {
+            console.error('❌ Error importando configuración:', error);
+            throw error;
+        }
     }
 
     /**
@@ -835,7 +1229,7 @@ class EPGManager {
             this.updateInterval = null;
         }
 
-        // Limpiar otros componentes
+        // Limpiar componentes tradicionales
         if (this.cache) {
             this.cache.cleanup();
         }
@@ -846,6 +1240,17 @@ class EPGManager {
 
         if (this.searchManager) {
             this.searchManager.destroy();
+        }
+
+        // Limpiar nuevos componentes
+        if (this.autoDownloader) {
+            this.autoDownloader.destroy();
+            this.autoDownloader = null;
+        }
+
+        if (this.iptvOrgIntegration) {
+            this.iptvOrgIntegration.destroy();
+            this.iptvOrgIntegration = null;
         }
 
         // Limpiar datos

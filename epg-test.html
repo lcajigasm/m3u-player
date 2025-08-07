@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EPG Modal Test</title>
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.show {
+            display: flex !important;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .epg-container {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 1px solid #333;
+            border-radius: 12px;
+            width: 90vw;
+            height: 80vh;
+            max-width: 1200px;
+            color: white;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .epg-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #333;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .epg-title h2 {
+            margin: 0;
+            font-size: 1.5em;
+            color: #4facfe;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 50%;
+        }
+
+        .close-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .epg-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .test-button {
+            padding: 10px 20px;
+            background: #4facfe;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>EPG Modal Test</h1>
+    <button class="test-button" onclick="openEPG()">Open EPG Modal</button>
+    
+    <!-- EPG Modal -->
+    <div id="epgModal" class="modal epg-modal" style="display: none">
+        <div class="epg-container">
+            <div class="epg-header">
+                <div class="epg-title">
+                    <h2>📺 Electronic Program Guide</h2>
+                </div>
+                <button id="closeEPG" class="close-btn">&times;</button>
+            </div>
+            
+            <div class="epg-content">
+                <div style="padding: 20px; text-align: center;">
+                    <h3>EPG Modal Test</h3>
+                    <p>If you can see this, the modal is working correctly!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openEPG() {
+            console.log('Opening EPG modal...');
+            const modal = document.getElementById('epgModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                modal.classList.add('show');
+            }
+        }
+
+        // Close EPG modal
+        document.getElementById('closeEPG').addEventListener('click', () => {
+            const modal = document.getElementById('epgModal');
+            if (modal) {
+                modal.classList.remove('show');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 300);
+            }
+        });
+
+        // Close on click outside
+        document.getElementById('epgModal').addEventListener('click', (e) => {
+            if (e.target.id === 'epgModal') {
+                document.getElementById('closeEPG').click();
+            }
+        });
+    </script>
+</body>
+</html>

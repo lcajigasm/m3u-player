@@ -39,7 +39,7 @@ class EPGSearchUI {
         this.setupEventListeners();
         this.initializeFilters();
         
-        console.log('🔍 EPGSearchUI inicializado');
+        // EPGSearchUI initialized
     }
 
     /**
@@ -924,7 +924,7 @@ class EPGSearchUI {
      */
     destroy() {
         this.clearSearch();
-        console.log('🔍 EPGSearchUI destruido');
+        // EPGSearchUI destroyed
     }
 }
 

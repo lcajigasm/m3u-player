@@ -1,6 +1,9 @@
 /**
  * EPG Integration - Integra funcionalidad EPG con M3UPlayer existente
- * Extiende el reproductor con capacidades de guía electrónica de programas
+ * Extiende el reproductor con capacidades de guía electróni        
+    } else {
+        console.error('❌ EPG Button not found');
+    } programas
  */
 
 /**
@@ -70,6 +73,117 @@ function setupEPGButton(player) {
     });
 
     console.log('🎮 Botón EPG configurado');
+    
+    // Inicializar EPG Manager automáticamente
+    setTimeout(async () => {
+        await initializeEPGManager(player);
+        debugEPGButton();
+        
+        // Escuchar cuando se cargue una nueva playlist
+        setupPlaylistListener(player);
+    }, 2000);
+}
+
+/**
+ * Configura listener para cuando se cargue una nueva playlist
+ * @param {M3UPlayer} player - Instancia del reproductor
+ */
+function setupPlaylistListener(player) {
+    // Crear un observer para detectar cambios en playlistData
+    let lastPlaylistLength = player.playlistData ? player.playlistData.length : 0;
+    
+    const checkPlaylistChanges = async () => {
+        const currentLength = player.playlistData ? player.playlistData.length : 0;
+        
+        if (currentLength > 0 && currentLength !== lastPlaylistLength) {
+            console.log(`📺 Nueva playlist detectada con ${currentLength} canales (EPG deshabilitado temporalmente)`);
+            lastPlaylistLength = currentLength;
+            
+            // EPG deshabilitado temporalmente para evitar rate limiting
+            // if (player.epgManager && player.epgManager.isInitialized) {
+            //     console.log('🔄 Cargando EPG para nueva playlist...');
+            //     try {
+            //         await player.epgManager.loadEPGData(player.playlistData);
+            //         console.log('✅ EPG cargado para nueva playlist');
+            //     } catch (error) {
+            //         console.error('❌ Error cargando EPG para nueva playlist:', error);
+            //     }
+            // }
+        }
+    };
+    
+    // Verificar cambios cada 2 segundos
+    setInterval(checkPlaylistChanges, 2000);
+    console.log('👁️ Listener de playlist EPG configurado');
+}
+
+/**
+ * Inicializa el EPG Manager
+ * @param {M3UPlayer} player - Instancia del reproductor
+ */
+async function initializeEPGManager(player) {
+    try {
+        console.log('🔄 Inicializando EPG Manager...');
+        
+        if (!player.epgManager) {
+            console.error('❌ EPG Manager no encontrado en player');
+            return;
+        }
+
+        // Inicializar el EPG Manager
+        await player.epgManager.initialize();
+        
+        // Verificar si hay canales cargados
+        if (player.playlistData && player.playlistData.length > 0) {
+            console.log(`📺 EPG: ${player.playlistData.length} canales detectados (EPG temporalmente deshabilitado para evitar rate limiting)`);
+            
+            // Temporalmente deshabilitado para evitar rate limiting agresivo
+            // await player.epgManager.loadEPGData(player.playlistData);
+            
+            console.log('✅ EPG Manager inicializado (sin cargar datos EPG)');
+        } else {
+            console.log('⚠️ No hay canales cargados, EPG esperando playlist...');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error inicializando EPG Manager:', error);
+        console.log('📺 Continuando con funcionalidad EPG básica...');
+        
+        // Marcar como inicializado básico para que el modal funcione
+        if (player.epgManager) {
+            player.epgManager.isInitialized = true;
+        }
+    }
+}
+
+/**
+ * Debug EPG button functionality
+ */
+function debugEPGButton() {
+    console.log('🐛 EPG Debug Starting from EPGIntegration...');
+    
+    const epgBtn = document.getElementById('epgBtn');
+    const epgModal = document.getElementById('epgModal');
+    
+    console.log('EPG Button found:', epgBtn);
+    console.log('EPG Modal found:', epgModal);
+    
+    if (epgBtn) {
+        console.log('EPG Button text:', epgBtn.textContent);
+        console.log('EPG Button classes:', epgBtn.className);
+        console.log('✅ EPG Button found and ready');
+        
+    } else {
+        console.error('❌ EPG Button not found in DOM');
+        alert('❌ EPG Button not found!\nCheck the console for more details.');
+    }
+    
+    // List all buttons for debugging
+    const allButtons = document.querySelectorAll('button[id]');
+    console.log(`Found ${allButtons.length} buttons total:`);
+    allButtons.forEach((btn, index) => {
+        console.log(`  ${index}: ID="${btn.id}", Text="${btn.textContent.trim()}", Classes="${btn.className}"`);
+    });
 }
 
 /**

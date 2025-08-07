@@ -290,8 +290,8 @@ const TRANSLATIONS = {
 
 class I18n {
     constructor() {
-        this.currentLanguage = this.detectLanguage();
         this.translations = TRANSLATIONS;
+        this.currentLanguage = this.detectLanguage();
     }
     
     detectLanguage() {

@@ -1,0 +1,489 @@
+/* EPG Admin UI Styles */
+.epg-admin-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 1000px;
+    max-height: 90vh;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.epg-admin-panel.hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: translate(-50%, -50%) scale(0.9);
+}
+
+.epg-admin-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid #404040;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.epg-admin-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #00ff88;
+}
+
+.epg-admin-close {
+    background: none;
+    border: none;
+    color: #ccc;
+    font-size: 24px;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.epg-admin-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.epg-admin-content {
+    padding: 20px 24px;
+    max-height: calc(90vh - 80px);
+    overflow-y: auto;
+}
+
+.epg-admin-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.epg-admin-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.epg-admin-content::-webkit-scrollbar-thumb {
+    background: #00ff88;
+    border-radius: 3px;
+}
+
+.epg-admin-section {
+    margin-bottom: 24px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    padding: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.epg-admin-section h4 {
+    margin: 0 0 16px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #00ff88;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Estadísticas */
+.epg-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.epg-stat-card {
+    background: rgba(0, 255, 136, 0.1);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    border-radius: 6px;
+    padding: 12px;
+    text-align: center;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #ccc;
+    margin-bottom: 4px;
+}
+
+.stat-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #00ff88;
+}
+
+/* Estado de descarga */
+.epg-download-status {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #666;
+}
+
+.status-indicator.ready .status-dot {
+    background: #00ff88;
+    animation: pulse 2s infinite;
+}
+
+.status-indicator.downloading .status-dot {
+    background: #ff6b35;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.download-progress {
+    position: relative;
+}
+
+.progress-bar {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00ff88, #00cc6a);
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    position: absolute;
+    right: 0;
+    top: -20px;
+    font-size: 12px;
+    color: #ccc;
+}
+
+/* Controles */
+.epg-controls-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+}
+
+.epg-control-btn {
+    background: linear-gradient(135deg, #333, #444);
+    border: 1px solid #555;
+    color: #fff;
+    padding: 12px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.epg-control-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.epg-control-btn.primary {
+    background: linear-gradient(135deg, #00ff88, #00cc6a);
+    border-color: #00ff88;
+    color: #000;
+}
+
+.epg-control-btn.primary:hover {
+    background: linear-gradient(135deg, #00cc6a, #009951);
+}
+
+.epg-control-btn.small {
+    padding: 8px 12px;
+    font-size: 12px;
+}
+
+.epg-control-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Formulario de configuración */
+.epg-config-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.config-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.config-group label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #ccc;
+}
+
+.config-group input {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    padding: 8px 12px;
+    color: #fff;
+    font-size: 14px;
+}
+
+.config-group input:focus {
+    outline: none;
+    border-color: #00ff88;
+    box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.2);
+}
+
+.config-group small {
+    font-size: 12px;
+    color: #999;
+}
+
+/* Búsqueda de canales */
+.epg-channel-search {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.epg-channel-search input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    padding: 8px 12px;
+    color: #fff;
+    font-size: 14px;
+}
+
+.epg-channel-search button {
+    background: #00ff88;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 12px;
+    color: #000;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+/* Lista de canales */
+.epg-channel-list {
+    max-height: 300px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    padding: 8px;
+}
+
+.channel-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+    transition: background 0.2s ease;
+}
+
+.channel-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.channel-item.has-epg {
+    border-left: 3px solid #00ff88;
+}
+
+.channel-item.no-epg {
+    border-left: 3px solid #ff6b35;
+}
+
+.channel-info {
+    flex: 1;
+}
+
+.channel-name {
+    font-weight: 500;
+    color: #fff;
+    font-size: 14px;
+}
+
+.channel-mapping,
+.channel-details {
+    font-size: 12px;
+    color: #999;
+    margin-top: 2px;
+}
+
+.channel-status {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.add-channel-btn {
+    background: #00ff88;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    color: #000;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.loading-placeholder,
+.no-channels {
+    text-align: center;
+    color: #999;
+    padding: 20px;
+    font-style: italic;
+}
+
+/* Log de actividad */
+.epg-admin-section.collapsible h4 {
+    cursor: pointer;
+    user-select: none;
+}
+
+.epg-admin-section.collapsible .epg-log-container {
+    display: none;
+}
+
+.epg-admin-section.collapsible.expanded .epg-log-container {
+    display: block;
+}
+
+.collapse-indicator {
+    transition: transform 0.2s ease;
+}
+
+.epg-admin-section.collapsible.expanded .collapse-indicator {
+    transform: rotate(180deg);
+}
+
+.epg-log {
+    max-height: 200px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    padding: 8px;
+    margin-bottom: 8px;
+}
+
+.log-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+.log-time {
+    color: #999;
+    font-family: monospace;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.log-message {
+    color: #ccc;
+    flex: 1;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .epg-admin-panel {
+        width: 95%;
+        max-height: 95vh;
+    }
+    
+    .epg-stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .epg-controls-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .epg-channel-search {
+        flex-direction: column;
+    }
+}
+
+/* Animaciones adicionales */
+.epg-admin-section {
+    animation: slideInUp 0.3s ease;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Estados especiales */
+.epg-control-btn.loading {
+    position: relative;
+    color: transparent;
+}
+
+.epg-control-btn.loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}

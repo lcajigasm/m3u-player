@@ -51,7 +51,11 @@
   },
   "dependencies": {
     "electron-store": "^8.1.0",
-    "hls.js": "^1.4.12"
+    "hls.js": "^1.4.12",
+    "node-cron": "^3.0.3",
+    "axios": "^1.6.2",
+    "cheerio": "^1.0.0-rc.12",
+    "xml2js": "^0.6.2"
   },
   "build": {
     "appId": "eu.m3u-player.app",

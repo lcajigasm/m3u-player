@@ -1,5 +1,5 @@
-// M3U Player Electron - Script Principal
-// Reproductor IPTV sin limitaciones CORS
+// M3U Player Electron - Main Script
+// IPTV Player without CORS limitations
 
 class M3UPlayer {
     constructor() {
@@ -8,53 +8,164 @@ class M3UPlayer {
         this.hls = null;
         this.config = {};
         this.isElectron = window.appInfo?.isElectron || false;
+        
+        // Initialize EPGManager
+        this.epgManager = null;
+        this.epgAdminUI = null;
+        this.playlistData = [];
 
         this.initializeElements();
         this.setupEventListeners();
         this.loadConfiguration();
 
-        console.log('🎬 Iniciando reproductor M3U...');
-        console.log(`📱 Plataforma: ${this.isElectron ? 'Electron' : 'Web'}`);
+        console.log('🎬 Starting M3U player...');
+        console.log(`📱 Platform: ${this.isElectron ? 'Electron' : 'Web'}`);
 
-        // Forzar recarga de estilos para evitar problemas de caché
+        // Force reload styles to avoid cache issues
         this.forceStyleRefresh();
 
-        // Ocultar overlay al inicializar
+        // Hide overlay on initialization
         this.hideOverlay();
 
-        // Verificar soporte de PiP
+        // Check PiP support
         this.checkPiPSupport();
 
-        // Inicializar estado de ordenación
+        // Initialize sort state
         this.sortAscending = false;
 
-        // Configurar debouncing para búsqueda
+        // Configure debouncing for search
         this.searchTimeout = null;
         
-        // DEBUG: Add EPG debug after a delay
+        // Initialize EPG after DOM
         setTimeout(() => {
-            console.log('🔧 Setting up EPG debugging...');
-            this.debugEPG();
-        }, 2000);
+            this.initializeEPG();
+        }, 1000);
     }
 
-    // Búsqueda con debouncing para mejor rendimiento
+    // Search with debouncing for better performance
     debouncedSearch() {
         clearTimeout(this.searchTimeout);
         this.searchTimeout = setTimeout(() => {
             this.handleSearch();
-        }, 150); // 150ms de delay para evitar búsquedas excesivas
+        }, 150); // 150ms delay to avoid excessive searches
+    }
+
+    /**
+     * Initialize EPG system
+     */
+    async initializeEPG() {
+        try {
+            console.log('📺 Initializing EPG system...');
+            
+            // Dynamically import EPGManager and EPGAdminUI
+            const { EPGManager } = await import('./epg/EPGManager.js');
+            const { EPGAdminUI } = await import('./epg/EPGAdminUI.js');
+            
+            // Create and initialize EPGManager
+            this.epgManager = new EPGManager(this);
+            await this.epgManager.initialize();
+            
+            // Create EPG administration interface
+            this.epgAdminUI = new EPGAdminUI(this.epgManager);
+            this.epgAdminUI.initialize();
+            
+            // Add EPG button to interface if it doesn't exist
+            this.addEPGButton();
+            
+            console.log('✅ EPG system initialized successfully');
+            
+        } catch (error) {
+            console.error('❌ Error initializing EPG system:', error);
+        }
+    }
+
+    /**
+     * Add EPG button to interface
+     */
+    addEPGButton() {
+        // Look for controls container
+        let controlsContainer = document.querySelector('.player-controls');
+        
+        if (!controlsContainer) {
+            // Create container if it doesn't exist
+            controlsContainer = document.createElement('div');
+            controlsContainer.className = 'player-controls';
+            
+            const playerSection = document.querySelector('.player-section');
+            if (playerSection) {
+                playerSection.appendChild(controlsContainer);
+            }
+        }
+        
+        // Check if button already exists
+        if (document.getElementById('epgButton')) {
+            return;
+        }
+        
+        // Create EPG button
+        const epgButton = document.createElement('button');
+        epgButton.id = 'epgButton';
+        epgButton.className = 'control-btn epg-btn';
+        epgButton.innerHTML = '📺 EPG';
+        epgButton.title = 'Show Program Guide';
+        
+        epgButton.addEventListener('click', () => {
+            if (this.epgManager) {
+                this.epgManager.showEPGGrid();
+            }
+        });
+        
+        controlsContainer.appendChild(epgButton);
+        
+        // Create EPG admin button
+        const epgAdminButton = document.createElement('button');
+        epgAdminButton.id = 'epgAdminButton';
+        epgAdminButton.className = 'control-btn epg-admin-btn';
+        epgAdminButton.innerHTML = '⚙️';
+        epgAdminButton.title = 'EPG Administration';
+        
+        epgAdminButton.addEventListener('click', () => {
+            if (this.epgAdminUI) {
+                this.epgAdminUI.toggle();
+            }
+        });
+        
+        controlsContainer.appendChild(epgAdminButton);
+        
+        console.log('✅ EPG buttons added to interface');
+    }
+
+    /**
+     * Emit events for EPGManager
+     */
+    emit(eventName, data) {
+        if (this.epgManager) {
+            this.epgManager.emit(eventName, data);
+        }
+        
+        // Can also emit to other player listeners
+        const event = new CustomEvent(eventName, { detail: data });
+        document.dispatchEvent(event);
+    }
+
+    /**
+     * Listen to EPGManager events
+     */
+    on(eventName, callback) {
+        document.addEventListener(eventName, (event) => {
+            callback(event.detail);
+        });
     }
 
     checkPiPSupport() {
         if (this.pipBtn) {
             if (!document.pictureInPictureEnabled) {
                 this.pipBtn.disabled = true;
-                this.pipBtn.title = 'Picture-in-Picture no soportado en este navegador';
+                this.pipBtn.title = 'Picture-in-Picture not supported in this browser';
                 this.pipBtn.style.opacity = '0.5';
-                console.warn('⚠️ Picture-in-Picture no soportado');
+                console.warn('⚠️ Picture-in-Picture not supported');
             } else {
-                console.log('✅ Picture-in-Picture soportado');
+                console.log('✅ Picture-in-Picture supported');
             }
         }
     }
@@ -63,12 +174,12 @@ class M3UPlayer {
         if (this.videoOverlay) {
             this.videoOverlay.classList.remove('show');
             this.videoOverlay.style.display = 'none';
-            console.log('🔧 Overlay ocultado al inicializar');
+            console.log('🔧 Overlay hidden on initialization');
         }
     }
 
     forceStyleRefresh() {
-        // Agregar timestamp a los estilos para evitar caché
+        // Add timestamp to styles to avoid cache
         const timestamp = Date.now();
         const links = document.querySelectorAll('link[rel="stylesheet"]');
 
@@ -77,7 +188,7 @@ class M3UPlayer {
             link.href = `${href}?v=${timestamp}`;
         });
 
-        console.log('🔄 Estilos actualizados para evitar caché');
+        console.log('🔄 Styles updated to avoid cache');
     }
 
     forceRefresh() {
@@ -176,7 +287,19 @@ class M3UPlayer {
     }
 
     setupEventListeners() {
-        // Botones principales
+        console.log('🔗 Setting up event listeners...');
+        
+        // Wait for DOM to be fully loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('📄 DOM fully loaded, setting up EPG listeners...');
+                this.setupEPGListeners();
+            });
+        } else {
+            console.log('📄 DOM already loaded, setting up EPG listeners...');
+            this.setupEPGListeners();
+        }
+        // Main buttons
         this.fileBtn?.addEventListener('click', () => this.openFileDialog());
         this.urlBtn?.addEventListener('click', () => this.showUrlInput());
         this.testBtn?.addEventListener('click', () => this.loadTestFile());
@@ -213,12 +336,13 @@ class M3UPlayer {
         this.typeFilter?.addEventListener('change', () => this.handleSearch());
         this.sortBtn?.addEventListener('click', () => this.toggleSort());
 
-        // Exportar y acciones
+        // Export and actions
         this.exportBtn?.addEventListener('click', () => this.exportPlaylist());
         this.refreshPlaylistBtn?.addEventListener('click', () => this.refreshPlaylist());
         
-        // EPG button - Simple implementation
-        this.setupEPGButton();
+        // Dashboard navigation
+        const backToDashboardBtn = document.getElementById('backToDashboardBtn');
+        backToDashboardBtn?.addEventListener('click', () => this.showDashboard());
 
         // Eventos del reproductor de video
         this.videoPlayer?.addEventListener('loadstart', () => this.showLoading());
@@ -268,168 +392,92 @@ class M3UPlayer {
         document.getElementById('closeSettings')?.addEventListener('click', () => this.hideSettings());
         document.getElementById('closeAbout')?.addEventListener('click', () => this.hideAbout());
 
-        // Configuración
         document.getElementById('saveSettings')?.addEventListener('click', () => this.saveSettings());
         document.getElementById('resetSettings')?.addEventListener('click', () => this.resetSettings());
     }
 
     /**
-     * Setup EPG button functionality
+     * Setup EPG-specific event listeners
      */
-    setupEPGButton() {
-        // Use setTimeout to ensure DOM is ready
-        setTimeout(() => {
-            this.initializeEPGListeners();
-        }, 1000); // Wait 1 second for DOM to be fully loaded
-    }
-
-    /**
-     * Initialize EPG event listeners
-     */
-    initializeEPGListeners() {
-        console.log('🔧 Initializing EPG listeners...');
+    setupEPGListeners() {
+        console.log('📺 Setting up EPG listeners...');
         
         // EPG button from HTML
         const epgBtn = document.getElementById('epgBtn');
-        console.log('EPG button found:', epgBtn);
+        console.log('🔍 EPG Button found:', epgBtn ? 'yes' : 'no');
         
         if (epgBtn) {
             epgBtn.addEventListener('click', () => {
-                console.log('📺 EPG button clicked!');
-                this.showEPGModal();
-            });
-            console.log('✅ EPG button listener added');
-        } else {
-            console.warn('⚠️ EPG button not found in DOM');
-        }
-        
-        // Close EPG modal
-        const closeEPGBtn = document.getElementById('closeEPG');
-        if (closeEPGBtn) {
-            closeEPGBtn.addEventListener('click', () => {
-                console.log('❌ Closing EPG modal');
-                this.hideEPGModal();
-            });
-        }
-        
-        // Close modal when clicking outside
-        const epgModal = document.getElementById('epgModal');
-        if (epgModal) {
-            epgModal.addEventListener('click', (e) => {
-                if (e.target === epgModal) {
-                    this.hideEPGModal();
-                }
-            });
-        }
-    }
-
-    /**
-     * Show EPG modal
-     */
-    showEPGModal() {
-        console.log('📺 Showing EPG modal...');
-        const epgModal = document.getElementById('epgModal');
-        
-        if (epgModal) {
-            epgModal.style.display = 'flex';
-            epgModal.classList.add('show');
-            console.log('✅ EPG modal shown');
-            
-            // Add some test content if empty
-            const epgContent = epgModal.querySelector('.epg-grid-container');
-            if (epgContent && epgContent.children.length === 0) {
-                epgContent.innerHTML = `
-                    <div style="padding: 20px; text-align: center;">
-                        <h3>📺 Electronic Program Guide</h3>
-                        <p>EPG system is being initialized...</p>
-                        <p>This is a test display to verify the modal is working.</p>
-                    </div>
-                `;
-            }
-        } else {
-            console.error('❌ EPG modal not found in DOM');
-        }
-    }
-
-    /**
-     * Hide EPG modal
-     */
-    hideEPGModal() {
-        const epgModal = document.getElementById('epgModal');
-        
-        if (epgModal) {
-            epgModal.classList.remove('show');
-            setTimeout(() => {
-                epgModal.style.display = 'none';
-            }, 300);
-            console.log('📺 EPG modal hidden');
-        }
-    }
-
-    /**
-     * Debug EPG functionality
-     */
-    debugEPG() {
-        console.log('🐛 EPG Debug Starting...');
-        
-        // Show visible alert to confirm debugging is working
-        alert('🐛 EPG Debug Starting! Check console for details.');
-        
-        // Check if elements exist
-        const epgBtn = document.getElementById('epgBtn');
-        const epgModal = document.getElementById('epgModal');
-        
-        console.log('EPG Button found:', epgBtn);
-        console.log('EPG Modal found:', epgModal);
-        
-        if (epgBtn) {
-            console.log('EPG Button text:', epgBtn.textContent);
-            console.log('EPG Button classes:', epgBtn.className);
-            
-            // Make button more visible for testing
-            epgBtn.style.background = 'red';
-            epgBtn.style.border = '2px solid yellow';
-            epgBtn.title = 'EPG DEBUG MODE - Click to test modal';
-            
-            // Add a direct click handler for testing
-            epgBtn.addEventListener('click', () => {
-                console.log('🎯 EPG Button clicked! (debug handler)');
-                if (epgModal) {
-                    epgModal.style.display = 'flex';
-                    epgModal.classList.add('show');
-                    
-                    // Add test content
-                    const content = epgModal.querySelector('.epg-grid-container');
-                    if (content) {
-                        content.innerHTML = `
-                            <div style="padding: 20px; text-align: center; color: white;">
-                                <h3>🐛 EPG Debug Test</h3>
-                                <p>This modal is working correctly!</p>
-                                <p>Time: ${new Date().toLocaleTimeString()}</p>
-                                <button onclick="document.getElementById('epgModal').style.display='none'" 
-                                        style="background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 4px; margin-top: 10px; cursor: pointer;">
-                                    Close
-                                </button>
-                            </div>
-                        `;
-                    }
-                    console.log('✅ Modal opened with debug content');
+                console.log('🔍 EPG Button clicked');
+                console.log('🔍 EPG Manager status:', this.epgManager ? 'exists' : 'null');
+                console.log('🔍 EPG Manager initialized:', this.epgManager?.isInitialized || false);
+                
+                if (this.epgManager && this.epgManager.isInitialized) {
+                    console.log('📺 Calling showEPGGrid...');
+                    this.epgManager.showEPGGrid();
                 } else {
-                    console.error('❌ Modal not found when clicking button');
+                    console.warn('⚠️ EPG system not initialized, showing modal directly');
+                    // Fallback: show modal directly
+                    const epgModal = document.getElementById('epgModal');
+                    console.log('🔍 EPG Modal found:', epgModal ? 'yes' : 'no');
+                    if (epgModal) {
+                        console.log('📺 Opening EPG modal directly...');
+                        epgModal.style.display = 'flex';
+                        epgModal.classList.add('show');
+                        
+                        // Add some test content to verify it's working
+                        const epgContent = epgModal.querySelector('.epg-content');
+                        if (epgContent && !epgContent.querySelector('.epg-test-content')) {
+                            const testDiv = document.createElement('div');
+                            testDiv.className = 'epg-test-content';
+                            testDiv.innerHTML = `
+                                <div style="padding: 20px; text-align: center; color: white;">
+                                    <h3>📺 EPG System</h3>
+                                    <p>EPG modal is working!</p>
+                                    <p>EPG Manager Status: ${this.epgManager ? 'Loaded' : 'Not loaded'}</p>
+                                    <p>Initialized: ${this.epgManager?.isInitialized ? 'Yes' : 'No'}</p>
+                                    <p>Channels loaded: ${this.playlistData?.length || 0}</p>
+                                </div>
+                            `;
+                            epgContent.appendChild(testDiv);
+                        }
+                    } else {
+                        console.error('❌ EPG Modal not found in DOM');
+                    }
                 }
             });
-            
-            console.log('✅ Debug click handler added to EPG button');
+            console.log('✅ EPG Button event listener added');
         } else {
             console.error('❌ EPG Button not found in DOM');
         }
+
+        // Close EPG modal
+        const closeEpgBtn = document.getElementById('closeEPG');
+        console.log('🔍 Close EPG Button found:', closeEpgBtn ? 'yes' : 'no');
         
-        // List all buttons for debugging
-        const allButtons = document.querySelectorAll('button');
-        console.log(`Found ${allButtons.length} buttons total:`);
-        allButtons.forEach((btn, index) => {
-            console.log(`  ${index}: ID="${btn.id}", Text="${btn.textContent.trim()}", Classes="${btn.className}"`);
+        if (closeEpgBtn) {
+            closeEpgBtn.addEventListener('click', () => {
+                console.log('🔍 Close EPG button clicked');
+                const epgModal = document.getElementById('epgModal');
+                if (epgModal) {
+                    epgModal.classList.remove('show');
+                    setTimeout(() => {
+                        epgModal.style.display = 'none';
+                    }, 300);
+                }
+            });
+            console.log('✅ Close EPG Button event listener added');
+        }
+
+        // Close EPG modal when clicking outside
+        document.addEventListener('click', (e) => {
+            const epgModal = document.getElementById('epgModal');
+            if (e.target === epgModal) {
+                console.log('🔍 Clicked outside EPG modal, closing...');
+                closeEpgBtn?.click();
+            }
         });
+    }
     }
 
     setupElectronEvents() {
@@ -617,23 +665,32 @@ https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
 
     processM3UContent(content, filename) {
         try {
-            console.log(`📁 Procesando archivo: ${filename}`);
+            console.log(`📁 Processing file: ${filename}`);
 
             this.playlistData = this.parseM3U(content);
-            console.log(`📋 ${this.playlistData.length} elementos en la playlist`);
+            console.log(`📋 ${this.playlistData.length} elements in playlist`);
 
             if (this.playlistData.length === 0) {
-                this.showError('No se encontraron elementos válidos en el archivo M3U');
+                this.showError('No valid elements found in M3U file');
                 return;
             }
 
-            this.showFileInfo(`✅ ${filename} - ${this.playlistData.length} elementos cargados`, 'success');
+            this.showFileInfo(`✅ ${filename} - ${this.playlistData.length} elements loaded`, 'success');
             this.renderPlaylist();
+            this.updateDashboardStats();
             this.showPlayerSection();
+            
+            // Notify EPGManager about the new loaded playlist
+            if (this.epgManager && this.epgManager.isInitialized) {
+                console.log('📺 Notifying EPGManager about loaded playlist');
+                this.epgManager.loadEPGData(this.playlistData).catch(error => {
+                    console.warn('⚠️ Error loading EPG data:', error);
+                });
+            }
 
         } catch (error) {
-            console.error('Error procesando M3U:', error);
-            this.showError(`Error procesando archivo: ${error.message}`);
+            console.error('Error processing M3U:', error);
+            this.showError(`Error processing file: ${error.message}`);
         }
     }
 
@@ -659,7 +716,10 @@ https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
                         group: '',
                         logo: '',
                         tvgId: '',
-                        tvgName: ''
+                        tvgName: '',
+                        country: '',
+                        language: '',
+                        originalName: ''
                     };
 
                     // Extraer atributos adicionales con regex más robusto
@@ -683,19 +743,36 @@ https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
                                 case 'tvg-name':
                                     currentItem.tvgName = value;
                                     break;
+                                case 'tvg-country':
+                                    currentItem.country = value;
+                                    break;
+                                case 'tvg-language':
+                                    currentItem.language = value;
+                                    break;
                             }
                         });
                     }
-
-                    // Si no hay título en los atributos, usar el que viene después de la coma
-                    if (!currentItem.title && currentItem.tvgName) {
-                        currentItem.title = currentItem.tvgName;
+                    
+                    // Si no hay tvgName, usar el título como nombre alternativo
+                    if (!currentItem.tvgName) {
+                        currentItem.tvgName = currentItem.title;
+                    }
+                    
+                    // Extraer país del título si no está en los atributos
+                    if (!currentItem.country) {
+                        const countryMatch = currentItem.title.match(/\[([A-Z]{2})\]|\(([A-Z]{2})\)|\.([a-z]{2})$/);
+                        if (countryMatch) {
+                            currentItem.country = (countryMatch[1] || countryMatch[2] || countryMatch[3]).toUpperCase();
+                        }
                     }
                 }
-            } else if (line && !line.startsWith('#') && currentItem.title) {
-                // Esta es la URL del stream
+            } else if (!line.startsWith('#') && currentItem.title) {
+                // URL del stream
                 currentItem.url = line;
                 currentItem.type = this.detectStreamType(line);
+                currentItem.id = `channel_${items.length}`;
+                currentItem.name = currentItem.title; // Agregar propiedad name para EPG
+                
                 items.push({ ...currentItem });
                 currentItem = {};
             }
@@ -787,13 +864,13 @@ https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
 
     showPlayerSection() {
         if (this.playerSection) {
-            // Ocultar sección de carga
+            // Hide upload section
             const uploadSection = document.getElementById('uploadSection');
             if (uploadSection) {
                 uploadSection.style.display = 'none';
             }
 
-            // Mostrar reproductor con animación
+            // Show player with animation
             this.playerSection.style.display = 'block';
             this.playerSection.style.opacity = '0';
             this.playerSection.style.transform = 'translateY(20px)';
@@ -805,12 +882,66 @@ https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
             });
         }
 
-        // Inicializar controles
+        // Initialize controls
         this.updatePlayPauseButton();
         if (this.currentTimeDisplay) this.currentTimeDisplay.textContent = '00:00';
         if (this.durationDisplay) this.durationDisplay.textContent = '00:00';
 
-        console.log('🎬 Reproductor mostrado');
+        console.log('🎬 Player section shown');
+    }
+
+    /**
+     * Show the dashboard/upload section
+     */
+    showDashboard() {
+        // Hide player section
+        if (this.playerSection) {
+            this.playerSection.style.display = 'none';
+        }
+
+        // Show upload section
+        const uploadSection = document.getElementById('uploadSection');
+        if (uploadSection) {
+            uploadSection.style.display = 'block';
+            uploadSection.style.opacity = '0';
+            uploadSection.style.transform = 'translateY(20px)';
+
+            requestAnimationFrame(() => {
+                uploadSection.style.transition = 'all 0.5s ease';
+                uploadSection.style.opacity = '1';
+                uploadSection.style.transform = 'translateY(0)';
+            });
+        }
+
+        // Stop current playback
+        this.stopPlayback();
+        
+        console.log('🏠 Dashboard shown');
+    }
+
+    /**
+     * Update dashboard statistics
+     */
+    updateDashboardStats() {
+        if (!this.playlistData) return;
+        
+        const totalChannels = this.playlistData.length;
+        const groups = new Set(this.playlistData.map(item => item.group || 'Ungrouped'));
+        const hlsStreams = this.playlistData.filter(item => item.type === 'HLS').length;
+        const channelsWithLogos = this.playlistData.filter(item => item.logo).length;
+        
+        // Update dashboard stats if elements exist
+        const totalChannelsEl = document.getElementById('totalChannels');
+        const totalGroupsEl = document.getElementById('totalGroups');
+        const hlsStreamsEl = document.getElementById('hlsStreams');
+        const channelsWithLogosEl = document.getElementById('channelsWithLogos');
+        
+        if (totalChannelsEl) totalChannelsEl.textContent = totalChannels;
+        if (totalGroupsEl) totalGroupsEl.textContent = groups.size;
+        if (hlsStreamsEl) hlsStreamsEl.textContent = hlsStreams;
+        if (channelsWithLogosEl) channelsWithLogosEl.textContent = channelsWithLogos;
+        
+        console.log(`📊 Dashboard stats updated: ${totalChannels} channels, ${groups.size} groups`);
     }
 
     async playItem(index) {
@@ -1077,12 +1208,15 @@ https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
         this.hideError();
         this.updatePlayPauseButton();
 
-        // Resetear información actual
-        if (this.currentTitle) this.currentTitle.textContent = 'No hay video seleccionado';
+        // Reset current information
+        if (this.currentTitle) this.currentTitle.textContent = 'No video selected';
         if (this.currentUrl) this.currentUrl.textContent = '';
         if (this.streamInfo) this.streamInfo.innerHTML = '';
 
-        console.log('⏹️ Reproducción detenida');
+        // Reset current index
+        this.currentIndex = -1;
+
+        console.log('⏹️ Playback stopped');
     }
 
     setVolume(value) {

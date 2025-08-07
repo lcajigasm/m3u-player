@@ -111,8 +111,8 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
     
-    // Open DevTools in development mode
-    if (process.argv.includes('--dev')) {
+    // Open DevTools in development mode only
+    if (process.env.NODE_ENV === 'development') {
       mainWindow.webContents.openDevTools();
     }
   });

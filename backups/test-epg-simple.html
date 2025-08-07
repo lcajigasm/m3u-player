@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>EPG Test Simple</title>
+    <style>
+        body {
+            background: #1a1a2e;
+            color: white;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .test-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .test-btn:hover {
+            background: #45a049;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 9999;
+        }
+        .modal-content {
+            background: #2a2a4a;
+            margin: 10% auto;
+            padding: 20px;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        #results {
+            background: #333;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            text-align: left;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 EPG Simple Test</h1>
+    
+    <div>
+        <button id="testBtn" class="test-btn">🧪 Test EPG Elements</button>
+        <button id="testModalBtn" class="test-btn">📺 Test Modal</button>
+        <button id="loadMainJsBtn" class="test-btn">🔗 Load Main.js</button>
+    </div>
+    
+    <div id="results"></div>
+    
+    <!-- Simple Modal for Testing -->
+    <div id="testModal" class="modal">
+        <div class="modal-content">
+            <h2>✅ Modal Test Successful!</h2>
+            <p>This proves that modal display is working correctly.</p>
+            <button onclick="document.getElementById('testModal').style.display='none'" class="test-btn">Close</button>
+        </div>
+    </div>
+
+    <!-- EPG Modal (same structure as main app) -->
+    <div id="epgModal" class="modal epg-modal" style="display: none">
+        <div class="modal-content">
+            <div class="epg-header">
+                <h2>📺 Electronic Program Guide</h2>
+                <button id="closeEPG" class="close-btn">&times;</button>
+            </div>
+            <div class="epg-grid-container">
+                <!-- EPG content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let results = document.getElementById('results');
+        
+        function log(message) {
+            console.log(message);
+            results.textContent += new Date().toLocaleTimeString() + ': ' + message + '\n';
+            results.scrollTop = results.scrollHeight;
+        }
+
+        // Test basic elements
+        document.getElementById('testBtn').addEventListener('click', () => {
+            log('🧪 Starting Element Test...');
+            
+            // Check for EPG elements
+            const epgBtn = document.getElementById('epgBtn');
+            const epgModal = document.getElementById('epgModal');
+            
+            log('EPG Button found: ' + (epgBtn ? 'YES' : 'NO'));
+            log('EPG Modal found: ' + (epgModal ? 'YES' : 'NO'));
+            
+            if (epgBtn) {
+                log('Button text: ' + epgBtn.textContent.trim());
+                log('Button classes: ' + epgBtn.className);
+            }
+            
+            // List all buttons
+            const allBtns = document.querySelectorAll('button');
+            log(`Found ${allBtns.length} buttons total`);
+            allBtns.forEach((btn, i) => {
+                log(`  ${i}: ID="${btn.id}", Text="${btn.textContent.trim()}"`);
+            });
+        });
+
+        // Test simple modal
+        document.getElementById('testModalBtn').addEventListener('click', () => {
+            log('📺 Testing simple modal...');
+            document.getElementById('testModal').style.display = 'block';
+        });
+
+        // Try to load main.js functionality
+        document.getElementById('loadMainJsBtn').addEventListener('click', async () => {
+            log('🔗 Attempting to load main.js...');
+            try {
+                // Try to create a simple EPG button
+                const testEPGBtn = document.createElement('button');
+                testEPGBtn.id = 'epgBtn';
+                testEPGBtn.textContent = '📺 EPG';
+                testEPGBtn.className = 'test-btn';
+                testEPGBtn.addEventListener('click', () => {
+                    log('🎯 EPG Button clicked!');
+                    document.getElementById('epgModal').style.display = 'block';
+                });
+                
+                document.body.appendChild(testEPGBtn);
+                log('✅ Created EPG button dynamically');
+                
+                // Test the elements again
+                document.getElementById('testBtn').click();
+                
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+            }
+        });
+
+        log('🚀 EPG Simple Test loaded successfully!');
+    </script>
+</body>
+</html>

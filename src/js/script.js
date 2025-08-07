@@ -15,8 +15,7 @@ class M3UPlayer {
         this.setupEventListeners();
         this.loadConfiguration();
 
-        console.log('🎬 Starting M3U player...');
-        console.log(`📱 Platform: ${this.isElectron ? 'Electron' : 'Web'}`);
+        // M3U Player initialized
 
         // Force style refresh to avoid cache issues
         this.forceStyleRefresh();
@@ -63,9 +62,9 @@ class M3UPlayer {
                 this.pipBtn.disabled = true;
                 this.pipBtn.title = 'Picture-in-Picture not supported in this browser';
                 this.pipBtn.style.opacity = '0.5';
-                console.warn('⚠️ Picture-in-Picture not supported');
+                // Picture-in-Picture not supported
             } else {
-                console.log('✅ Picture-in-Picture supported');
+                // Picture-in-Picture supported
             }
         }
     }
@@ -74,7 +73,7 @@ class M3UPlayer {
         if (this.videoOverlay) {
             this.videoOverlay.classList.remove('show');
             this.videoOverlay.style.display = 'none';
-            console.log('🔧 Overlay hidden on initialization');
+            // Overlay hidden on initialization
         }
     }
 
@@ -88,11 +87,11 @@ class M3UPlayer {
             link.href = `${href}?v=${timestamp}`;
         });
 
-        console.log('🔄 Styles updated to avoid cache');
+        // Styles updated to avoid cache
     }
 
     forceRefresh() {
-        console.log('🔄 Forcing complete reload...');
+        // Forcing complete reload
 
         if (this.isElectron && window.electronAPI) {
             // In Electron, reload window
@@ -104,7 +103,7 @@ class M3UPlayer {
     }
 
     forceHideOverlay() {
-        console.log('👁️ Forcing overlay hide...');
+        // Forcing overlay hide
 
         const overlay = document.getElementById('videoOverlay');
         if (overlay) {
@@ -114,7 +113,7 @@ class M3UPlayer {
             overlay.style.opacity = '0';
             overlay.style.pointerEvents = 'none';
             overlay.style.zIndex = '-1';
-            console.log('✅ Overlay forcefully hidden');
+            // Overlay forcefully hidden
         }
 
         // Also force controls visibility
@@ -247,7 +246,7 @@ class M3UPlayer {
         
         // Language selector event listener
         this.languageSelect?.addEventListener('change', (e) => {
-            console.log('🌐 Language selector changed to:', e.target.value);
+            // Language changed
             this.changeLanguage(e.target.value);
         });
         this.refreshBtn?.addEventListener('click', () => this.forceRefresh());
@@ -308,7 +307,7 @@ class M3UPlayer {
 
         // Eventos de Picture-in-Picture
         this.videoPlayer?.addEventListener('enterpictureinpicture', () => {
-            console.log('📺 Picture-in-Picture activado');
+            // Picture-in-Picture activated
             if (this.pipBtn) {
                 this.pipBtn.innerHTML = '📺 Salir PiP';
                 this.pipBtn.classList.add('pip-active');
@@ -316,7 +315,7 @@ class M3UPlayer {
         });
 
         this.videoPlayer?.addEventListener('leavepictureinpicture', () => {
-            console.log('📺 Picture-in-Picture desactivado');
+            // Picture-in-Picture deactivated
             if (this.pipBtn) {
                 this.pipBtn.innerHTML = '📺 PiP';
                 this.pipBtn.classList.remove('pip-active');
@@ -651,7 +650,7 @@ class M3UPlayer {
 
             // Special handling for IPTV API endpoints that need authentication
             if (this.streamNeedsAuthentication(url)) {
-                console.log('🔐 Detectada URL que requiere autenticación, usando headers VLC');
+                // Using VLC headers for authentication
                 const urlObj = new URL(url);
                 const referer = `${urlObj.protocol}//${urlObj.hostname}/`;
                 
@@ -695,50 +694,71 @@ class M3UPlayer {
     }
 
     async checkIPTVOrgPlaylistStatus() {
+        // Checking IPTV-ORG playlist status
         try {
             if (this.isElectron && window.electronAPI) {
+                // Looking for iptv-org-channels.m3u file
                 const fileResult = await window.electronAPI.readFile('examples/iptv-org-channels.m3u');
                 if (fileResult.success && fileResult.data && !fileResult.data.includes('404: Not Found')) {
                     // File exists and has valid content
+                    // IPTV-ORG file found, counting channels
                     this.iptvOrgContent = fileResult.data;
                     const tempData = await this.parseM3U(fileResult.data);
                     const channelCount = tempData.length;
+                    console.log(`📊 Canales encontrados en IPTV-ORG: ${channelCount}`);
                     
                     if (channelCount > 0) {
                         this.updateIPTVOrgButton(`▶ Play IPTV-ORG (${channelCount})`, false);
                         console.log(`✅ Found existing IPTV-ORG playlist with ${channelCount} channels`);
+                        
+                        // Auto-cargar IPTV-ORG existente
+                        // Auto-loading existing IPTV-ORG
+                        setTimeout(() => {
+                            this.loadIPTVOrgPlaylist();
+                        }, 1000);
                         return;
                     }
+                } else {
+                    // IPTV-ORG file not found or empty
                 }
             }
             
             // No valid file found, show download button
             this.updateIPTVOrgButton('📡 Download IPTV-ORG', false);
-            console.log('📡 IPTV-ORG playlist not found, showing download option');
+            // IPTV-ORG playlist not found, showing download option
             
         } catch (error) {
-            console.log('📡 Could not check IPTV-ORG status, showing download option');
+            // Could not check IPTV-ORG status, showing download option
             this.updateIPTVOrgButton('📡 Download IPTV-ORG', false);
         }
     }
 
     async handleIPTVOrgButton() {
-        if (!this.iptvOrgBtn) return;
+        // IPTV-ORG button clicked
+        if (!this.iptvOrgBtn) {
+            console.error('❌ IPTV-ORG button not found!');
+            return;
+        }
         
         // Check the tile title instead of full textContent
         const tileTitle = this.iptvOrgBtn.querySelector('.tile-title');
         const titleText = tileTitle ? tileTitle.textContent.trim() : '';
+        console.log(`📝 IPTV-ORG button title: "${titleText}"`);
         
-        if (titleText.includes('Download') || titleText.includes('Update')) {
+        if (titleText.includes('Download') || titleText.includes('Update') || titleText.includes('IPTV-ORG')) {
+            // Starting IPTV-ORG download
             await this.downloadIPTVOrgPlaylist();
         } else if (titleText.includes('Play') || titleText.includes('Reproducir')) {
+            // Starting IPTV-ORG playback
             await this.loadIPTVOrgPlaylist();
+        } else {
+            // Unrecognized IPTV-ORG action
         }
     }
 
     async downloadIPTVOrgPlaylist() {
         try {
-            console.log('📡 Downloading IPTV-ORG playlist...');
+            // Downloading IPTV-ORG playlist
             this.showLoadingScreen('Downloading IPTV-ORG', 'Fetching the latest playlist from iptv-org.github.io...');
             this.updateIPTVOrgButton('⏳ Downloading...', true);
             
@@ -771,7 +791,7 @@ class M3UPlayer {
             if (this.isElectron && window.electronAPI) {
                 try {
                     await window.electronAPI.saveFile('examples/iptv-org-channels.m3u', content);
-                    console.log('✅ IPTV-ORG playlist saved locally');
+                    // IPTV-ORG playlist saved locally
                 } catch (saveError) {
                     console.warn('⚠️ Could not save playlist locally:', saveError);
                 }
@@ -788,11 +808,17 @@ class M3UPlayer {
             
             this.updateLoadingProgress(100, 'Complete!', channelCount, channelCount);
             
-            // Show completion for a moment
-            setTimeout(() => {
+            // Show completion for a moment, then auto-load
+            setTimeout(async () => {
                 this.hideLoadingScreen();
                 this.showFileInfo(`✅ IPTV-ORG playlist downloaded - ${channelCount} channels`, 'success');
                 this.updateIPTVOrgButton(`▶ Play IPTV-ORG (${channelCount})`, false);
+                
+                // Auto-cargar playlist descargada y cambiar a reproductor
+                // Auto-loading IPTV-ORG after download
+                setTimeout(() => {
+                    this.loadIPTVOrgPlaylist();
+                }, 1000);
             }, 1000);
             
             console.log(`✅ Downloaded ${channelCount} channels from IPTV-ORG`);
@@ -807,7 +833,7 @@ class M3UPlayer {
 
     async loadIPTVOrgPlaylist() {
         try {
-            console.log('🎬 Loading IPTV-ORG playlist...');
+            // Loading IPTV-ORG playlist
             this.showFileInfo('Loading IPTV-ORG playlist...', 'loading');
             
             let content = this.iptvOrgContent;
@@ -820,29 +846,29 @@ class M3UPlayer {
                     if (fileResult.success) {
                         content = fileResult.data;
                         isLargeFile = content.length > 50000; // Real IPTV-ORG files are large
-                        console.log('✅ Loaded IPTV-ORG from local file');
+                        // Loaded IPTV-ORG from local file
                     }
                 } catch (fileError) {
-                    console.log('📁 Local file not found');
+                    // Local file not found
                 }
             }
             
             // If still no content, use fallback
             if (!content) {
-                console.log('📋 Using fallback test content');
+                // Using fallback test content
                 content = this.getTestPlaylistContent();
                 isLargeFile = false; // Test content is small
             }
             
-            console.log(`📋 Content loaded, size: ${content.length} characters, isLarge: ${isLargeFile}`);
-            console.log(`📋 Content preview: ${content.substring(0, 200)}...`);
+            // Content loaded and processed
+            // Content preview available for debugging
             
             // Use appropriate processing method based on content size
             if (isLargeFile) {
-                console.log('📋 Using large file processing');
+                // Using large file processing
                 await this.processLargeM3UContent(content, 'iptv-org-channels.m3u');
             } else {
-                console.log('📋 Using standard processing for small content');
+                // Using standard processing for small content
                 await this.processM3UContent(content, 'iptv-org-channels.m3u');
             }
             
@@ -858,7 +884,7 @@ class M3UPlayer {
 
 
     goBackToDashboard() {
-        console.log('🏠 Going back to dashboard...');
+        // Going back to dashboard
         
         // Hide player section
         if (this.playerSection) {
@@ -879,7 +905,7 @@ class M3UPlayer {
         // Update dashboard stats
         this.updateDashboardStats();
         
-        console.log('✅ Back to dashboard complete');
+        // Back to dashboard complete
     }
 
     updatePlaylistTitle(filename = null) {
@@ -949,21 +975,34 @@ class M3UPlayer {
 
     // Free-TV Methods (copied from IPTV-ORG logic)
     async checkFreeTvPlaylistStatus() {
+        // Checking Free-TV playlist status
         try {
             // Check if Free-TV playlist exists and get channel count
             if (this.isElectron && window.electronAPI) {
+                // Looking for free-tv-channels.m3u8 file
                 const fileResult = await window.electronAPI.readFile('examples/free-tv-channels.m3u8');
                 if (fileResult.success && fileResult.data) {
+                    console.log('✅ Archivo Free-TV encontrado, contando canales...');
                     const channelCount = this.countChannelsInM3U(fileResult.data);
+                    console.log(`📊 Canales encontrados en Free-TV: ${channelCount}`);
                     if (channelCount > 0) {
                         this.freeTvContent = fileResult.data; // Store content in memory
                         this.updateFreeTvButton(`▶ Play Free-TV (${channelCount})`, false);
+                        
+                        // Auto-load existing Free-TV playlist
+                        console.log('🚀 Auto-cargando Free-TV existente...');
+                        setTimeout(() => {
+                            this.loadFreeTvPlaylist();
+                        }, 1000);
                         return;
                     }
+                } else {
+                    console.log('❌ Archivo Free-TV no encontrado o vacío');
                 }
             }
 
             // If file doesn't exist or has no channels, show download option
+            console.log('📺 Mostrando opción de descarga para Free-TV');
             this.updateFreeTvButton('📺 Download Free-TV', false);
         } catch (error) {
             console.error('Error checking Free-TV playlist status:', error);
@@ -972,16 +1011,25 @@ class M3UPlayer {
     }
 
     async handleFreeTvButton() {
-        if (!this.freeTvBtn) return;
+        console.log('🖱️ Free-TV button clicked!');
+        if (!this.freeTvBtn) {
+            console.error('❌ Free-TV button not found!');
+            return;
+        }
         
         // Check the tile title instead of full textContent
         const tileTitle = this.freeTvBtn.querySelector('.tile-title');
         const titleText = tileTitle ? tileTitle.textContent.trim() : '';
+        console.log(`📝 Free-TV button title: "${titleText}"`);
         
-        if (titleText.includes('Download') || titleText.includes('Update')) {
+        if (titleText.includes('Download') || titleText.includes('Update') || titleText.includes('Free-TV')) {
+            console.log('⬇️ Iniciando descarga de Free-TV...');
             await this.downloadFreeTvPlaylist();
         } else if (titleText.includes('Play') || titleText.includes('Reproducir')) {
+            console.log('▶️ Iniciando reproducción de Free-TV...');
             await this.loadFreeTvPlaylist();
+        } else {
+            console.log('❓ Acción no reconocida para Free-TV');
         }
     }
 
@@ -1040,11 +1088,17 @@ class M3UPlayer {
 
             this.updateLoadingProgress(100, 'Download complete!');
 
-            setTimeout(() => {
+            setTimeout(async () => {
                 this.hideLoadingScreen();
                 if (channelCount > 0) {
                     this.showFileInfo(`✅ Free-TV playlist downloaded: ${channelCount} channels`, 'success');
                     this.updateFreeTvButton(`▶ Play Free-TV (${channelCount})`, false);
+                    
+                    // Auto-load the downloaded playlist
+                    console.log('🚀 Auto-cargando Free-TV después de descarga...');
+                    setTimeout(() => {
+                        this.loadFreeTvPlaylist();
+                    }, 1000);
                 } else {
                     this.showFileInfo('⚠️ Downloaded playlist appears to be empty', 'warning');
                     this.updateFreeTvButton('📺 Download Free-TV', false);
