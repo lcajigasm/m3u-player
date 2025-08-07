@@ -503,7 +503,7 @@ class EPGSearchUI {
     }
 
     /**
-     * Sale del modo de búsqueda
+     * Exit search mode
      * @private
      */
     exitSearchMode() {
@@ -520,24 +520,49 @@ class EPGSearchUI {
     }
 
     /**
-     * Actualiza el encabezado de resultados de búsqueda
-     * @param {string} query - Consulta de búsqueda
+     * Update search results header
+     * @param {string} query - Search query
      * @private
      */
     updateSearchResultsHeader(query) {
         if (this.elements.searchResultsTitle) {
-            this.elements.searchResultsTitle.textContent = `Resultados para "${query}"`;
+            this.elements.searchResultsTitle.textContent = `Results for "${query}"`;
         }
         
         if (this.elements.searchResultsCount) {
             const count = this.totalResults;
             this.elements.searchResultsCount.textContent = 
-                `${count} resultado${count !== 1 ? 's' : ''}`;
+                `${count} result${count !== 1 ? 's' : ''}`;
         }
     }
 
     /**
-     * Renderiza los resultados de búsqueda
+     * Hide search suggestions
+     * @private
+     */
+    hideSuggestions() {
+        if (this.elements.searchSuggestions) {
+            this.elements.searchSuggestions.style.display = 'none';
+        }
+    }    /**
+     * Update search results header
+     * @param {string} query - Search query
+     * @private
+     */
+    updateSearchResultsHeader(query) {
+        if (this.elements.searchResultsTitle) {
+            this.elements.searchResultsTitle.textContent = `Results for "${query}"`;
+        }
+        
+        if (this.elements.searchResultsCount) {
+            const count = this.totalResults;
+            this.elements.searchResultsCount.textContent = 
+                `${count} result${count !== 1 ? 's' : ''}`;
+        }
+    }
+
+    /**
+     * Render search results
      * @private
      */
     renderSearchResults() {
@@ -573,7 +598,7 @@ class EPGSearchUI {
                             <div class="result-meta">
                                 <span class="result-channel">${this.escapeHtml(channel.name)}</span>
                                 <span class="result-time">${timeString}</span>
-                                ${isLive ? '<span class="live-indicator">● EN VIVO</span>' : ''}
+                                ${isLive ? '<span class="live-indicator">● LIVE</span>' : ''}
                             </div>
                         </div>
                         ${program.description ? `
@@ -608,31 +633,31 @@ class EPGSearchUI {
     }
 
     /**
-     * Muestra mensaje de sin resultados
-     * @param {string} query - Consulta de búsqueda
+     * Show no results message
+     * @param {string} query - Search query
      * @private
      */
     showNoResults(query) {
         this.enterSearchMode();
         
         if (this.elements.searchResultsTitle) {
-            this.elements.searchResultsTitle.textContent = `Sin resultados para "${query}"`;
+            this.elements.searchResultsTitle.textContent = `No results for "${query}"`;
         }
         
         if (this.elements.searchResultsCount) {
-            this.elements.searchResultsCount.textContent = '0 resultados';
+            this.elements.searchResultsCount.textContent = '0 results';
         }
         
         if (this.elements.searchResultsList) {
             this.elements.searchResultsList.innerHTML = `
                 <div class="no-search-results">
                     <div class="no-results-icon">🔍</div>
-                    <h3>No se encontraron programas</h3>
-                    <p>Intenta con otros términos de búsqueda o ajusta los filtros.</p>
+                    <h3>No programs found</h3>
+                    <p>Try different search terms or adjust your filters.</p>
                     <div class="search-suggestions-help">
-                        <h4>Sugerencias:</h4>
+                        <h4>Suggestions:</h4>
                         <ul>
-                            <li>Verifica la ortografía</li>
+                            <li>Check your spelling</li>
                             <li>Usa términos más generales</li>
                             <li>Prueba con nombres de géneros o canales</li>
                             <li>Limpia los filtros activos</li>
@@ -781,9 +806,9 @@ class EPGSearchUI {
     }
 
     /**
-     * Maneja configurar recordatorio
-     * @param {string} programId - ID del programa
-     * @param {string} channelId - ID del canal
+     * Handle setting a reminder
+     * @param {string} programId - Program ID
+     * @param {string} channelId - Channel ID
      * @private
      */
     handleSetReminder(programId, channelId) {
@@ -796,7 +821,7 @@ class EPGSearchUI {
     }
 
     /**
-     * Limpia la búsqueda
+     * Clear the search
      * @private
      */
     clearSearch() {
@@ -814,9 +839,9 @@ class EPGSearchUI {
     }
 
     /**
-     * Resalta términos de búsqueda en el texto
-     * @param {string} text - Texto original
-     * @returns {string} Texto con términos resaltados
+     * Highlight search terms in text
+     * @param {string} text - Original text
+     * @returns {string} Text with highlighted terms
      * @private
      */
     highlightSearchTerms(text) {
@@ -829,10 +854,10 @@ class EPGSearchUI {
     }
 
     /**
-     * Resalta coincidencias en el texto
-     * @param {string} text - Texto original
-     * @param {string} query - Término a resaltar
-     * @returns {string} Texto con coincidencias resaltadas
+     * Highlight matches in text
+     * @param {string} text - Original text
+     * @param {string} query - Term to highlight
+     * @returns {string} Text with highlighted matches
      * @private
      */
     highlightMatch(text, query) {

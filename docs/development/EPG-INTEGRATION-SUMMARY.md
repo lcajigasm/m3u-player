@@ -1,4 +1,4 @@
-# EPG Integration Summary - Sistema de Descarga Automática
+# EPG Integration Summary - Automatic Download System
 
 ## 📺 Descripción General
 
@@ -116,19 +116,19 @@ const CONFIG = {
 - [ ] Soporte offline con sincronización diferida
 - [ ] API REST para acceso externo a datos EPG
 
-## 📝 Archivos Modificados/Creados
+## 📝 Modified/Created Files
 
-### Nuevos Archivos
+### New Files
 - `src/js/epg/IPTVOrgIntegration.js`
 - `src/js/epg/AutoEPGDownloader.js`
 - `src/js/epg/EPGAdminUI.js`
 - `src/styles/epg-admin.css`
 
-### Archivos Modificados
-- `src/js/main.js` - Integración EPG y mejora parseM3U
-- `src/js/epg/EPGManager.js` - Integración con nuevos módulos
-- `src/index.html` - Inclusión de estilos EPG
-- `package.json` - Nuevas dependencias
+### Modified Files
+- `src/js/main.js` - EPG integration and parseM3U improvement
+- `src/js/epg/EPGManager.js` - Integration with new modules
+- `src/index.html` - EPG styles inclusion
+- `package.json` - New dependencies
 
 ## ✅ Estado del Proyecto
 

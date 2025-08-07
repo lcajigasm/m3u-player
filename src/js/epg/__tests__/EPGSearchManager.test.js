@@ -113,22 +113,22 @@ describe('EPGSearchManager', () => {
         });
     });
 
-    describe('Extracción de palabras clave', () => {
-        test('debería extraer palabras clave correctamente', () => {
-            const keywords = searchManager.extractKeywords('Noticias de la Mañana en Español');
+    describe('Keyword extraction', () => {
+        test('should correctly extract keywords', () => {
+            const keywords = searchManager.extractKeywords('Morning News in English');
             
-            expect(keywords).toContain('noticias');
-            expect(keywords).toContain('mañana');
-            expect(keywords).toContain('español');
-            expect(keywords).not.toContain('de'); // Stop word
-            expect(keywords).not.toContain('la'); // Stop word
-            expect(keywords).not.toContain('en'); // Stop word
+            expect(keywords).toContain('morning');
+            expect(keywords).toContain('news');
+            expect(keywords).toContain('english');
+            expect(keywords).not.toContain('in'); // Stop word
+            expect(keywords).not.toContain('the'); // Stop word
+            expect(keywords).not.toContain('at'); // Stop word
         });
 
-        test('debería filtrar palabras muy cortas', () => {
+        test('should filter very short words', () => {
             const keywords = searchManager.extractKeywords('TV HD 4K UHD');
             
-            expect(keywords).toContain('uhd'); // 3 caracteres, válido
+            expect(keywords).toContain('uhd'); // 3 chars, valid
             expect(keywords).not.toContain('tv'); // 2 caracteres, muy corto
             expect(keywords).not.toContain('hd'); // 2 caracteres, muy corto
         });

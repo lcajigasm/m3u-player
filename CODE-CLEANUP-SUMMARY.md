@@ -1,24 +1,24 @@
-# Resumen de Limpieza del Código - M3U Player
+# Code Cleanup Summary - M3U Player
 
-## 🧹 Limpieza Completada
+## 🧹 Cleanup Completed
 
-### 1. Archivos de Desarrollo/Testing Movidos
+### 1. Development/Testing Files Moved
 - ✅ `test-epg-simple.html` → `backups/test-epg-simple.html`
 - ✅ `src/styles/epg-admin.css` → `backups/epg-admin.css`  
 - ✅ `src/styles/epg-modal-basic.css` → `backups/epg-modal-basic.css`
 - ✅ `src/js/main.js.backup` → `backups/main.js.backup`
 
-### 2. Logging Excesivo Reducido
+### 2. Excessive Logging Reduced
 
 #### main.js
-- ✅ DevTools solo se abre en modo desarrollo (`process.env.NODE_ENV === 'development'`)
-- ✅ Comentarios de logging innecesarios reemplazados por comentarios simples
+- ✅ DevTools only opens in development mode (`process.env.NODE_ENV === 'development'`)
+- ✅ Unnecessary logging comments replaced with simple comments
 
 #### script.js  
-- ✅ Logs de inicialización simplificados
-- ✅ Logs de funciones de carga automática minimizados
-- ✅ Logs de navegación y botones reducidos
-- ✅ Mantenidos solo logs de errores importantes
+- ✅ Initialization logs simplified
+- ✅ Auto-load function logs minimized
+- ✅ Navigation and button logs reduced
+- ✅ Only important error logs maintained
 
 #### Archivos EPG (todos los módulos)
 - ✅ **EPGIntegration.js**: Logs informativos convertidos a comentarios
@@ -54,31 +54,31 @@
 
 ## ✅ Características Preservadas
 
-### Funcionalidad Completa Mantenida
-- ✅ **Sistema EPG completo**: Descarga automática de IPTV-ORG
-- ✅ **Carga automática de playlists**: IPTV-ORG y Free-TV  
-- ✅ **Modal EPG funcional**: Con botones y navegación
-- ✅ **Cache y programación**: Sistema de almacenamiento local
-- ✅ **Mapeo de canales**: Integración inteligente con base de datos
-- ✅ **Transición automática**: Al reproductor después de descargas
+### Complete Functionality Maintained
+- ✅ **Full EPG System**: Automatic download from IPTV-ORG
+- ✅ **Automatic playlist loading**: IPTV-ORG and Free-TV  
+- ✅ **Functional EPG modal**: With buttons and navigation
+- ✅ **Cache and scheduling**: Local storage system
+- ✅ **Channel mapping**: Smart database integration
+- ✅ **Automatic transition**: To player after downloads
 
-### Solo se Eliminó
-- ❌ Logging excesivo de debug
-- ❌ Archivos de testing temporal
-- ❌ DevTools siempre abierto
-- ❌ CSS de desarrollo no usado
+### Only Removed
+- ❌ Excessive debug logging
+- ❌ Temporary test files
+- ❌ Always-on DevTools
+- ❌ Unused development CSS
 
 ## 🎯 Código Listo para Commit
 
-### Archivos Modificados (Producción)
-- `main.js` - DevTools condicional + logs reducidos
-- `src/js/script.js` - Logging minimizado, funcionalidad preservada
-- `src/js/epg/*.js` - Todo el sistema EPG limpio pero funcional
+### Modified Files (Production)
+- `main.js` - Conditional DevTools + reduced logs
+- `src/js/script.js` - Minimized logging, preserved functionality
+- `src/js/epg/*.js` - Clean but functional EPG system
 
-### Archivos Nuevos (Documentación)
-- `CODE-CLEANUP-SUMMARY.md` - Este resumen
-- `docs/development/BUG-FIXES-SUMMARY.md` - Historial de fixes
-- `docs/development/EPG-INTEGRATION-SUMMARY.md` - Documentación EPG
+### New Files (Documentation)
+- `CODE-CLEANUP-SUMMARY.md` - This summary
+- `docs/development/BUG-FIXES-SUMMARY.md` - Fix history
+- `docs/development/EPG-INTEGRATION-SUMMARY.md` - EPG documentation
 
 ## 🚀 Estado Final
 

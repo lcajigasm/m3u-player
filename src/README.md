@@ -1,58 +1,58 @@
 # M3U Player - Source Structure
 
-## 📁 Estructura de Carpetas
+## 📁 Folder Structure
 
 ```
 src/
-├── index.html          # Página principal
-├── styles.css          # Estilos principales
+├── index.html          # Main page
+├── styles.css          # Main styles
 ├── js/
-│   └── script.js       # Lógica principal de la aplicación
+│   └── script.js       # Main application logic
 ├── styles/
-│   ├── variables.css   # Variables CSS
-│   ├── components.css  # Componentes reutilizables
-│   └── main.css        # Estilos principales modulares
+│   ├── variables.css   # CSS variables
+│   ├── components.css  # Reusable components
+│   └── main.css        # Modular main styles
 ├── assets/
-│   ├── icons/          # Iconos de la aplicación
-│   └── images/         # Imágenes y logos
-├── components/         # Componentes JS modulares (futuro)
-└── utils/              # Utilidades y helpers (futuro)
+│   ├── icons/          # Application icons
+│   └── images/         # Images and logos
+├── components/         # Modular JS components (future)
+└── utils/              # Utilities and helpers (future)
 ```
 
-## 🔧 Archivos Principales
+## 🔧 Main Files
 
 ### index.html
-- Estructura HTML principal
-- Referencias a CSS y JS optimizadas
-- Cache busting con versioning
+- Main HTML structure
+- Optimized CSS and JS references
+- Cache busting with versioning
 
 ### styles.css
-- Estilos globales mejorados
-- Diseño responsive
-- Variables CSS para temas
-- Lista de canales optimizada
-- Búsqueda de ancho completo
+- Improved global styles
+- Responsive design
+- CSS variables for themes
+- Optimized channel list
+- Full-width search
 
 ### js/script.js
-- Clase M3UPlayer principal
-- Funciones optimizadas para playlist
-- Mejor manejo de tipos de stream
-- Diseño de items simplificado
+- Main M3UPlayer class
+- Optimized playlist functions
+- Better stream type handling
+- Simplified item design
 
-## 🎯 Mejoras Implementadas
+## 🎯 Implemented Improvements
 
-1. **Búsqueda al 100% del ancho**: Eliminado max-width, ancho completo
-2. **Lista de canales mejorada**: 
-   - Logos de 50x50px
-   - Solo información relevante (nombre, grupo, tipo)
-   - Metadatos con colores distintivos
-   - Hover effects suaves
-3. **Estructura organizada**: Archivos en carpetas lógicas
-4. **CSS optimizado**: Estilos más limpios y eficientes
+1. **Full-width Search**: Removed max-width, full-width enabled
+2. **Enhanced Channel List**: 
+   - 50x50px logos
+   - Only relevant information (name, group, type)
+   - Distinctive colored metadata
+   - Smooth hover effects
+3. **Organized Structure**: Files in logical folders
+4. **Optimized CSS**: Cleaner and more efficient styles
 
-## 🚀 Uso
+## 🚀 Usage
 
-El archivo principal está en la raíz: `index.html`
-Los archivos fuente están organizados en: `src/`
+The main file is in the root: `index.html`
+Source files are organized in: `src/`
 
 Para desarrollo, trabajar en `src/` y los cambios se reflejan automáticamente.

@@ -567,10 +567,10 @@ class EPGDataProvider {
     }
 
     /**
-     * Intenta fuentes de respaldo para fuentes críticas
-     * @param {Object} failedSource - Fuente que falló
-     * @param {Array} channels - Lista de canales
-     * @param {Map} results - Mapa de resultados actual
+     * Attempt backup sources for critical sources
+     * @param {Object} failedSource - Source that failed
+     * @param {Array} channels - List of channels
+     * @param {Map} results - Current results map
      * @private
      */
     async tryBackupSources(failedSource, channels, results) {
@@ -579,11 +579,11 @@ class EPGDataProvider {
         );
         
         if (backupSources.length === 0) {
-            console.warn(`⚠️ No hay fuentes de respaldo para ${failedSource.name}`);
+            console.warn(`⚠️ No backup sources available for ${failedSource.name}`);
             return;
         }
         
-        console.log(`🔄 Intentando ${backupSources.length} fuentes de respaldo para ${failedSource.name}`);
+        console.log(`🔄 Trying ${backupSources.length} backup sources for ${failedSource.name}`);
         
         for (const backupSource of backupSources) {
             try {
@@ -596,11 +596,11 @@ class EPGDataProvider {
                     }
                 }
                 
-                console.log(`✅ Fuente de respaldo ${backupSource.name} proporcionó datos`);
+                console.log(`✅ Backup source ${backupSource.name} provided data`);
                 break;
                 
             } catch (error) {
-                console.warn(`⚠️ Fuente de respaldo ${backupSource.name} también falló: ${error.message}`);
+                console.warn(`⚠️ Backup source ${backupSource.name} also failed: ${error.message}`);
                 continue;
             }
         }
@@ -706,17 +706,17 @@ class EPGDataProvider {
     }
 
     /**
-     * Habilita o deshabilita una fuente específica
-     * @param {string} sourceName - Nombre de la fuente
-     * @param {boolean} enabled - Estado habilitado
+     * Enable or disable a specific source
+     * @param {string} sourceName - Source name
+     * @param {boolean} enabled - Enabled state
      */
     setSourceEnabled(sourceName, enabled) {
         const source = this.dataSources.find(s => s.name === sourceName);
         if (source) {
             source.enabled = enabled;
-            console.log(`${enabled ? '✅' : '❌'} Fuente ${sourceName} ${enabled ? 'habilitada' : 'deshabilitada'}`);
+            console.log(`${enabled ? '✅' : '❌'} Source ${sourceName} ${enabled ? 'enabled' : 'disabled'}`);
         } else {
-            console.warn(`⚠️ Fuente ${sourceName} no encontrada`);
+            console.warn(`⚠️ Source ${sourceName} not found`);
         }
     }
 
@@ -755,26 +755,26 @@ class EPGDataProvider {
     }
 
     /**
-     * Remueve una fuente de datos
-     * @param {string} sourceName - Nombre de la fuente a remover
+     * Remove a data source
+     * @param {string} sourceName - Name of the source to remove
      */
     removeDataSource(sourceName) {
         const index = this.dataSources.findIndex(s => s.name === sourceName);
         if (index !== -1) {
             this.dataSources.splice(index, 1);
-            console.log(`➖ Fuente removida: ${sourceName}`);
+            console.log(`➖ Source removed: ${sourceName}`);
         } else {
-            console.warn(`⚠️ Fuente ${sourceName} no encontrada para remover`);
+            console.warn(`⚠️ Source ${sourceName} not found to remove`);
         }
     }
 
     /**
-     * Establece el caché para respaldos
-     * @param {EPGCache} cache - Instancia del caché
+     * Set cache for backups
+     * @param {EPGCache} cache - Cache instance
      */
     setCache(cache) {
         this.cache = cache;
-        console.log('📦 Caché configurado para respaldos');
+        console.log('📦 Cache configured for backups');
     }
 
     /**

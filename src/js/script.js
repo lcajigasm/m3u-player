@@ -3411,7 +3411,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         this.handleStreamError(new Error(message));
     }
 
-    // Búsqueda optimizada para rendimiento instantáneo
+    // Search optimized for instant performance
     handleSearch() {
         if (!this.playlistData || !this.playlist) return;
 

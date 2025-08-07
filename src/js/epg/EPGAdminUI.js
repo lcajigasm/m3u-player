@@ -506,8 +506,8 @@ class EPGAdminUI {
     }
 
     /**
-     * Registra actividad en el log
-     * @param {string} message - Mensaje a registrar
+     * Log activity
+     * @param {string} message - Message to log
      */
     logActivity(message) {
         const logContainer = document.getElementById('epgActivityLog');
@@ -520,14 +520,14 @@ class EPGAdminUI {
         
         logContainer.insertBefore(entry, logContainer.firstChild);
         
-        // Mantener solo las últimas 50 entradas
+        // Keep only the last 50 entries
         while (logContainer.children.length > 50) {
             logContainer.removeChild(logContainer.lastChild);
         }
     }
 
     /**
-     * Limpia el log de actividad
+     * Clear activity log
      */
     clearLog() {
         document.getElementById('epgActivityLog').innerHTML = '';

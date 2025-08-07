@@ -77,9 +77,9 @@ class EPGSearchManager {
     }
 
     /**
-     * Extrae palabras clave de un texto
-     * @param {string} text - Texto a procesar
-     * @returns {string[]} Array de palabras clave
+     * Extract keywords from text
+     * @param {string} text - Text to process
+     * @returns {string[]} Array of keywords
      * @private
      */
     extractKeywords(text) {
@@ -87,15 +87,15 @@ class EPGSearchManager {
         
         return text
             .toLowerCase()
-            .replace(/[^\w\sáéíóúñü]/g, ' ') // Remover puntuación, mantener acentos
+            .replace(/[^\w\sáéíóúñü]/g, ' ') // Remove punctuation, keep accents
             .split(/\s+/)
-            .filter(word => word.length > 2) // Filtrar palabras muy cortas
-            .filter(word => !this.isStopWord(word)); // Filtrar palabras vacías
+            .filter(word => word.length > 2) // Filter very short words
+            .filter(word => !this.isStopWord(word)); // Filter stop words
     }
 
     /**
-     * Verifica si una palabra es una palabra vacía (stop word)
-     * @param {string} word - Palabra a verificar
+     * Check if a word is a stop word
+     * @param {string} word - Word to check
      * @returns {boolean}
      * @private
      */
@@ -395,8 +395,8 @@ class EPGSearchManager {
     }
 
     /**
-     * Obtiene estadísticas de búsqueda
-     * @returns {Object} Estadísticas
+     * Get search statistics
+     * @returns {Object} Statistics
      */
     getSearchStats() {
         return {

@@ -1,35 +1,35 @@
 # EPG Search Functionality
 
-Sistema de búsqueda avanzada para el Electronic Program Guide (EPG) del reproductor M3U.
+Advanced search system for the M3U player's Electronic Program Guide (EPG).
 
-## Características Principales
+## Main Features
 
-- 🔍 **Búsqueda en tiempo real** con debouncing
-- 📊 **Índice de búsqueda optimizado** para grandes volúmenes de datos
-- 🎯 **Filtros avanzados** por género, canal y tiempo
-- 📝 **Sugerencias automáticas** mientras escribes
-- 📄 **Paginación** para muchos resultados
-- ⚡ **Rendimiento optimizado** con virtualización
-- 🎨 **Interfaz responsive** con tema oscuro
+- 🔍 **Real-time search** with debouncing
+- 📊 **Optimized search index** for large data volumes
+- 🎯 **Advanced filters** by genre, channel and time
+- 📝 **Automatic suggestions** while typing
+- 📄 **Pagination** for many results
+- ⚡ **Optimized performance** with virtualization
+- 🎨 **Responsive interface** with dark theme
 
-## Arquitectura
+## Architecture
 
 ```
 EPGSearchManager          EPGSearchUI
        |                        |
-       |-- Índice de búsqueda   |-- Interfaz de búsqueda
-       |-- Algoritmo de score   |-- Filtros visuales
-       |-- Filtros y caché      |-- Resultados paginados
-       |-- Sugerencias          |-- Navegación
+       |-- Search index         |-- Search interface
+       |-- Score algorithm      |-- Visual filters
+       |-- Filters & cache      |-- Paginated results
+       |-- Suggestions          |-- Navigation
 ```
 
-## Componentes
+## Components
 
 ### EPGSearchManager
 
-Gestiona la lógica de búsqueda y el índice de datos.
+Manages search logic and data indexing.
 
-#### Métodos principales:
+#### Main Methods:
 
 ```javascript
 // Construir índice de búsqueda
@@ -48,11 +48,55 @@ searchManager.setFilter('genre', 'Deportes');
 searchManager.setFilter('channel', 'ch1');
 searchManager.setFilter('timeRange', 'today');
 
-// Obtener sugerencias
+# Get suggestions
 const suggestions = searchManager.getSuggestions('not', 5);
 
-// Limpiar filtros
+# Clear filters
 searchManager.clearFilters();
+```
+
+#### Search Algorithm Features:
+
+- **Relevance Score**: Calculates score based on matches
+- **Multi-criteria Search**: Title, description, genre, channel
+- **Stop Words**: Filters empty words in English and Spanish
+- **Accents**: Properly handles special characters
+- **Keywords**: Automatically extracts relevant terms
+
+### EPGSearchUI
+
+Provides the visual interface for searching.
+
+#### Interface Features:
+
+```javascript
+// Initialize search UI
+const searchUI = new EPGSearchUI(container, epgManager);
+
+// Show results
+searchUI.showSearchResults(results);
+
+// Toggle between modes
+searchUI.showSearchMode();  // Results view
+searchUI.showGridMode();    // EPG grid view
+
+// Handle pagination
+searchUI.nextPage();
+searchUI.prevPage();
+searchUI.goToPage(3);
+```
+
+## Basic Usage
+
+### 1. Integration with EPGManager
+
+```javascript
+// EPGManager automatically initializes search
+const epgManager = new EPGManager(player);
+await epgManager.initialize();
+
+// Search programs
+const results = epgManager.searchPrograms('news');
 ```
 
 #### Características del algoritmo de búsqueda:
@@ -104,13 +148,13 @@ epgManager.searchProgramsWithDebounce('deporte', (results) => {
 });
 ```
 
-### 2. Interfaz HTML
+### 2. HTML Interface
 
-La búsqueda se integra en el modal EPG existente:
+The search is integrated into the existing EPG modal:
 
 ```html
 <div class="epg-search-container">
-    <input type="text" id="epgSearch" placeholder="Buscar programas...">
+    <input type="text" id="epgSearch" placeholder="Search programs...">
     <button id="clearEpgSearchBtn">✕</button>
 </div>
 
@@ -121,117 +165,120 @@ La búsqueda se integra en el modal EPG existente:
 </div>
 
 <div class="epg-search-results" id="epgSearchResults">
-    <!-- Resultados generados dinámicamente -->
+    <!-- Dynamically generated results -->
 </div>
 ```
 
-### 3. Eventos de búsqueda
+### 3. Search Events
 
 ```javascript
-// Escuchar resultados de búsqueda
+// Listen for search results
 container.addEventListener('epg:searchResults', (e) => {
-    console.log('Nuevos resultados:', e.detail.results);
+    console.log('New results:', e.detail.results);
 });
 
-// Escuchar cambios de filtros
+// Listen for filter changes
 container.addEventListener('epg:filtersChanged', (e) => {
-    console.log('Filtros aplicados:', e.detail.filters);
+    console.log('Applied filters:', e.detail.filters);
 });
 ```
 
-## Filtros Disponibles
+## Available Filters
 
-### Por Género
-- Extrae géneros únicos de todos los programas
-- Filtrado dinámico según contenido disponible
+### By Genre
 
-### Por Canal
-- Lista todos los canales con programas
-- Muestra nombre e ID del canal
+- Extracts unique genres from all programs
+- Dynamic filtering based on available content
 
-### Por Tiempo
-- `now` - Programas en emisión actual
-- `today` - Programas de hoy
-- `tomorrow` - Programas de mañana
-- `next2h` - Próximas 2 horas
-- `next6h` - Próximas 6 horas
+### By Channel
 
-## Configuración
+- Lists all channels with programs
+- Shows channel name and ID
 
-### Opciones del SearchManager
+### By Time
+
+- `now` - Currently airing programs
+- `today` - Today's programs
+- `tomorrow` - Tomorrow's programs
+- `next2h` - Next 2 hours
+- `next6h` - Next 6 hours
+
+## Configuration
+
+### SearchManager Options
 
 ```javascript
 const searchManager = new EPGSearchManager();
 
-// Configurar delay de debouncing (default: 300ms)
+// Configure debouncing delay (default: 300ms)
 searchManager.debounceDelay = 500;
 
-// Número máximo de sugerencias (default: 5)
+// Maximum number of suggestions (default: 5)
 const suggestions = searchManager.getSuggestions('query', 10);
 ```
 
-### Configuración de UI
+### UI Configuration
 
 ```javascript
 const searchUI = new EPGSearchUI(container, epgManager);
 
-// Resultados por página (default: 20)
+// Results per page (default: 20)
 searchUI.resultsPerPage = 50;
 
-// Personalizar elementos
-searchUI.elements.searchInput.placeholder = 'Buscar...';
+// Customize elements
+searchUI.elements.searchInput.placeholder = 'Search...';
 ```
 
-## Rendimiento
+## Performance
 
-### Optimizaciones implementadas:
+### Implemented Optimizations
 
-- **Índice en memoria**: Búsqueda O(n) en lugar de O(n²)
-- **Debouncing**: Evita búsquedas excesivas mientras se escribe
-- **Virtualización**: Solo renderiza resultados visibles
-- **Caché de resultados**: Reutiliza resultados para misma query
-- **Paginación**: Divide resultados grandes en páginas
+- **In-memory Index**: O(n) search instead of O(n²)
+- **Debouncing**: Prevents excessive searches while typing
+- **Virtualization**: Only renders visible results
+- **Results Cache**: Reuses results for same query
+- **Pagination**: Splits large results into pages
 
-### Métricas típicas:
+### Typical Metrics
 
-- Construcción de índice: ~5ms para 1000 programas
-- Búsqueda: ~10ms para 1000 programas
-- Renderizado: ~50ms para 100 resultados
+- Index building: ~5ms for 1000 programs
+- Search: ~10ms for 1000 programs
+- Rendering: ~50ms for 100 results
 
-## Personalización de Estilos
+## Style Customization
 
-Los estilos CSS siguen el tema oscuro del reproductor:
+The CSS styles follow the player's dark theme:
 
 ```css
-/* Contenedor de búsqueda */
+/* Search Container */
 .epg-search-container {
     position: relative;
     display: flex;
     align-items: center;
 }
 
-/* Input de búsqueda */
+/* Search Input */
 .epg-search-input {
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid #555;
     color: #e2e8f0;
-    /* ... más estilos */
+    /* ... more styles */
 }
 
-/* Filtros */
+/* Filters */
 .epg-search-filters {
     display: flex;
     gap: 15px;
     padding: 10px 0;
-    /* ... más estilos */
+    /* ... more styles */
 }
 
-/* Resultados */
+/* Results */
 .search-result-item {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid #444;
     border-radius: 8px;
-    /* ... más estilos */
+    /* ... more styles */
 }
 ```
 
@@ -248,16 +295,95 @@ npm test src/js/epg/__tests__/EPGSearchManager.test.js
 npm test src/js/epg/__tests__/EPGSearchUI.test.js
 ```
 
-### Cobertura de tests:
+### Test Coverage
 
-- ✅ Construcción del índice
-- ✅ Extracción de palabras clave
-- ✅ Algoritmo de búsqueda
-- ✅ Sistema de filtros
-- ✅ Debouncing
-- ✅ Paginación
-- ✅ Interfaz de usuario
-- ✅ Eventos y callbacks
+- Basic text search
+- Genre filtering
+- Channel filtering
+- Time filtering
+- EPGManager integration
+- Result events
+- Search suggestions
+- Results cache
+- Search index
+- UI and rendering
+- Pagination
+- Performance
+
+### Main Files
+
+- `EPGSearchManager.js` - Search engine
+- `EPGSearchUI.js` - User interface
+
+### Use Cases
+
+- Text search
+- Search with filters
+- Predefined search examples
+- Search suggestions
+- Search history
+- Paginated results
+
+### Common Issues
+
+#### No Results
+
+- Verify index is built: `searchManager.searchIndex.size > 0`
+- Check active filters
+- Validate search text
+
+#### Slow Performance
+
+- Reduce `resultsPerPage` if there are many results
+- Verify virtualization
+- Optimize filters
+
+#### UI Issues
+
+- Verify `epg.css` is loaded
+- Check DOM events
+- Validate containers
+
+### Debugging
+
+```javascript
+// View current index
+console.log(searchManager.searchIndex);
+
+// Monitor events
+container.addEventListener('epg:*', console.log);
+
+// View cache status
+console.log(searchManager.cache);
+
+// Verify filters
+console.log(searchUI.currentFilters);
+```
+
+### Future Improvements
+
+1. **Search**
+   - Phonetic search
+   - Spell checking
+   - Synonyms and aliases
+
+2. **Performance**
+   - Worker for searches
+   - Persistent index
+   - Data compression
+
+3. **UX**
+   - Persistent history
+   - Favorite filters
+   - Hover preview
+
+## References
+
+### Related Files
+
+- `src/js/epg/EPGSearchManager.js`
+- `src/js/epg/EPGSearchUI.js`
+- `src/styles/epg.css`
 
 ## Demo
 
@@ -278,22 +404,25 @@ La demo incluye:
 
 ## Troubleshooting
 
-### Problemas comunes:
+### Common Issues
 
-**1. No aparecen resultados:**
-- Verificar que el índice esté construido: `searchManager.searchIndex.size > 0`
-- Comprobar que la query tenga más de 2 caracteres
-- Revisar filtros activos
+**1. No Results Appear**
 
-**2. Rendimiento lento:**
-- Reducir `resultsPerPage` si hay muchos resultados
-- Verificar que no haya memory leaks en el índice
-- Considerar aumentar `debounceDelay` para usuarios lentos
+- Verify that the index is built: `searchManager.searchIndex.size > 0`
+- Check that the query has more than 2 characters
+- Review active filters
 
-**3. Estilos incorrectos:**
-- Verificar que `epg.css` esté cargado
-- Comprobar que no hay conflictos de CSS
-- Usar herramientas de desarrollo para inspeccionar elementos
+**2. Slow Performance**
+
+- Reduce `resultsPerPage` if there are many results
+- Verify there are no memory leaks in the index
+- Consider increasing `debounceDelay` for slow users
+
+**3. Incorrect Styles**
+
+- Verify that `epg.css` is loaded
+- Check for CSS conflicts
+- Use developer tools to inspect elements
 
 ### Debug:
 
@@ -310,16 +439,16 @@ console.log('Estadísticas:', stats);
 
 ## Roadmap
 
-### Mejoras futuras:
+### Future Improvements
 
-- [ ] Búsqueda por voz
-- [ ] Historial de búsquedas
-- [ ] Búsqueda fuzzy (tolerancia a errores)
-- [ ] Filtros por clasificación y duración
-- [ ] Exportación de resultados
-- [ ] Integración con favoritos
-- [ ] Búsqueda en descripción de episodios
-- [ ] Sugerencias basadas en historial
+- [ ] Voice search
+- [ ] Search history
+- [ ] Fuzzy search (error tolerance)
+- [ ] Rating and duration filters 
+- [ ] Export results
+- [ ] Favorites integration
+- [ ] Episode description search
+- [ ] History-based suggestions
 
 ## Contribución
 

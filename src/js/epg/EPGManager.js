@@ -509,8 +509,8 @@ class EPGManager {
     }
 
     /**
-     * Obtiene géneros disponibles para filtros
-     * @returns {string[]} Lista de géneros
+     * Get available genres for filtering
+     * @returns {string[]} List of genres
      */
     getAvailableGenres() {
         if (!this.searchManager) {
@@ -521,8 +521,8 @@ class EPGManager {
     }
 
     /**
-     * Obtiene canales disponibles para filtros
-     * @returns {Object[]} Lista de canales
+     * Get available channels for filtering
+     * @returns {Object[]} List of channels
      */
     getAvailableChannels() {
         if (!this.searchManager) {
@@ -533,8 +533,8 @@ class EPGManager {
     }
 
     /**
-     * Obtiene estadísticas de búsqueda
-     * @returns {Object} Estadísticas
+     * Get search statistics
+     * @returns {Object} Statistics
      */
     getSearchStats() {
         if (!this.searchManager) {

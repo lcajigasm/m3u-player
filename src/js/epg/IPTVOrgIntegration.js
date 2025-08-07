@@ -420,8 +420,8 @@ class IPTVOrgIntegration {
     }
 
     /**
-     * Obtiene estadísticas de la integración
-     * @returns {Object} Estadísticas
+     * Get integration statistics
+     * @returns {Object} Statistics
      */
     getStats() {
         const channelCount = Array.from(this.cache.keys())
@@ -441,9 +441,9 @@ class IPTVOrgIntegration {
     }
 
     /**
-     * Busca guía por nombre alternativo
-     * @param {string} channelName - Nombre del canal
-     * @returns {Object|null} Guía encontrada
+     * Find guide by alternative name
+     * @param {string} channelName - Channel name
+     * @returns {Object|null} Found guide
      */
     findGuideByAlternativeName(channelName) {
         const searchTerm = channelName.toLowerCase();
@@ -460,10 +460,10 @@ class IPTVOrgIntegration {
     }
 
     /**
-     * Verifica si un canal soporta un idioma
-     * @param {Object} channel - Canal
-     * @param {string} language - Código de idioma
-     * @returns {boolean} Si soporta el idioma
+     * Check if a channel supports a language
+     * @param {Object} channel - Channel
+     * @param {string} language - Language code
+     * @returns {boolean} Whether the channel supports the language
      */
     channelSupportsLanguage(channel, language) {
         // Implementación básica - se puede mejorar

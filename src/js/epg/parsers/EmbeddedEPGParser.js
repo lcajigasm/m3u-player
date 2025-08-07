@@ -291,9 +291,9 @@ class EmbeddedEPGParser {
     }
 
     /**
-     * Extrae información de programa desde comentarios
-     * @param {string} comment - Línea de comentario
-     * @param {Map} programsMap - Mapa de programas
+     * Extract program information from comments
+     * @param {string} comment - Comment line
+     * @param {Map} programsMap - Programs map
      * @private
      */
     extractProgramInfoFromComment(comment, programsMap) {

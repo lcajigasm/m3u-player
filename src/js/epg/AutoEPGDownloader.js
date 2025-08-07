@@ -1,6 +1,6 @@
 /**
- * Auto EPG Downloader - Descargador automático de EPG
- * Gestiona la descarga programada y el cache local de datos EPG
+ * Auto EPG Downloader - Automatic EPG Downloader
+ * Manages scheduled downloads and local cache of EPG data
  */
 
 class AutoEPGDownloader {
@@ -34,18 +34,18 @@ class AutoEPGDownloader {
     }
 
     /**
-     * Inicializa el descargador automático
+     * Initializes the automatic downloader
      * @returns {Promise<void>}
      */
     async initialize() {
         try {
-            // Configurar almacenamiento local
+            // Configure local storage
             await this.initializeStorage();
             
-            // Configurar programador
+            // Set up scheduler
             this.setupScheduler();
             
-            // Limpiar datos antiguos
+            // Clean up old data
             await this.cleanupOldData();
             
             // System initialized
@@ -57,17 +57,17 @@ class AutoEPGDownloader {
     }
 
     /**
-     * Inicializa el sistema de almacenamiento
+     * Initializes the storage system
      * @returns {Promise<void>}
      */
     async initializeStorage() {
         try {
-            // Usar localStorage del navegador o sistema de archivos en Electron
+            // Use browser localStorage or filesystem in Electron
             if (typeof window !== 'undefined' && window.localStorage) {
                 this.localStorage = window.localStorage;
             } else {
-                // Para Electron, usar electron-store o sistema de archivos
-                this.localStorage = new Map(); // Fallback temporal
+                // For Electron, use electron-store or filesystem
+                this.localStorage = new Map(); // Temporary fallback
             }
             
             // Storage configured
@@ -79,10 +79,10 @@ class AutoEPGDownloader {
     }
 
     /**
-     * Configura el programador de descargas
+     * Sets up the download scheduler
      */
     setupScheduler() {
-        // Verificar cada hora si es momento de descargar
+        // Check every hour if it's time to download
         this.scheduler = setInterval(() => {
             const now = new Date();
             const currentHour = now.getHours();
@@ -90,14 +90,14 @@ class AutoEPGDownloader {
             if (this.config.scheduledHours.includes(currentHour)) {
                 const lastRun = this.downloadStats.lastRunTime;
                 
-                // Solo ejecutar si no se ha ejecutado en la última hora
+            // Only run if it hasn't run in the last hour
                 if (!lastRun || (now - lastRun) > 3600000) {
                     this.scheduleEPGDownload();
                 }
             }
-        }, 3600000); // Cada hora
+        }, 3600000); // Every hour
         
-        // Calcular próxima ejecución
+        // Calculate next run time
         this.calculateNextRunTime();
         
         // EPG scheduler configured
@@ -105,8 +105,8 @@ class AutoEPGDownloader {
     }
 
     /**
-     * Programa una descarga de EPG
-     * @param {Array} channels - Canales específicos (opcional)
+     * Schedules an EPG download
+     * @param {Array} channels - Specific channels (optional)
      * @returns {Promise<void>}
      */
     async scheduleEPGDownload(channels = null) {
@@ -119,7 +119,7 @@ class AutoEPGDownloader {
             // Starting automatic EPG download
             this.isDownloading = true;
             
-            // Usar canales proporcionados o todos los mapeados
+            // Use provided channels or all mapped channels
             const targetChannels = channels || this.getAllMappedChannels();
             
             if (targetChannels.length === 0) {
@@ -127,13 +127,13 @@ class AutoEPGDownloader {
                 return;
             }
             
-            // Resetear estadísticas
+            // Reset statistics
             this.downloadStats.totalChannels = targetChannels.length;
             this.downloadStats.successfulDownloads = 0;
             this.downloadStats.failedDownloads = 0;
             this.downloadStats.lastRunTime = new Date();
             
-            // Preparar cola de descarga
+            // Prepare download queue
             this.downloadQueue = targetChannels.map(channel => ({
                 channelId: channel.id,
                 channelName: channel.name,
@@ -141,13 +141,13 @@ class AutoEPGDownloader {
                 attempts: 0
             }));
             
-            // Ordenar por prioridad
+            // Sort by priority
             this.downloadQueue.sort((a, b) => a.priority - b.priority);
             
-            // Iniciar descarga en lotes
+            // Start batch download
             await this.processDownloadQueue();
             
-            // Calcular próxima ejecución
+            // Calculate next run time
             this.calculateNextRunTime();
             
             // Automatic download completed
@@ -161,7 +161,7 @@ class AutoEPGDownloader {
     }
 
     /**
-     * Procesa la cola de descarga
+     * Processes the download queue
      * @returns {Promise<void>}
      */
     async processDownloadQueue() {
@@ -170,11 +170,11 @@ class AutoEPGDownloader {
         while (this.downloadQueue.length > 0) {
             const batch = this.downloadQueue.splice(0, batchSize);
             
-            // Procesar lote en paralelo
+            // Process batch in parallel
             const promises = batch.map(item => this.downloadChannelEPG(item));
             await Promise.allSettled(promises);
             
-            // Pequeña pausa entre lotes
+            // Small pause between batches
             if (this.downloadQueue.length > 0) {
                 await this.delay(1000);
             }
@@ -182,9 +182,9 @@ class AutoEPGDownloader {
     }
 
     /**
-     * Descarga EPG para un canal específico
-     * @param {Object} channelItem - Item de la cola
-     * @returns {Promise<boolean>} Éxito de la descarga
+     * Downloads EPG for a specific channel
+     * @param {Object} channelItem - Queue item
+     * @returns {Promise<boolean>} Download success
      */
     async downloadChannelEPG(channelItem) {
         const { channelId, channelName } = channelItem;
@@ -192,11 +192,11 @@ class AutoEPGDownloader {
         try {
             // Downloading EPG for channel
             
-            // Descargar con timeout
+            // Download with timeout
             const epgData = await this.downloadWithTimeout(channelId);
             
             if (epgData && epgData.length > 0) {
-                // Guardar datos en cache local
+                // Save data to local cache
                 await this.saveEPGToCache(channelId, epgData);
                 
                 this.downloadStats.successfulDownloads++;
@@ -210,10 +210,10 @@ class AutoEPGDownloader {
         } catch (error) {
             console.warn(`⚠️ Error descargando EPG para ${channelName}:`, error.message);
             
-            // Intentar reintentos
+            // Try retries
             channelItem.attempts++;
             if (channelItem.attempts < this.config.retryAttempts) {
-                // Re-agregar a la cola con delay
+                // Re-add to queue with delay
                 setTimeout(() => {
                     this.downloadQueue.push(channelItem);
                 }, this.config.retryDelay * channelItem.attempts);
@@ -221,7 +221,7 @@ class AutoEPGDownloader {
                 // Retrying channel download
             } else {
                 this.downloadStats.failedDownloads++;
-                console.error(`❌ Falló definitivamente la descarga para ${channelName}`);
+                console.error(`❌ Download permanently failed for ${channelName}`);
             }
             
             return false;
@@ -229,9 +229,9 @@ class AutoEPGDownloader {
     }
 
     /**
-     * Descarga EPG con timeout
-     * @param {string} channelId - ID del canal
-     * @returns {Promise<Array>} Datos EPG
+     * Downloads EPG with timeout
+     * @param {string} channelId - Channel ID
+     * @returns {Promise<Array>} EPG data
      */
     async downloadWithTimeout(channelId) {
         return new Promise(async (resolve, reject) => {
@@ -256,9 +256,9 @@ class AutoEPGDownloader {
     }
 
     /**
-     * Guarda datos EPG en cache local
-     * @param {string} channelId - ID del canal
-     * @param {Array} epgData - Datos EPG
+     * Saves EPG data to local cache
+     * @param {string} channelId - Channel ID
+     * @param {Array} epgData - EPG data
      * @returns {Promise<void>}
      */
     async saveEPGToCache(channelId, epgData) {
@@ -272,10 +272,10 @@ class AutoEPGDownloader {
             };
             
             if (this.localStorage.setItem) {
-                // localStorage del navegador
+                // Browser localStorage
                 this.localStorage.setItem(cacheKey, JSON.stringify(cacheData));
             } else {
-                // Map temporal
+                // Temporary Map
                 this.localStorage.set(cacheKey, cacheData);
             }
             
@@ -285,9 +285,9 @@ class AutoEPGDownloader {
     }
 
     /**
-     * Obtiene EPG del cache local
-     * @param {string} channelId - ID del canal
-     * @returns {Array|null} Datos EPG o null
+     * Gets EPG from local cache
+     * @param {string} channelId - Channel ID
+     * @returns {Array|null} EPG data or null
      */
     getEPGFromCache(channelId) {
         try {
@@ -295,17 +295,17 @@ class AutoEPGDownloader {
             let cacheData;
             
             if (this.localStorage.getItem) {
-                // localStorage del navegador
+                // Browser localStorage
                 const data = this.localStorage.getItem(cacheKey);
                 cacheData = data ? JSON.parse(data) : null;
             } else {
-                // Map temporal
+                // Temporary Map
                 cacheData = this.localStorage.get(cacheKey);
             }
             
             if (!cacheData) return null;
             
-            // Verificar expiración
+            // Check expiration
             const expiresAt = new Date(cacheData.expiresAt);
             if (expiresAt < new Date()) {
                 this.removeFromCache(channelId);
@@ -321,8 +321,8 @@ class AutoEPGDownloader {
     }
 
     /**
-     * Remueve datos del cache
-     * @param {string} channelId - ID del canal
+     * Removes data from cache
+     * @param {string} channelId - Channel ID
      */
     removeFromCache(channelId) {
         try {
@@ -340,7 +340,7 @@ class AutoEPGDownloader {
     }
 
     /**
-     * Limpia datos antiguos del cache
+     * Cleans up old cache data
      * @returns {Promise<void>}
      */
     async cleanupOldData() {
@@ -349,7 +349,7 @@ class AutoEPGDownloader {
             let cleanedCount = 0;
             
             if (this.localStorage.getItem) {
-                // localStorage del navegador
+                // Browser localStorage
                 const keys = Object.keys(this.localStorage).filter(key => key.startsWith('epg_'));
                 
                 keys.forEach(key => {
@@ -362,14 +362,14 @@ class AutoEPGDownloader {
                             cleanedCount++;
                         }
                     } catch (error) {
-                        // Dato corrupto, eliminar
+                        // Corrupt data, remove
                         this.localStorage.removeItem(key);
                         cleanedCount++;
                     }
                 });
                 
             } else {
-                // Map temporal
+                // Temporary Map
                 for (const [key, data] of this.localStorage) {
                     if (key.startsWith('epg_')) {
                         const downloadedAt = new Date(data.downloadedAt);
@@ -392,8 +392,8 @@ class AutoEPGDownloader {
     }
 
     /**
-     * Obtiene todos los canales mapeados
-     * @returns {Array} Lista de canales mapeados
+     * Gets all mapped channels
+     * @returns {Array} List of mapped channels
      */
     getAllMappedChannels() {
         const channels = [];
@@ -410,13 +410,13 @@ class AutoEPGDownloader {
     }
 
     /**
-     * Calcula la próxima hora de ejecución
+     * Calculates the next run time
      */
     calculateNextRunTime() {
         const now = new Date();
         const currentHour = now.getHours();
         
-        // Encontrar la próxima hora programada
+        // Find the next scheduled hour
         let nextHour = null;
         
         for (const hour of this.config.scheduledHours) {
@@ -426,7 +426,7 @@ class AutoEPGDownloader {
             }
         }
         
-        // Si no hay hora hoy, usar la primera del día siguiente
+        // If no hour left today, use the first of the next day
         if (nextHour === null) {
             nextHour = this.config.scheduledHours[0];
             now.setDate(now.getDate() + 1);
@@ -439,8 +439,8 @@ class AutoEPGDownloader {
     }
 
     /**
-     * Forza una descarga inmediata
-     * @param {Array} channels - Canales específicos (opcional)
+     * Forces an immediate download
+     * @param {Array} channels - Specific channels (optional)
      * @returns {Promise<void>}
      */
     async forceDownload(channels = null) {
@@ -449,8 +449,8 @@ class AutoEPGDownloader {
     }
 
     /**
-     * Obtiene estadísticas del descargador
-     * @returns {Object} Estadísticas
+     * Gets downloader statistics
+     * @returns {Object} Statistics
      */
     getDownloadStats() {
         return {
@@ -462,13 +462,13 @@ class AutoEPGDownloader {
     }
 
     /**
-     * Actualiza la configuración
-     * @param {Object} newConfig - Nueva configuración
+     * Updates configuration
+     * @param {Object} newConfig - New configuration
      */
     updateConfig(newConfig) {
         this.config = { ...this.config, ...newConfig };
         
-        // Reconfigurar programador si cambió
+        // Reconfigure scheduler if changed
         if (newConfig.scheduledHours) {
             this.calculateNextRunTime();
         }
@@ -477,8 +477,8 @@ class AutoEPGDownloader {
     }
 
     /**
-     * Pausa de ejecución
-     * @param {number} ms - Milisegundos
+     * Execution delay
+     * @param {number} ms - Milliseconds
      * @returns {Promise<void>}
      */
     delay(ms) {
@@ -486,7 +486,7 @@ class AutoEPGDownloader {
     }
 
     /**
-     * Detiene y libera recursos
+     * Stops and releases resources
      */
     destroy() {
         if (this.scheduler) {
