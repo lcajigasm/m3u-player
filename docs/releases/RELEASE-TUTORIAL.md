@@ -225,9 +225,9 @@ After successful release:
 
 ## 🔗 Related Documentation
 
-- [Build Guide](BUILD-GUIDE.md) - Detailed build configuration
-- [Troubleshooting](TROUBLESHOOTING.md) - Common issues and solutions
-- [Contributing](../CONTRIBUTING.md) - Development guidelines
+- [Build Guide](../development/BUILD-GUIDE.md) - Detailed build configuration
+- [Troubleshooting](../user-guides/TROUBLESHOOTING.md) - Common issues and solutions
+- [Contributing](../../CONTRIBUTING.md) - Development guidelines
 
 ---
 

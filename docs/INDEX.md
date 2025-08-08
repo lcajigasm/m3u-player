@@ -40,9 +40,9 @@ Core documentation files:
 ## 🎯 **Quick Navigation**
 
 ### For Users
-- **Getting Started**: See [README.md](README.md)
+- **Getting Started**: See [README.md](../README.md)
 - **Having Issues?**: Check [user-guides/](user-guides/)
-- **Latest Changes**: See [CHANGELOG.md](CHANGELOG.md)
+- **Latest Changes**: See [CHANGELOG.md](../CHANGELOG.md)
 
 ### For Developers
 - **Building the Project**: See [development/BUILD-GUIDE.md](development/BUILD-GUIDE.md)

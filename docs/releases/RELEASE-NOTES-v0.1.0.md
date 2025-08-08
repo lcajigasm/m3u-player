@@ -87,7 +87,7 @@ This is a major release of M3U Player featuring dual theme system, enhanced UI, 
 ## 🔗 Links
 
 - **Repository**: [github.com/lcajigasm/m3u-player](https://github.com/lcajigasm/m3u-player)
-- **Documentation**: [docs/](../docs/)
+ - **Documentation**: [docs/](../)
 - **Issues**: [GitHub Issues](https://github.com/lcajigasm/m3u-player/issues)
 - **Releases**: [GitHub Releases](https://github.com/lcajigasm/m3u-player/releases)
 
