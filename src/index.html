@@ -465,9 +465,9 @@
                         <span class="btn-icon">⛶</span>
                         <span class="btn-text">Fullscreen</span>
                     </button>
-                    <button id="epgBtn" class="control-btn premium" title="Electronic Program Guide">
+                    <button id="epgBtn" class="control-btn premium" title="Guía de Programación">
                         <span class="btn-icon">📺</span>
-                        <span class="btn-text">EPG</span>
+                        <span class="btn-text">Guía</span>
                     </button>
                 </div>
                 
@@ -701,6 +701,28 @@
                             <p>No hay información de programación disponible para los canales actuales.</p>
                             <button id="epgRetryBtn" class="upload-btn">🔄 Reintentar</button>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Now/Next Sidebar Panel (Overlay) -->
+        <div id="nowNextPanel" style="display: none">
+            <div class="epg-now-next">
+                <div class="panel-header">
+                    <span>📺 Now/Next</span>
+                    <button id="closeNowNext" class="close-btn" aria-label="Cerrar">&times;</button>
+                </div>
+                <div class="panel-content">
+                    <div class="now-item">
+                        <div class="label">Ahora</div>
+                        <div class="title" id="nowProgramTitle">—</div>
+                        <div class="time" id="nowProgramTime">--:-- - --:--</div>
+                    </div>
+                    <div class="next-item">
+                        <div class="label">Siguiente</div>
+                        <div class="title" id="nextProgramTitle">—</div>
+                        <div class="time" id="nextProgramTime">--:-- - --:--</div>
                     </div>
                 </div>
             </div>
