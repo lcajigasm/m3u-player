@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, Menu, shell } = require('electron');
+/Users/luis/Library/Application Support/CleanShot/media/media_W3lrLsmMGY/CleanShot 2025-08-07 at 22.40.30.pngconst { app, BrowserWindow, ipcMain, dialog, Menu, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');

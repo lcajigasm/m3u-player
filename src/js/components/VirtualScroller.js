@@ -533,10 +533,35 @@ class VirtualScroller {
      * @param {string} html
      * @returns {string}
      */
+    /**
+     * Sanitiza HTML permitiendo solo <img> y atributos seguros
+     * @param {string} html
+     * @returns {string}
+     */
     sanitizeHTML(html) {
-        const div = document.createElement('div');
-        div.textContent = html;
-        return div.innerHTML;
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+        const allowedTags = ['IMG'];
+        const allowedAttrs = ['src', 'alt', 'title', 'width', 'height', 'class', 'style'];
+        function walk(node) {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+                if (!allowedTags.includes(node.tagName)) {
+                    const text = document.createTextNode(node.textContent);
+                    node.parentNode.replaceChild(text, node);
+                } else {
+                    Array.from(node.attributes).forEach(attr => {
+                        if (!allowedAttrs.includes(attr.name)) {
+                            node.removeAttribute(attr.name);
+                        }
+                    });
+                }
+            } else if (node.nodeType === Node.COMMENT_NODE) {
+                node.parentNode.removeChild(node);
+            }
+            Array.from(node.childNodes).forEach(walk);
+        }
+        Array.from(temp.childNodes).forEach(walk);
+        return temp.innerHTML;
     }
             element.removeAttribute('data-index');
             this.itemPool.push(element);
