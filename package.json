@@ -75,6 +75,7 @@
     "cheerio": "^1.0.0-rc.12",
     "electron-store": "^8.1.0",
     "hls.js": "^1.4.12",
+    "i18next": "^22.5.1",
     "node-cron": "^3.0.3",
     "xml2js": "^0.6.2"
   },

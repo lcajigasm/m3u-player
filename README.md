@@ -114,6 +114,8 @@ https://m3u-player.eu/stream.m3u8
 - **+/-** - Adjust brightness
 - **↑/↓** - Volume control
 - **M** - Mute
+  
+See also: `docs/user-guides/KEYBOARD-SHORTCUTS.md`
 
 ### Search & Filtering:
 - **Instant search** - Search by name, group, or type
@@ -133,6 +135,7 @@ The project includes comprehensive documentation organized by category:
 
 ### Quick Links:
 - **Getting Help**: [User Guides](docs/user-guides/TROUBLESHOOTING.md)
+- **i18n Quick Guide**: [docs/development/I18N-GUIDE.md](docs/development/I18N-GUIDE.md)
 - **Building the Project**: [Build Guide](docs/development/BUILD-GUIDE.md)
 - **Release Process**: [Release Tutorial](docs/releases/RELEASE-TUTORIAL.md)
 
