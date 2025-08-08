@@ -1,4 +1,4 @@
-const { test, expect } = require('@playwright/test');
+const { _electron: electron, test, expect } = require('@playwright/test');
 
 // Generates a synthetic playlist of N items
 function genItems(n){
@@ -16,7 +16,8 @@ function genItems(n){
 }
 
 // E2E: search should be < 50ms on 10k items
-test('search performance under 50ms on 10k items', async ({ electronApp }) => {
+test('search performance under 50ms on 10k items', async () => {
+  const electronApp = await electron.launch({ args: ['.'] });
   const window = await electronApp.firstWindow();
 
   // Inject a synthetic list and initialize UI components
@@ -56,12 +57,12 @@ test('search performance under 50ms on 10k items', async ({ electronApp }) => {
   }, { count: 10000 });
 
   // Validate time under 50ms
-  const { dt, resultCount } = await window.evaluate(() => ({ dt: 0, resultCount: 0 }));
-  // Above evaluate won't return data here; instead rerun to get stored metrics if needed
-  const metrics = await window.evaluate(() => {
-    const ms = window.UI?.Metrics?.get('search.ms') || 0;
-    return { ms };
+  const { dt } = await window.evaluate(() => {
+    const ms = window.UI?.Metrics?.get('search.ms');
+    return { dt: typeof ms === 'number' ? ms : 0 };
   });
 
-  expect(metrics.ms).toBeLessThan(50);
+  expect(dt).toBeLessThan(50);
+
+  await electronApp.close();
 });

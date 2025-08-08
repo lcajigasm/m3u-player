@@ -1,12 +1,22 @@
 // E2E Playwright: playlist maliciosa, verificar que no navega fuera de la app
-const { test, expect } = require('@playwright/test');
+const { _electron: electron, test, expect } = require('@playwright/test');
 
-test('No navigation to external origins from malicious playlist', async ({ electronApp }) => {
+test('No navigation to external origins from malicious playlist', async () => {
+  const electronApp = await electron.launch({ args: ['.'] });
   const window = await electronApp.firstWindow();
+  const initialUrl = await window.url();
   // Simula carga de playlist con entrada maliciosa
   await window.evaluate(() => {
-    window.api.playlists.importFromUrl('file:///etc/passwd');
+    try {
+      window.api.playlists.importFromUrl('file:///etc/passwd');
+    } catch (e) {
+      // Expected error path; ensure app remains on allowed origin
+    }
   });
   // Espera y verifica que la URL no cambió a origen externo
-  await expect(window).not.toHaveURL(/file:\/|data:|javascript:/);
+  const url = await window.url();
+  expect(url).toMatch(/^file:\/\//);
+  expect(url).not.toMatch(/^(data:|javascript:)/);
+  expect(url).toBe(initialUrl);
+  await electronApp.close();
 });

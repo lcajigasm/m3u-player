@@ -1,10 +1,22 @@
 import security from "eslint-plugin-security";
 
 export default [
+  // Global ignores (Flat config)
   {
-    files: ["**/*.{js,html}"],
+    ignores: [
+      "node_modules/**",
+      "dist/**",
+      "coverage/**",
+      "test-results/**",
+      "examples/**",
+      "assets/**",
+      "**/*.html" // HTML files are not linted as JS
+    ]
+  },
+  {
+    files: ["**/*.js"],
     languageOptions: {
-      ecmaVersion: 2021,
+      ecmaVersion: "latest",
       sourceType: "module",
       globals: {
         window: "readonly",
