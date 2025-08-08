@@ -32,6 +32,12 @@ class M3UPlayer {
         // Configure debouncing for search
         this.searchTimeout = null;
 
+        // Virtual list and search state
+        this.isVirtualMode = false;
+        this.channelList = null;
+        this.searchComponent = null;
+        this._currentFilteredItems = null;
+
         // Check IPTV-ORG playlist status on startup
         this.checkIPTVOrgPlaylistStatus();
         
@@ -2001,16 +2007,16 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         // Show skeleton loading for better UX
         this.showSkeletonLoading();
 
-        // For large playlists, use virtual scrolling
+        // For large playlists, use virtual scrolling + indexed search
         if (this.playlistData.length > 1000) {
-            console.log('🚀 Using virtual scrolling for large playlist');
-            this.initVirtualScrolling();
-            
-            // Configure filters and counter for virtual scrolling too
+            console.log('🚀 Using virtual list + indexed search for large playlist');
+            this.setupVirtualPlaylist();
+            // Configure filters and counter
             this.populateGroupFilter();
-            this.updateFilterCounts();
+            if (typeof this.updateFilterCounts === 'function') {
+                this.updateFilterCounts();
+            }
             this.updateChannelCount(this.playlistData.length, this.playlistData.length);
-            
             return;
         }
 
@@ -2031,6 +2037,68 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         
         // Preload logos in background (limited for performance)
         setTimeout(() => this.preloadLogos(), 200);
+    }
+
+    setupVirtualPlaylist() {
+        try {
+            this.isVirtualMode = true;
+            const items = this.playlistData;
+
+            // Ensure playlist container has height for virtualization
+            if (!this.playlist.style.height) {
+                this.playlist.style.height = '60vh';
+            }
+            this.playlist.style.display = 'block';
+            this.playlist.style.overflow = 'auto';
+
+            if (window.UI && window.UI.ChannelList) {
+                this.channelList = window.UI.ChannelList({
+                    container: this.playlist,
+                    items,
+                    onItemClick: (item, idx) => {
+                        const target = this._currentFilteredItems ? this._currentFilteredItems[idx] : items[idx];
+                        const originalIndex = this.playlistData.indexOf(target);
+                        if (originalIndex >= 0) this.playItem(originalIndex);
+                    },
+                    onTestClick: (item, idx) => {
+                        const target = this._currentFilteredItems ? this._currentFilteredItems[idx] : items[idx];
+                        const originalIndex = this.playlistData.indexOf(target);
+                        if (originalIndex >= 0) this.testStream(originalIndex);
+                    }
+                });
+            }
+
+            if (window.UI && window.UI.SearchBar) {
+                this.searchComponent = window.UI.SearchBar({
+                    items,
+                    onResults: (indices) => {
+                        this._currentFilteredItems = indices.map(i => items[i]);
+                        if (this.channelList) this.channelList.update(this._currentFilteredItems);
+                        this.updateChannelCount(this._currentFilteredItems.length, this.playlistData.length);
+                    }
+                });
+            }
+
+            // Initial state
+            this._currentFilteredItems = items;
+
+            // Hide skeleton once ready
+            setTimeout(() => this.hideSkeletonLoading(), 100);
+
+            console.log('✅ Virtual list initialized');
+        } catch (e) {
+            console.warn('⚠️ Virtual list failed, falling back to built-in virtual scrolling:', e);
+            this.isVirtualMode = false;
+            this.initVirtualScrolling();
+        }
+    }
+
+    virtualHandleSearch() {
+        if (!this.isVirtualMode || !this.searchComponent) return;
+        const query = this.searchInput?.value || '';
+        const group = this.groupFilter?.value || '';
+        const type = this.typeFilter?.value || '';
+        this.searchComponent.run(query, { group, type });
     }
 
     showSkeletonLoading() {
@@ -3440,6 +3508,12 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
     // Search optimized for instant performance
     handleSearch() {
         if (!this.playlistData || !this.playlist) return;
+
+        // If virtual mode is enabled, delegate to indexed search
+        if (this.isVirtualMode && this.searchComponent) {
+            this.virtualHandleSearch();
+            return;
+        }
 
         const searchTerm = this.searchInput?.value.toLowerCase().trim() || '';
         const selectedGroup = this.groupFilter?.value || '';
