@@ -188,9 +188,9 @@ git push origin --delete release/0.2.0
 
 ## 🔗 Related Documentation
 
-- [Build Guide](BUILD-GUIDE.md) - Complete build instructions
+- [Build Guide](../development/BUILD-GUIDE.md) - Complete build instructions
 - [Release Tutorial](RELEASE-TUTORIAL.md) - Manual release process
-- [Troubleshooting](TROUBLESHOOTING.md) - Common issues
+- [Troubleshooting](../user-guides/TROUBLESHOOTING.md) - Common issues
 
 ---
 

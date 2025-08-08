@@ -149,6 +149,28 @@ function createWindow() {
   // Load the application
   mainWindow.loadFile('src/index.html');
 
+  // Relax CSP only at runtime if needed by allowing http(s) connect for m3u/m3u8 fetches
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    const responseHeaders = details.responseHeaders || {};
+    const cspHeaderKey = Object.keys(responseHeaders).find(k => k.toLowerCase() === 'content-security-policy');
+    if (cspHeaderKey) {
+      const current = Array.isArray(responseHeaders[cspHeaderKey]) ? responseHeaders[cspHeaderKey][0] : responseHeaders[cspHeaderKey];
+      // Ensure connect-src allows http/https/ws/wss and media-src allows http/https
+      const patched = current
+        .replace(/connect-src[^;]*/i, (m) => {
+          return m.includes('http:') ? m : `${m} http: https: ws: wss: blob: data:`;
+        })
+        .replace(/media-src[^;]*/i, (m) => {
+          return m.includes('http:') ? m : `${m} http: https:`;
+        })
+        .replace(/img-src[^;]*/i, (m) => {
+          return m.includes('http:') ? m : `${m} http:`;
+        });
+      responseHeaders[cspHeaderKey] = [patched];
+    }
+    callback({ responseHeaders });
+  });
+
   // Show window when ready
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
