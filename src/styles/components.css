@@ -1000,3 +1000,13 @@ input:focus-visible {
 .shadow-md { box-shadow: var(--shadow-md); }
 .shadow-lg { box-shadow: var(--shadow-lg); }
 .shadow-xl { box-shadow: var(--shadow-xl); }
+
+/* ===== Diagnostics ===== */
+.diag-grid{ display:grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap:12px; margin-bottom:12px; }
+.diag-card{ background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; }
+.diag-title{ font-weight: 600; margin-bottom: 8px; }
+.diag-row{ display:flex; gap:8px; align-items:center; margin: 4px 0; }
+.diag-table{ width:100%; border-collapse: collapse; font-size: 0.92rem; }
+.diag-table th, .diag-table td{ border-bottom: 1px solid var(--border-color); padding: 6px 8px; text-align: left; }
+.diag-table thead th{ position: sticky; top: 0; background: var(--bg-secondary); z-index: 1; }
+.telemetry{ margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border-color); }

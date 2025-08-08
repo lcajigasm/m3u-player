@@ -21,6 +21,7 @@ Technical specifications and requirements:
 End-user documentation and troubleshooting:
 - [`TROUBLESHOOTING.md`](user-guides/TROUBLESHOOTING.md) - General troubleshooting guide
 - [`CACHE-TROUBLESHOOTING.md`](user-guides/CACHE-TROUBLESHOOTING.md) - Cache-related issues and fixes
+- [`PRIVACY.md`](PRIVACY.md) - Privacy & Telemetry policy
 
 ### 📁 **releases/**
 Release management and version documentation:
