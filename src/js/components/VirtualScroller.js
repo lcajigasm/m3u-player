@@ -534,33 +534,33 @@ class VirtualScroller {
      * @returns {string}
      */
     /**
-     * Sanitiza HTML permitiendo solo <img> y atributos seguros
+     * Sanitiza HTML permitiendo etiquetas seguras
      * @param {string} html
      * @returns {string}
      */
     sanitizeHTML(html) {
+        // Para contenido de canales, necesitamos permitir más etiquetas
+        // pero aún así mantener seguridad básica
+        if (typeof html !== 'string') return '';
+        
+        // Lista simple de etiquetas permitidas para canales
+        const allowedTags = ['DIV', 'SPAN', 'IMG', 'BUTTON', 'BR'];
+        const allowedAttrs = ['class', 'src', 'alt', 'title', 'data-url', 'data-index'];
+        
         const temp = document.createElement('div');
         temp.innerHTML = html;
-        const allowedTags = ['IMG'];
-        const allowedAttrs = ['src', 'alt', 'title', 'width', 'height', 'class', 'style'];
-        function walk(node) {
-            if (node.nodeType === Node.ELEMENT_NODE) {
-                if (!allowedTags.includes(node.tagName)) {
-                    const text = document.createTextNode(node.textContent);
-                    node.parentNode.replaceChild(text, node);
-                } else {
-                    Array.from(node.attributes).forEach(attr => {
-                        if (!allowedAttrs.includes(attr.name)) {
-                            node.removeAttribute(attr.name);
-                        }
-                    });
+        
+        // Solo remover scripts y eventos, mantener estructura HTML
+        temp.querySelectorAll('script').forEach(el => el.remove());
+        temp.querySelectorAll('*').forEach(el => {
+            // Remover atributos de eventos
+            Array.from(el.attributes).forEach(attr => {
+                if (attr.name.startsWith('on') || attr.name === 'javascript:') {
+                    el.removeAttribute(attr.name);
                 }
-            } else if (node.nodeType === Node.COMMENT_NODE) {
-                node.parentNode.removeChild(node);
-            }
-            Array.from(node.childNodes).forEach(walk);
-        }
-        Array.from(temp.childNodes).forEach(walk);
+            });
+        });
+        
         return temp.innerHTML;
     }
             element.removeAttribute('data-index');

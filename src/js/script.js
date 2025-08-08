@@ -667,7 +667,7 @@ class M3UPlayer {
             }
 
             if (this.isElectron && window.electronAPI) {
-                const response = await window.electronAPI.fetchUrl(url, requestOptions);
+                const response = await window.api.fetchUrl(url, requestOptions);
 
                 if (response.success) {
                     content = response.data;
@@ -768,7 +768,7 @@ class M3UPlayer {
             let content;
             
             if (this.isElectron && window.electronAPI) {
-                const response = await window.electronAPI.fetchUrl(iptvOrgUrl, {
+                const response = await window.api.fetchUrl(iptvOrgUrl, {
                     userAgent: this.config.playerSettings?.userAgent || 'M3U Player/1.0.0'
                 });
                 
@@ -1049,7 +1049,7 @@ class M3UPlayer {
             let content;
             
             if (this.isElectron && window.electronAPI) {
-                const response = await window.electronAPI.fetchUrl(freeTvUrl, {
+                const response = await window.api.fetchUrl(freeTvUrl, {
                     userAgent: this.config.playerSettings?.userAgent || 'M3U Player/1.0.0'
                 });
                 
@@ -1982,6 +1982,11 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
     }
 
     renderPlaylist() {
+        console.log('🔍 renderPlaylist called - Starting debug...');
+        console.log('this.playlist:', this.playlist);
+        console.log('this.playlistData:', this.playlistData);
+        console.log('this.playlistData length:', this.playlistData?.length);
+        
         if (!this.playlist || !this.playlistData) {
             console.error('❌ Cannot render playlist - missing elements:', {
                 playlist: !!this.playlist,
@@ -2566,7 +2571,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
     async isAudioOnlyStream(url) {
         try {
             console.log('🎵 Checking if stream is audio-only...');
-            const response = await window.electronAPI.fetchUrl(url, {
+            const response = await window.api.fetchUrl(url, {
                 method: 'HEAD',
                 timeout: 5000
             });
@@ -2580,7 +2585,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             
             // If it's an M3U8, check the manifest for codec information
             if (url.includes('.m3u8')) {
-                const manifestResponse = await window.electronAPI.fetchUrl(url, { timeout: 5000 });
+                const manifestResponse = await window.api.fetchUrl(url, { timeout: 5000 });
                 if (manifestResponse.success && manifestResponse.data) {
                     const manifest = manifestResponse.data;
                     // Check for audio-only codec patterns
@@ -2634,7 +2639,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             
             console.log(`🔍 Resolviendo URL final para: ${originalUrl}`);
             
-            const headResponse = await window.electronAPI.fetchUrl(originalUrl, {
+            const headResponse = await window.api.fetchUrl(originalUrl, {
                 method: 'HEAD',
                 timeout: 10000,
                 userAgent: 'VLC/3.0.8 LibVLC/3.0.8',
@@ -2880,7 +2885,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
                 const maxRedirects = 5;
                 
                 while (attempts < maxRedirects) {
-                    const headResponse = await window.electronAPI.fetchUrl(finalUrl, {
+                    const headResponse = await window.api.fetchUrl(finalUrl, {
                         method: 'HEAD',
                         timeout: 10000,
                         userAgent: 'VLC/3.0.8 LibVLC/3.0.8',
@@ -2985,7 +2990,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         try {
             let result;
             if (this.isElectron && window.electronAPI) {
-                result = await window.electronAPI.fetchUrl(item.url, {
+                result = await window.api.fetchUrl(item.url, {
                     method: 'HEAD',
                     timeout: 5000,
                     userAgent: this.config.playerSettings?.userAgent
@@ -3552,6 +3557,12 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
     // Crear elemento de playlist optimizado
     createPlaylistItem(item, originalIndex, displayNumber = null) {
+        console.log(`🔍 Creating item ${originalIndex}:`, {
+            title: item.title,
+            logo: item.logo,
+            hasLogo: !!(item.logo && item.logo.trim() !== '')
+        });
+        
         const playlistItem = document.createElement('div');
         playlistItem.className = 'playlist-item';
         playlistItem.dataset.index = originalIndex; // Use original index for data lookup
@@ -3562,13 +3573,16 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
         const numberToShow = displayNumber !== null ? displayNumber : originalIndex + 1;
 
+        const logoHtml = item.logo && item.logo.trim() !== '' ?
+            `<img src="${item.logo}" alt="Logo" />` :
+            `<div class="logo-placeholder">📺</div>`;
+        
+        console.log(`🖼️ Logo HTML for ${item.title}:`, logoHtml);
+
         playlistItem.innerHTML = `
             <div class="playlist-item-number">${numberToShow}</div>
             <div class="playlist-item-logo">
-                ${item.logo && item.logo.trim() !== '' ?
-                    `<img src="${this.escapeHtml(item.logo)}" alt="Logo" onerror="this.parentElement.innerHTML='<div class=&quot;logo-placeholder&quot;>📺</div>'" />` :
-                    `<div class="logo-placeholder">📺</div>`
-                }
+                ${logoHtml}
             </div>
             <div class="playlist-item-content">
                 <div class="playlist-item-title" title="${this.escapeHtml(item.title)}">
@@ -3586,6 +3600,19 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
                 <button class="test-stream-btn" title="Probar stream">🔧</button>
             </div>
         `;
+
+        // Handle logo error fallback via JavaScript instead of onerror
+        const logoImg = playlistItem.querySelector('img');
+        if (logoImg) {
+            console.log(`🔗 Setting up logo error handler for: ${item.logo}`);
+            logoImg.addEventListener('error', function() {
+                console.log(`❌ Logo failed to load: ${item.logo}`);
+                this.parentElement.innerHTML = '<div class="logo-placeholder">📺</div>';
+            });
+            logoImg.addEventListener('load', function() {
+                console.log(`✅ Logo loaded successfully: ${item.logo}`);
+            });
+        }
 
         // Use the originalIndex parameter directly (no need to redeclare)
         

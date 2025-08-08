@@ -53,5 +53,12 @@ contextBridge.exposeInMainWorld('api', {
       if (headers && typeof headers !== 'object') throw new TypeError('streams.test: headers must be object');
       return ipcRenderer.invoke('streams-test', url, headers);
     }
+  },
+  /** @param {string} url @param {object} [options] */
+  fetchUrl: (url, options = {}) => {
+    if (typeof url !== 'string') throw new TypeError('fetchUrl: url must be string');
+    if (!/^https?:\/\//.test(url)) throw new Error('fetchUrl: only http/https allowed');
+    if (options && typeof options !== 'object') throw new TypeError('fetchUrl: options must be object');
+    return ipcRenderer.invoke('fetch-url', url, options);
   }
 });
