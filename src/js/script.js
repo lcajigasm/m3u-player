@@ -50,7 +50,17 @@ class M3UPlayer {
         
         // Initialize internationalization after DOM is ready
         setTimeout(() => {
-            this.initializeI18n();
+            try {
+                if (window.i18n && typeof window.i18n.updateUI === 'function') {
+                    // Sync language selector
+                    if (this.languageSelect && window.i18n.currentLanguage) {
+                        this.languageSelect.value = window.i18n.currentLanguage;
+                    }
+                    window.i18n.updateUI();
+                }
+            } catch (e) {
+                console.warn('i18n init warning:', e);
+            }
         }, 200);
     }
 

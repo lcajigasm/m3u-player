@@ -166,6 +166,9 @@ class M3UPlayer {
         // Modales
         this.settingsModal = document.getElementById('settingsModal');
         this.aboutModal = document.getElementById('aboutModal');
+        this.shortcutsModal = document.getElementById('shortcutsModal');
+        this.shortcutsHeaderBtn = document.getElementById('shortcutsHeaderBtn');
+        this.closeShortcutsBtn = document.getElementById('closeShortcuts');
 
         // Overlay de video
         this.videoOverlay = document.getElementById('videoOverlay');
@@ -271,6 +274,23 @@ class M3UPlayer {
         // Configuración
         document.getElementById('saveSettings')?.addEventListener('click', () => this.saveSettings());
         document.getElementById('resetSettings')?.addEventListener('click', () => this.resetSettings());
+
+        // Shortcuts modal
+        this.shortcutsHeaderBtn?.addEventListener('click', () => this.showShortcuts());
+        this.closeShortcutsBtn?.addEventListener('click', () => this.hideShortcuts());
+        document.addEventListener('keydown', (e) => {
+            // Open shortcuts with Shift+/
+            if (e.shiftKey && e.key === '?') {
+                e.preventDefault();
+                this.showShortcuts();
+            }
+            if (e.key === 'Escape') {
+                // Close shortcuts modal if open
+                if (this.shortcutsModal && this.shortcutsModal.style.display !== 'none') {
+                    this.hideShortcuts();
+                }
+            }
+        }, { capture: true });
     }
 
     /**
@@ -320,6 +340,20 @@ class M3UPlayer {
                     this.hideEPGModal();
                 }
             });
+        }
+    }
+
+    showShortcuts() {
+        if (this.shortcutsModal) {
+            this.shortcutsModal.style.display = 'block';
+            const closeBtn = this.closeShortcutsBtn;
+            closeBtn?.focus();
+        }
+    }
+
+    hideShortcuts() {
+        if (this.shortcutsModal) {
+            this.shortcutsModal.style.display = 'none';
         }
     }
 
@@ -463,6 +497,10 @@ class M3UPlayer {
                     e.preventDefault();
                     this.toggleFullscreen();
                     break;
+                case 'm':
+                    e.preventDefault();
+                    this.toggleMute();
+                    break;
                 case '+':
                 case '=':
                     e.preventDefault();
@@ -472,6 +510,23 @@ class M3UPlayer {
                     e.preventDefault();
                     this.adjustBrightness(-5);
                     break;
+            }
+        });
+
+        // Playlist keyboard navigation
+        this.playlist?.addEventListener('keydown', (e) => {
+            const items = Array.from(this.playlist.querySelectorAll('.playlist-item'));
+            if (items.length === 0) return;
+            const active = document.activeElement;
+            const idx = items.indexOf(active);
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                const next = items[Math.min((idx >= 0 ? idx + 1 : 0), items.length - 1)];
+                next?.focus();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                const prev = items[Math.max((idx >= 0 ? idx - 1 : items.length - 1), 0)];
+                prev?.focus();
             }
         });
     }
@@ -1204,11 +1259,12 @@ https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
     }
 
     updatePlayPauseButton() {
+        const t = window.__t || ((k) => k);
         if (this.playPauseBtn && this.videoPlayer) {
             if (this.videoPlayer.paused) {
-                this.playPauseBtn.textContent = '▶️ Reproducir';
+                this.playPauseBtn.textContent = `▶️ ${t('play')}`;
             } else {
-                this.playPauseBtn.textContent = '⏸️ Pausar';
+                this.playPauseBtn.textContent = `⏸️ ${t('pause')}`;
             }
         }
     }
@@ -1253,13 +1309,15 @@ https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
     showLoading() {
         if (this.loadingSpinner) {
             this.loadingSpinner.style.display = 'block';
+            this.loadingSpinner.setAttribute('aria-busy', 'true');
         }
         if (this.videoOverlay) {
             this.videoOverlay.classList.add('show');
             this.videoOverlay.style.display = 'flex';
         }
         if (this.playPauseBtn) {
-            this.playPauseBtn.textContent = '⏳ Cargando...';
+            const t = window.__t || ((k) => k);
+            this.playPauseBtn.textContent = `⏳ ${t('loading')}`;
             this.playPauseBtn.disabled = true;
         }
         this.hideError();
@@ -1268,6 +1326,7 @@ https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
     hideLoading() {
         if (this.loadingSpinner) {
             this.loadingSpinner.style.display = 'none';
+            this.loadingSpinner.setAttribute('aria-busy', 'false');
         }
         if (this.videoOverlay) {
             this.videoOverlay.classList.remove('show');
@@ -1390,6 +1449,9 @@ https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
     createPlaylistItem(item, index) {
         const playlistItem = document.createElement('div');
         playlistItem.className = 'playlist-item';
+        playlistItem.setAttribute('role', 'listitem');
+        playlistItem.setAttribute('tabindex', '0');
+        playlistItem.setAttribute('aria-label', item.title);
         playlistItem.dataset.index = index;
 
         const typeIcon = item.type === 'HLS' ? '📡' : item.type === 'Direct' ? '🎥' : '📺';
@@ -1428,10 +1490,23 @@ https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
         });
 
         const testBtn = playlistItem.querySelector('.test-stream-btn');
+        if (testBtn) {
+            testBtn.setAttribute('aria-label', 'Test stream');
+            testBtn.setAttribute('title', 'Test stream');
+        }
         testBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             const originalIndex = this.playlistData.findIndex(dataItem => dataItem === item);
             this.testStream(originalIndex);
+        });
+
+        // Keyboard activate
+        playlistItem.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                const originalIndex = this.playlistData.findIndex(dataItem => dataItem === item);
+                this.playItem(originalIndex);
+            }
         });
 
         return playlistItem;
@@ -1471,11 +1546,12 @@ https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
         if (!this.channelCount) return;
 
         const totalCount = total || this.playlistData?.length || 0;
-
+        const t = window.__t || ((k) => k);
+        const label = (t('channels_label') || 'Channels').toLowerCase();
         if (visible === totalCount) {
-            this.channelCount.textContent = `${totalCount} canales`;
+            this.channelCount.textContent = `${totalCount} ${label}`;
         } else {
-            this.channelCount.textContent = `${visible} de ${totalCount} canales`;
+            this.channelCount.textContent = `${visible} / ${totalCount} ${label}`;
         }
     }
 
@@ -1489,8 +1565,9 @@ https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4`;
                 .filter(group => group && group.trim())
         )].sort();
 
-        // Limpiar opciones existentes (excepto "Todos los grupos")
-        this.groupFilter.innerHTML = '<option value="">Todos los grupos</option>';
+        // Limpiar opciones existentes (excepto opción "Todos")
+        const t = window.__t || ((k) => k);
+        this.groupFilter.innerHTML = `<option value="">${t('all_groups')}</option>`;
 
         // Agregar opciones de grupos
         groups.forEach(group => {
