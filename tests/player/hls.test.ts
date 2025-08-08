@@ -5,16 +5,20 @@ jest.mock('hls.js', () => {
     static ErrorTypes = { NETWORK_ERROR: 'NETWORK_ERROR', MEDIA_ERROR: 'MEDIA_ERROR' };
     static ErrorDetails = { MANIFEST_LOAD_ERROR: 'MANIFEST_LOAD_ERROR', MANIFEST_LOAD_TIMEOUT: 'MANIFEST_LOAD_TIMEOUT', MANIFEST_PARSING_ERROR: 'MANIFEST_PARSING_ERROR' };
 
-    on = jest.fn();
-    loadSource = jest.fn();
-    attachMedia = jest.fn();
-    destroy = jest.fn();
-    recoverMediaError = jest.fn();
-    audioTracks: any[] = [];
-    subtitleTracks: any[] = [];
-    currentLevel = -1;
-    levels: any[] = [];
+    constructor() {
+      this.audioTracks = [];
+      this.subtitleTracks = [];
+      this.currentLevel = -1;
+      this.levels = [];
+    }
   }
+  // Define instance methods on the prototype so tests that inspect prototype pass
+  (MockHls.prototype as any).on = jest.fn();
+  (MockHls.prototype as any).loadSource = jest.fn();
+  (MockHls.prototype as any).attachMedia = jest.fn();
+  (MockHls.prototype as any).destroy = jest.fn();
+  (MockHls.prototype as any).recoverMediaError = jest.fn();
+
   return { __esModule: true, default: MockHls, Events: MockHls.Events, ErrorTypes: MockHls.ErrorTypes, ErrorDetails: MockHls.ErrorDetails };
 });
 
