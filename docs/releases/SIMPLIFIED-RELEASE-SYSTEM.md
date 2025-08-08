@@ -142,7 +142,7 @@ https://github.com/your-repo/releases
 
 - [Auto-Release Guide](AUTO-RELEASE-GUIDE.md) - Detailed branch-based release guide
 - [Release Tutorial](RELEASE-TUTORIAL.md) - Manual tag-based releases
-- [Build Guide](BUILD-GUIDE.md) - Complete build instructions
+- [Build Guide](../development/BUILD-GUIDE.md) - Complete build instructions
 
 ---
 

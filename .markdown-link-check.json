@@ -1,0 +1,13 @@
+{
+  "ignorePatterns": [
+    { "pattern": "^mailto:" }
+  ],
+  "httpHeaders": [
+    {
+      "urls": ["https://commondatastorage.googleapis.com/*"],
+      "headers": { "user-agent": "Mozilla/5.0" }
+    }
+  ],
+  "aliveStatusCodes": [200, 206, 301, 302, 403]
+}
+

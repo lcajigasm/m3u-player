@@ -244,8 +244,8 @@ ls -la m3u-player-0.1.0.AppImage
 ## 🔗 Related Documentation
 
 - [Auto-Release Guide](AUTO-RELEASE-GUIDE.md) - How releases are created
-- [Build Guide](BUILD-GUIDE.md) - Building from source
-- [Troubleshooting](TROUBLESHOOTING.md) - Installation issues
+- [Build Guide](../development/BUILD-GUIDE.md) - Building from source
+- [Troubleshooting](../user-guides/TROUBLESHOOTING.md) - Installation issues
 
 ---
 

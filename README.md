@@ -30,7 +30,7 @@ A modern, professional IPTV player built with Electron that bypasses CORS limita
 ## 🚀 Quick Start
 
 ### Option 1: Download Executable (Recommended)
-Download the latest installer for your operating system from [Releases](../../releases):
+Download the latest installer for your operating system. See [Release Formats](docs/releases/RELEASE-FORMATS.md) to choose the right file for your platform:
 
 - 🪟 **Windows**: `M3U-Player-Setup-x.x.x.exe`
 - 🍎 **macOS**: `M3U-Player-x.x.x.dmg` 
@@ -127,7 +127,6 @@ https://m3u-player.eu/stream.m3u8
 The project includes comprehensive documentation organized by category:
 
 - **📖 [Documentation Index](docs/INDEX.md)** - Master navigation for all documentation
-- **🎨 [UI Improvements](docs/improvements/)** - Interface enhancement details
 - **⚙️ [Development Guides](docs/development/)** - Technical documentation for developers  
 - **📋 [User Guides](docs/user-guides/)** - Troubleshooting and how-to guides
 - **🚀 [Release Documentation](docs/releases/)** - Version management and release processes
@@ -135,7 +134,6 @@ The project includes comprehensive documentation organized by category:
 ### Quick Links:
 - **Getting Help**: [User Guides](docs/user-guides/TROUBLESHOOTING.md)
 - **Building the Project**: [Build Guide](docs/development/BUILD-GUIDE.md)
-- **Latest Improvements**: [Channel List Improvements](docs/improvements/CHANNEL-LIST-IMPROVEMENTS.md)
 - **Release Process**: [Release Tutorial](docs/releases/RELEASE-TUTORIAL.md)
 
 ## 🏗️ Project Structure
@@ -203,7 +201,7 @@ npm run pack
 npm run dist
 ```
 
-📖 **Complete tutorial**: See [docs/BUILD-GUIDE.md](docs/BUILD-GUIDE.md)
+📖 **Complete tutorial**: See [docs/development/BUILD-GUIDE.md](docs/development/BUILD-GUIDE.md)
 
 ## 🛠️ Development
 
@@ -265,7 +263,7 @@ npm run clear-cache
    - Clear application cache
    - Check available system memory
 
-For detailed troubleshooting, see [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
+For detailed troubleshooting, see [docs/user-guides/TROUBLESHOOTING.md](docs/user-guides/TROUBLESHOOTING.md)
 
 ## 🤝 Contributing
 
@@ -287,12 +285,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📚 Documentation
 
-- 📖 **[Build Guide](docs/BUILD-GUIDE.md)** - Complete guide for building executables
-- 🚀 **[Release Tutorial](docs/RELEASE-TUTORIAL.md)** - Step-by-step manual release process
-- 🤖 **[Auto-Release Guide](docs/AUTO-RELEASE-GUIDE.md)** - Automatic releases from branch pushes
-- 📦 **[Release Formats](docs/RELEASE-FORMATS.md)** - Download formats and installation guide
-- 🔧 **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
-- 📋 **[Release Notes v0.1.0](docs/RELEASE-NOTES-v0.1.0.md)** - What's new in this version
+- 📖 **[Build Guide](docs/development/BUILD-GUIDE.md)** - Complete guide for building executables
+- 🚀 **[Release Tutorial](docs/releases/RELEASE-TUTORIAL.md)** - Step-by-step manual release process
+- 🤖 **[Auto-Release Guide](docs/releases/AUTO-RELEASE-GUIDE.md)** - Automatic releases from branch pushes
+- 📦 **[Release Formats](docs/releases/RELEASE-FORMATS.md)** - Download formats and installation guide
+- 🔧 **[Troubleshooting](docs/user-guides/TROUBLESHOOTING.md)** - Common issues and solutions
+- 📋 **[Release Notes v0.1.0](docs/releases/RELEASE-NOTES-v0.1.0.md)** - What's new in this version
 - 🤝 **[Contributing](CONTRIBUTING.md)** - How to contribute to the project
 - 📝 **[Changelog](CHANGELOG.md)** - Version history and changes
 

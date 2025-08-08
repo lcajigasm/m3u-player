@@ -673,6 +673,7 @@ class M3UPlayer {
             }
 
             if (this.isElectron && window.electronAPI) {
+                // Use Electron main-process fetch to bypass renderer CSP
                 const response = await window.api.fetchUrl(url, requestOptions);
 
                 if (response.success) {
@@ -681,8 +682,9 @@ class M3UPlayer {
                     throw new Error(response.error);
                 }
             } else {
+                // In browser, ensure CSP allows http(s) connect-src, otherwise show a friendly error
                 const fetchHeaders = requestOptions.headers || {};
-                const response = await fetch(url, { headers: fetchHeaders });
+                const response = await fetch(url, { headers: fetchHeaders, mode: 'cors' });
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
