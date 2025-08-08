@@ -24,7 +24,10 @@
     "postinstall": "electron-builder install-app-deps",
     "clear-cache": "rm -rf node_modules/.cache && npm run dev-nocache",
     "lint": "eslint . --ext .js,.html",
-    "test": "npm run lint && echo 'Unit tests here'",
+    "test": "jest -c jest.config.js",
+    "test:m3u": "jest -c jest.m3u.config.js",
+    "test:watch": "jest -c jest.m3u.config.js --watch",
+    "bench:parser": "jest -c jest.m3u.config.js tests/m3u/parser.bench.spec.ts -i --passWithNoTests",
     "e2e": "npx playwright test"
   },
   "keywords": [
@@ -45,17 +48,26 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "@babel/core": "^7.25.0",
+    "@babel/preset-env": "^7.25.0",
+    "@babel/preset-typescript": "^7.24.7",
     "@playwright/test": "^1.54.2",
+    "@types/jest": "^29.5.12",
+    "babel-jest": "^29.7.0",
     "electron": "^27.0.0",
     "electron-builder": "^24.6.4",
     "eslint": "^9.32.0",
     "eslint-plugin-security": "^3.0.1",
     "jest": "^30.0.5",
+    "jest-environment-jsdom": "^30.0.5",
+    "jest-html-reporters": "^3.1.7",
+    "jest-serializer-html": "^7.1.0",
     "playwright": "^1.54.2",
     "png-to-icns": "^1.0.0",
     "sharp": "^0.34.3",
     "svg2img": "^1.0.0-beta.2",
-    "to-ico": "^1.1.5"
+    "to-ico": "^1.1.5",
+    "typescript": "^5.6.2"
   },
   "dependencies": {
     "axios": "^1.6.2",

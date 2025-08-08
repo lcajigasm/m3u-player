@@ -18,15 +18,19 @@ module.exports = {
   
   // Test file patterns
   testMatch: [
-    '<rootDir>/tests/**/*.test.js',
-    '<rootDir>/src/**/__tests__/**/*.test.js'
+    '<rootDir>/tests/**/*.test.[jt]s',
+    '<rootDir>/tests/**/*.spec.[jt]s',
+    '<rootDir>/src/**/__tests__/**/*.test.[jt]s',
+    '<rootDir>/src/**/__tests__/**/*.spec.[jt]s'
   ],
   
   // Coverage configuration
   collectCoverage: true,
   collectCoverageFrom: [
     'src/js/**/*.js',
+    'src/lib/**/*.ts',
     '!src/js/**/*.test.js',
+    '!src/lib/**/*.test.ts',
     '!src/js/epg/__tests__/**',
     '!node_modules/**',
     '!dist/**'
@@ -64,7 +68,7 @@ module.exports = {
   },
   
   // Module name mapping for ES6 imports
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@core/(.*)$': '<rootDir>/src/js/core/$1',
     '^@modules/(.*)$': '<rootDir>/src/js/modules/$1',
@@ -73,12 +77,11 @@ module.exports = {
   
   // Transform configuration
   transform: {
-    '^.+\\.js$': 'babel-jest',
-    '^.+\\.mjs$': 'babel-jest'
+    '^.+\\.(ts|tsx|js|mjs)$': 'babel-jest'
   },
   
   // Module file extensions
-  moduleFileExtensions: ['js', 'mjs', 'json'],
+  moduleFileExtensions: ['js', 'mjs', 'json', 'ts', 'tsx'],
   
   // Global setup/teardown
   globalSetup: '<rootDir>/tests/globalSetup.js',
@@ -114,13 +117,11 @@ module.exports = {
   // Ignore patterns
   testPathIgnorePatterns: [
     '<rootDir>/node_modules/',
-    '<rootDir>/dist/'
+    '<rootDir>/dist/',
+    '.*\\.bench\\..*'
   ],
   
   // Mock configuration
-  mockPathIgnorePatterns: [
-    '<rootDir>/node_modules/'
-  ],
   
   // Reporter configuration
   reporters: [
