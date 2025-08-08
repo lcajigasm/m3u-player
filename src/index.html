@@ -56,6 +56,12 @@
                             <path d="M7 9h2M11 9h2M15 9h2M7 13h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                         </svg>
                     </button>
+                    <button class="header-btn" id="diagnosticsHeaderBtn" title="Diagnostics" aria-label="Open diagnostics">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 3h18v18H3z" stroke="currentColor" stroke-width="2"/>
+                            <path d="M7 13l3 3 7-7" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
         </header>
@@ -863,6 +869,56 @@
                     <div class="copyright">
                         <p>© 2024 M3U Player. Open source IPTV solution.</p>
                         <p class="subtitle">Professional IPTV streaming platform for everyone</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Diagnostics Modal -->
+        <div id="diagnosticsModal" class="modal premium-modal" style="display: none" role="dialog" aria-modal="true" aria-labelledby="diagnosticsTitle">
+            <div class="modal-content premium">
+                <div class="modal-header premium">
+                    <h2 id="diagnosticsTitle">🧪 Diagnostics</h2>
+                    <button id="closeDiagnostics" class="close-btn premium" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="diag-grid">
+                        <div class="diag-card">
+                            <div class="diag-title">Runtime</div>
+                            <div class="diag-row"><span>HLS.js:</span> <strong id="hlsVersion">N/A</strong></div>
+                            <div class="diag-row"><span>App version:</span> <strong id="diagAppVersion">2.0.0</strong></div>
+                            <div class="diag-row"><span>Effective UA:</span> <code id="effectiveUA"></code></div>
+                            <div class="diag-row"><span>Playlist size:</span> <strong id="diagPlaylistSize">0</strong></div>
+                        </div>
+                        <div class="diag-card">
+                            <div class="diag-title">Applied headers</div>
+                            <pre id="appliedHeaders" style="max-height:180px; overflow:auto; background:#0b0b0b; color:#cbd5e1; padding:8px; border-radius:8px;">{}</pre>
+                        </div>
+                    </div>
+                    <div class="diag-list">
+                        <div class="diag-list-header">
+                            <div class="diag-title">Recent requests</div>
+                        </div>
+                        <div class="table-wrapper" style="max-height:280px; overflow:auto;">
+                            <table class="diag-table">
+                                <thead>
+                                    <tr><th>Time</th><th>Method</th><th>Status</th><th>Latency</th><th>URL</th></tr>
+                                </thead>
+                                <tbody id="diagnosticsTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="telemetry">
+                        <div class="diag-title">Telemetry (opt-in, anonymous)</div>
+                        <label style="display:flex; gap:8px; align-items:center; margin:6px 0;">
+                            <input type="checkbox" id="telemetryOptIn" /> Enable telemetry
+                        </label>
+                        <div class="telemetry-row" style="display:flex; gap:8px; align-items:center;">
+                            <label for="telemetryEndpoint">Endpoint:</label>
+                            <input id="telemetryEndpoint" type="url" placeholder="http://localhost:11420/telemetry" style="flex:1;" />
+                            <button id="sendTelemetryNow" class="upload-btn">Send now</button>
+                        </div>
+                        <small>We send app version, OS UA, playlist size, and basic performance stats. No personal or stream URLs are sent.</small>
                     </div>
                 </div>
             </div>

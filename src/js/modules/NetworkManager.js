@@ -174,6 +174,28 @@ class NetworkManager {
                 size: processedResponse.size || 0
             });
 
+            // Diagnostics: push to global collector if available
+            try {
+                if (window.Diagnostics && window.Diagnostics.addRequest) {
+                    const reqHeaders = (requestOptions && requestOptions.headers) ? requestOptions.headers : {};
+                    const resHeaders = processedResponse && processedResponse.headers;
+                    const toObj = (h) => {
+                        const o = {};
+                        try { h && h.forEach && h.forEach((v,k)=>{ o[k]=v; }); } catch {}
+                        return o;
+                    };
+                    window.Diagnostics.addRequest({
+                        ts: Date.now(),
+                        method: requestOptions.method || 'GET',
+                        url,
+                        status: processedResponse.status,
+                        ms: latency,
+                        reqHeaders: toObj(reqHeaders),
+                        resHeaders: toObj(resHeaders)
+                    });
+                }
+            } catch {}
+
             return processedResponse;
 
         } catch (error) {
@@ -191,6 +213,22 @@ class NetworkManager {
                 error: error.message,
                 latency
             });
+
+            // Diagnostics: capture failed request
+            try {
+                if (window.Diagnostics && window.Diagnostics.addRequest) {
+                    const reqHeaders = (options && options.headers) ? options.headers : {};
+                    window.Diagnostics.addRequest({
+                        ts: Date.now(),
+                        method: options.method || 'GET',
+                        url,
+                        status: -1,
+                        ms: latency,
+                        reqHeaders,
+                        resHeaders: {}
+                    });
+                }
+            } catch {}
 
             throw error;
         } finally {

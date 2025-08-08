@@ -26,6 +26,7 @@ A modern, professional IPTV player built with Electron that bypasses CORS limita
 - � **Theme persistence** - Remembers your preferred theme across sessions
 - 🔄 **Smooth transitions** - Animated theme switching with visual feedback
 - ♿ **Enhanced accessibility** - Better contrast ratios and keyboard navigation
+- 🧪 **Diagnostics panel** - View recent network requests, HLS.js version, headers; opt-in anonymous telemetry (see `docs/PRIVACY.md`)
 
 ## 🚀 Quick Start
 
