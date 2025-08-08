@@ -880,6 +880,19 @@ class PlaylistManager {
             };
 
             localStorage.setItem('m3u_playlist_data', JSON.stringify(data));
+            // Fire-and-forget: also inform main to persist library recents (best-effort)
+            try {
+                if (window?.api?.library?.mergeRecents) {
+                    const selector = this.getCurrentItem() ? {
+                        tvgId: this.getCurrentItem().tvgId,
+                        url: this.getCurrentItem().url,
+                        name: this.getCurrentItem().title,
+                    } : null;
+                    if (selector) {
+                        window.api.library.mergeRecents(selector);
+                    }
+                }
+            } catch {}
         } catch (error) {
             console.warn('⚠️ Failed to save to storage:', error);
         }

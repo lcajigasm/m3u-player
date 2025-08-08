@@ -528,11 +528,11 @@ class VirtualScroller {
         // Agregar al pool si reciclaje está habilitado
         if (this.config.recycleItems && this.itemPool.length < 50) {
             element.innerHTML = '';
-    /**
-     * Sanitiza HTML para evitar XSS
-     * @param {string} html
-     * @returns {string}
-     */
+            element.removeAttribute('data-index');
+            this.itemPool.push(element);
+        }
+    }
+
     /**
      * Sanitiza HTML permitiendo etiquetas seguras
      * @param {string} html
@@ -543,17 +543,12 @@ class VirtualScroller {
         // pero aún así mantener seguridad básica
         if (typeof html !== 'string') return '';
         
-        // Lista simple de etiquetas permitidas para canales
-        const allowedTags = ['DIV', 'SPAN', 'IMG', 'BUTTON', 'BR'];
-        const allowedAttrs = ['class', 'src', 'alt', 'title', 'data-url', 'data-index'];
-        
         const temp = document.createElement('div');
         temp.innerHTML = html;
         
         // Solo remover scripts y eventos, mantener estructura HTML
         temp.querySelectorAll('script').forEach(el => el.remove());
         temp.querySelectorAll('*').forEach(el => {
-            // Remover atributos de eventos
             Array.from(el.attributes).forEach(attr => {
                 if (attr.name.startsWith('on') || attr.name === 'javascript:') {
                     el.removeAttribute(attr.name);
@@ -562,10 +557,6 @@ class VirtualScroller {
         });
         
         return temp.innerHTML;
-    }
-            element.removeAttribute('data-index');
-            this.itemPool.push(element);
-        }
     }
 
     /**

@@ -30,6 +30,20 @@ contextBridge.exposeInMainWorld('api', {
       return ipcRenderer.invoke('settings-put', key, value);
     }
   },
+  library: {
+    get: () => ipcRenderer.invoke('library:get'),
+    set: (state) => ipcRenderer.invoke('library:set', state),
+    importJSON: (state) => ipcRenderer.invoke('library:import-json', state),
+    exportJSON: () => ipcRenderer.invoke('library:export-json'),
+    exportM3U: () => ipcRenderer.invoke('library:export-m3u'),
+    mergeRecents: (selector) => ipcRenderer.invoke('library:merge-recents', selector),
+  },
+  dialog: {
+    showSave: (options) => ipcRenderer.invoke('show-save-dialog', options),
+  },
+  fs: {
+    writeFile: (filePath, content) => ipcRenderer.invoke('write-file', filePath, content),
+  },
   /** @type {PlaylistsAPI} */
   playlists: {
     /** @param {File} file */

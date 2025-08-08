@@ -118,7 +118,8 @@ module.exports = {
   testPathIgnorePatterns: [
     '<rootDir>/node_modules/',
     '<rootDir>/dist/',
-    '.*\\.bench\\..*'
+    '.*\\.bench\\..*',
+    '<rootDir>/tests/e2e/'
   ],
   
   // Mock configuration

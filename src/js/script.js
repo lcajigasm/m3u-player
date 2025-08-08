@@ -4954,6 +4954,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Forzar visibilidad cada 2 segundos como medida de emergencia
     setInterval(forceControlsVisibility, 2000);
 
+    // Update library counters (favorites and recents) if available
+    try {
+        if (window.api && window.api.library && typeof window.api.library.get === 'function') {
+            window.api.library.get().then((state) => {
+                const favCount = (state && state.favorites && Array.isArray(state.favorites.items)) ? state.favorites.items.length : 0;
+                const recentCount = (state && Array.isArray(state.recents)) ? state.recents.length : 0;
+                const elFav = document.querySelector('#favoritesCount');
+                if (elFav) elFav.textContent = String(favCount);
+                const elRecent = document.querySelector('#recentCount');
+                if (elRecent) elRecent.textContent = String(recentCount);
+            }).catch(() => {});
+        }
+    } catch {}
+
     setTimeout(() => {
         const controlsDiv = document.querySelector('.controls');
         if (controlsDiv) {
