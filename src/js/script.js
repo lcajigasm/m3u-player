@@ -4935,6 +4935,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Inicializar el reproductor
     window.player = new M3UPlayer();
+    // Initialize Diagnostics after player is available
+    try{ window.Diagnostics && window.Diagnostics.init(window.player); }catch{}
     
     // Make debugging methods globally accessible
     window.testI18n = () => {
