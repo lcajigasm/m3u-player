@@ -228,11 +228,15 @@ function setupPlayerEvents(player) {
             setTimeout(() => {
                 if (this.emit) {
                     this.emit('channelChanged', index);
-                } else {
-                    // Fallback directo
-                    this.epgManager.updateCurrentProgramInfo(index);
                 }
-            }, 500); // Pequeño delay para que se complete la carga del stream
+                // Actualizar Now/Next inmediatamente
+                try {
+                    const channel = this.playlistData[index];
+                    const channelId = channel?.tvgId || channel?.name;
+                    const currentProgram = this.epgManager.getCurrentProgram(channelId);
+                    updateCurrentProgramInfo(currentProgram, channelId, this.epgManager);
+                } catch {}
+            }, 500);
         }
         
         return result;
@@ -263,9 +267,15 @@ function setupPlayerEvents(player) {
  * Actualiza la información del programa actual en la UI
  * @param {EPGProgram|null} program - Programa actual
  */
-function updateCurrentProgramInfo(program) {
+function updateCurrentProgramInfo(program, channelId = null, epgManager = null) {
     const titleElement = document.getElementById('currentProgramTitle');
     const timeElement = document.getElementById('currentProgramTime');
+    const panel = document.getElementById('nowNextPanel');
+    const closePanelBtn = document.getElementById('closeNowNext');
+    const nowTitle = document.getElementById('nowProgramTitle');
+    const nowTime = document.getElementById('nowProgramTime');
+    const nextTitle = document.getElementById('nextProgramTitle');
+    const nextTime = document.getElementById('nextProgramTime');
     
     if (titleElement && timeElement) {
         if (program) {
@@ -282,6 +292,39 @@ function updateCurrentProgramInfo(program) {
             // Remover clase EPG
             titleElement.classList.remove('has-epg-info');
             timeElement.classList.remove('has-epg-info');
+        }
+    }
+
+    // Now/Next panel population
+    if (panel && nowTitle && nowTime && nextTitle && nextTime) {
+        if (program) {
+            nowTitle.textContent = program.title;
+            nowTime.textContent = formatTimeRange(program.startTime, program.endTime);
+
+            // Compute NEXT using manager if available
+            let next = null;
+            if (channelId && epgManager && epgManager.channels) {
+                const entry = epgManager.channels.get(channelId);
+                if (entry && Array.isArray(entry.programs)) {
+                    const now = new Date();
+                    next = entry.programs.find(p => p.startTime > now) || null;
+                }
+            }
+            if (next) {
+                nextTitle.textContent = next.title;
+                nextTime.textContent = formatTimeRange(next.startTime, next.endTime);
+            } else {
+                nextTitle.textContent = '—';
+                nextTime.textContent = '--:-- - --:--';
+            }
+
+            panel.style.display = 'block';
+            if (closePanelBtn && !closePanelBtn._bound) {
+                closePanelBtn.addEventListener('click', () => {
+                    panel.style.display = 'none';
+                });
+                closePanelBtn._bound = true;
+            }
         }
     }
 }
