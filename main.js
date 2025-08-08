@@ -4,6 +4,7 @@ const fs = require('fs');
 const https = require('https');
 const http = require('http');
 const { URL } = require('url');
+const Store = require('electron-store');
 
 // Main window configuration
 let mainWindow;
@@ -27,6 +28,46 @@ const defaultConfig = {
   },
   recentFiles: []
 };
+
+// Library store (playlists, favorites, recents)
+const libraryStore = new Store({
+  name: 'library',
+  fileExtension: 'json',
+});
+
+function getLibraryState() {
+  const state = libraryStore.get('state');
+  if (!state || typeof state !== 'object') {
+    const initial = { version: 1, playlists: [], favorites: { folders: [], items: [] }, recents: [] };
+    libraryStore.set('state', initial);
+    return initial;
+  }
+  const withDefaults = {
+    version: typeof state.version === 'number' ? state.version : 1,
+    playlists: Array.isArray(state.playlists) ? state.playlists : [],
+    favorites: {
+      folders: Array.isArray(state?.favorites?.folders) ? state.favorites.folders : [],
+      items: Array.isArray(state?.favorites?.items) ? state.favorites.items : [],
+    },
+    recents: Array.isArray(state.recents) ? state.recents.slice(0, 20) : [],
+  };
+  if ((state.recents?.length || 0) !== withDefaults.recents.length) {
+    libraryStore.set('state', withDefaults);
+  }
+  return withDefaults;
+}
+
+function setLibraryState(nextState) {
+  if (!nextState || typeof nextState !== 'object') return false;
+  if (Array.isArray(nextState.recents)) {
+    nextState.recents = nextState.recents
+      .slice()
+      .sort((a, b) => (b.playedAt || 0) - (a.playedAt || 0))
+      .slice(0, 20);
+  }
+  libraryStore.set('state', nextState);
+  return true;
+}
 
 // Load configuration
 function loadConfig() {
@@ -564,6 +605,91 @@ ipcMain.handle('open-file-dialog', async () => {
   await openFileDialog();
 });
 
+// Library IPC
+ipcMain.handle('library:get', () => {
+  return getLibraryState();
+});
+
+ipcMain.handle('library:set', (event, nextState) => {
+  try {
+    const ok = setLibraryState(nextState);
+    return { success: ok };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('library:import-json', (event, importedState) => {
+  try {
+    if (!importedState || typeof importedState !== 'object') throw new Error('Invalid import data');
+    const current = getLibraryState();
+    const next = {
+      version: typeof importedState.version === 'number' ? importedState.version : 1,
+      playlists: Array.isArray(importedState.playlists) ? importedState.playlists : current.playlists,
+      favorites: {
+        folders: Array.isArray(importedState?.favorites?.folders) ? importedState.favorites.folders : current.favorites.folders,
+        items: Array.isArray(importedState?.favorites?.items) ? importedState.favorites.items : current.favorites.items,
+      },
+      recents: Array.isArray(importedState.recents) ? importedState.recents : current.recents,
+    };
+    setLibraryState(next);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('library:export-json', () => {
+  try {
+    const state = getLibraryState();
+    return { success: true, state };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('library:merge-recents', (event, selector) => {
+  try {
+    const state = getLibraryState();
+    if (!selector || typeof selector !== 'object') return { success: false, error: 'Invalid selector' };
+    const normalized = { ...selector };
+    const isSame = (a, b) => {
+      if (a?.tvgId && b?.tvgId) return a.tvgId === b.tvgId;
+      if (a?.url && b?.url) return a.url === b.url;
+      if (a?.name && b?.name) return String(a.name).toLowerCase() === String(b.name).toLowerCase();
+      return false;
+    };
+    const filtered = Array.isArray(state.recents) ? state.recents.filter((r) => !isSame(r.selector, normalized)) : [];
+    filtered.unshift({ id: `rec_${Date.now()}`, selector: normalized, playedAt: Date.now() });
+    state.recents = filtered.slice(0, 20);
+    setLibraryState(state);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('library:export-m3u', () => {
+  try {
+    const state = getLibraryState();
+    const enabled = (state.playlists || []).filter((p) => p.enabled !== false && typeof p.content === 'string');
+    if (enabled.length === 0) {
+      return { success: true, m3u: '#EXTM3U\n' };
+    }
+    let output = '#EXTM3U\n';
+    for (const pl of enabled) {
+      const lines = String(pl.content).split(/\r?\n/);
+      for (const line of lines) {
+        if (!line) continue;
+        if (line.startsWith('#EXTM3U')) continue;
+        output += `${line}\n`;
+      }
+    }
+    return { success: true, m3u: output };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
 // Start proxy server for IPTV streams
 function startProxyServer() {
   if (proxyServer) {
