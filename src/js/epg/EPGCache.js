@@ -24,7 +24,8 @@ class EPGCache {
             memoryMaxSize: 50 * 1024 * 1024, // 50MB en memoria
             localStorageMaxSize: 10 * 1024 * 1024, // 10MB en localStorage
             defaultTTL: 2 * 60 * 60 * 1000, // 2 horas por defecto
-            maxRetentionDays: 7
+            maxRetentionDays: 7,
+            optimizeIntervalMs: 2 * 60 * 60 * 1000 // intervalo optimización (2h por defecto)
         };
         
         // Métricas de rendimiento
@@ -41,10 +42,15 @@ class EPGCache {
         // Patrones de uso para optimización
         this.accessPatterns = new Map(); // channelId -> { count, lastAccess, frequency }
         
-        this.initializeIndexedDB();
-        this.scheduleCleanup();
-        this.scheduleMetricsReset();
-        this.scheduleOptimization();
+    // Referencias a intervalos para limpiar en destroy
+    this._cleanupIntervalId = null;
+    this._metricsResetIntervalId = null;
+    this._optimizationIntervalId = null;
+
+    this.initializeIndexedDB();
+    this.scheduleCleanup();
+    this.scheduleMetricsReset();
+    this.scheduleOptimization();
         
         console.log('💾 EPGCache inicializado con estrategia multinivel y optimización inteligente');
     }
@@ -380,10 +386,10 @@ class EPGCache {
      */
     scheduleMetricsReset() {
         // Reset métricas cada 24 horas
-        setInterval(() => {
+        if (this._metricsResetIntervalId) clearInterval(this._metricsResetIntervalId);
+        this._metricsResetIntervalId = setInterval(() => {
             this.resetMetrics();
         }, 24 * 60 * 60 * 1000);
-        
         console.log('📊 Reset de métricas programado cada 24 horas');
     }
 
@@ -599,10 +605,10 @@ class EPGCache {
      */
     scheduleCleanup() {
         // Limpiar cada hora
-        setInterval(() => {
+        if (this._cleanupIntervalId) clearInterval(this._cleanupIntervalId);
+        this._cleanupIntervalId = setInterval(() => {
             this.cleanup();
         }, 60 * 60 * 1000);
-        
         console.log('⏰ Limpieza automática programada cada hora');
     }
 
@@ -840,35 +846,47 @@ class EPGCache {
         console.log('🔧 Iniciando optimización de caché...');
         
         try {
-            // 1. Promover canales frecuentemente accedidos a memoria
-            const frequentChannels = this.getMostAccessedChannels(10);
-            
-            for (const { channelId } of frequentChannels) {
-                if (!this.memoryCache.has(channelId)) {
-                    // Intentar promover desde localStorage o IndexedDB
-                    let entry = await this.retrieveFromLocalStorage(channelId);
-                    if (!entry) {
-                        entry = await this.retrieveFromIndexedDB(channelId);
-                    }
-                    
-                    if (entry && !this.isExpired(entry.expiresAt)) {
-                        await this.storeInMemory(channelId, entry);
-                        console.log(`⬆️ Canal ${channelId} promovido a memoria`);
-                    }
+            // 1) Promover a memoria canales con frequency >= 0.2 o count >= 5 si hay espacio
+            const memoryLimit = this.config.memoryMaxSize;
+            let memoryUsage = this.calculateMemorySize();
+            const candidates = [];
+            const nowMs = Date.now();
+            for (const [channelId, pattern] of this.accessPatterns.entries()) {
+                if ((pattern.frequency >= 0.2 || pattern.count >= 5) && !this.memoryCache.has(channelId)) {
+                    candidates.push({ channelId, pattern });
                 }
             }
-            
-            // 2. Limpiar patrones de acceso obsoletos
+            // Ordenar por un score ponderado: frecuencia*2 + count - ageHours
+            candidates.sort((a, b) => {
+                const ageA = (nowMs - (a.pattern.lastAccess || nowMs)) / (60 * 60 * 1000);
+                const ageB = (nowMs - (b.pattern.lastAccess || nowMs)) / (60 * 60 * 1000);
+                const scoreA = (a.pattern.frequency || 0) * 2 + (a.pattern.count || 0) - ageA;
+                const scoreB = (b.pattern.frequency || 0) * 2 + (b.pattern.count || 0) - ageB;
+                return scoreB - scoreA;
+            });
+
+            for (const { channelId } of candidates) {
+                if (memoryUsage >= memoryLimit) break;
+                let entry = await this.retrieveFromLocalStorage(channelId);
+                if (!entry) entry = await this.retrieveFromIndexedDB(channelId);
+                if (!entry || this.isExpired(entry.expiresAt)) continue;
+                const size = entry.size || 0;
+                if (memoryUsage + size > memoryLimit) break;
+                await this.storeInMemory(channelId, entry);
+                memoryUsage += size;
+                console.log(`⬆️ Canal ${channelId} promovido a memoria (optimizeCache)`);
+            }
+
+            // 2) Limpiar patrones de acceso obsoletos (>24h y count < 2)
             const now = Date.now();
             const dayAgo = now - (24 * 60 * 60 * 1000);
-            
             for (const [channelId, pattern] of this.accessPatterns) {
                 if (pattern.lastAccess < dayAgo && pattern.count < 2) {
                     this.accessPatterns.delete(channelId);
                 }
             }
-            
-            // 3. Rebalancear niveles de caché
+
+            // 3) Rebalancear niveles de caché
             await this.rebalanceCacheLevels();
             
             console.log('✅ Optimización de caché completada');
@@ -883,42 +901,54 @@ class EPGCache {
      * @private
      */
     async rebalanceCacheLevels() {
-        const memoryUsage = this.calculateMemorySize();
         const memoryLimit = this.config.memoryMaxSize;
-        
-        // Si la memoria está por debajo del 70%, promover más datos
-        if (memoryUsage < memoryLimit * 0.7) {
-            const availableSpace = memoryLimit - memoryUsage;
-            const candidates = [];
-            
-            // Buscar candidatos en localStorage
-            const localKeys = this.getLocalStorageKeys();
-            for (const key of localKeys.slice(0, 5)) { // Limitar a 5 para evitar sobrecarga
-                const channelId = key.replace(this.localStoragePrefix, '');
-                if (!this.memoryCache.has(channelId)) {
-                    const entry = await this.retrieveFromLocalStorage(channelId);
-                    if (entry && entry.size < availableSpace) {
-                        candidates.push({ channelId, entry });
-                    }
+        let memoryUsage = this.calculateMemorySize();
+        const nowMs = Date.now();
+
+        // Evicción por LRU ponderado si excede límite
+        if (memoryUsage > memoryLimit) {
+            const scored = Array.from(this.memoryCache.entries()).map(([channelId, entry]) => {
+                const pattern = this.accessPatterns.get(channelId) || {};
+                const last = pattern.lastAccess || (entry.lastUpdated ? entry.lastUpdated.getTime() : nowMs);
+                const ageHours = (nowMs - last) / (60 * 60 * 1000);
+                const score = (pattern.frequency || 0) * 2 + (pattern.count || 0) - ageHours;
+                return { channelId, entry, score };
+            });
+            scored.sort((a, b) => a.score - b.score); // expulsar peores primero
+            let i = 0;
+            while (memoryUsage > memoryLimit && i < scored.length) {
+                const { channelId, entry } = scored[i++];
+                if (this.memoryCache.delete(channelId)) {
+                    memoryUsage -= (entry.size || 0);
+                    this.metrics.evictions.memory++;
                 }
             }
-            
-            // Promover candidatos ordenados por frecuencia
-            candidates.sort((a, b) => {
-                const patternA = this.accessPatterns.get(a.channelId) || { frequency: 0 };
-                const patternB = this.accessPatterns.get(b.channelId) || { frequency: 0 };
-                return patternB.frequency - patternA.frequency;
-            });
-            
-            let promotedSize = 0;
+            console.log('🧹 Rebalance LRU ponderado aplicado');
+        }
+
+        // Promoción desde localStorage para patrones frecuentes hasta llenar espacio restante
+        if (memoryUsage < memoryLimit) {
+            const keys = this.getLocalStorageKeys();
+            const candidates = [];
+            for (const key of keys) {
+                const channelId = key.replace(this.localStoragePrefix, '');
+                if (this.memoryCache.has(channelId)) continue;
+                const pattern = this.accessPatterns.get(channelId);
+                if (!pattern) continue;
+                if (!(pattern.frequency >= 0.2 || pattern.count >= 5)) continue;
+                const entry = await this.retrieveFromLocalStorage(channelId);
+                if (!entry || this.isExpired(entry.expiresAt)) continue;
+                const ageHours = (nowMs - (pattern.lastAccess || nowMs)) / (60 * 60 * 1000);
+                const score = (pattern.frequency || 0) * 2 + (pattern.count || 0) - ageHours;
+                candidates.push({ channelId, entry, score });
+            }
+            candidates.sort((a, b) => b.score - a.score);
             for (const { channelId, entry } of candidates) {
-                if (promotedSize + entry.size < availableSpace) {
-                    await this.storeInMemory(channelId, entry);
-                    promotedSize += entry.size;
-                    console.log(`⬆️ Rebalance: ${channelId} promovido a memoria`);
-                } else {
-                    break;
-                }
+                const size = entry.size || 0;
+                if (memoryUsage + size > memoryLimit) break;
+                await this.storeInMemory(channelId, entry);
+                memoryUsage += size;
+                console.log(`⬆️ Rebalance: ${channelId} promovido a memoria`);
             }
         }
     }
@@ -928,18 +958,32 @@ class EPGCache {
      * @private
      */
     scheduleOptimization() {
-        // Optimizar cada 2 horas
-        setInterval(() => {
+        // Optimizar periódicamente (configurable)
+        if (this._optimizationIntervalId) clearInterval(this._optimizationIntervalId);
+        const interval = this.config.optimizeIntervalMs || (2 * 60 * 60 * 1000);
+        this._optimizationIntervalId = setInterval(() => {
             this.optimizeCache();
-        }, 2 * 60 * 60 * 1000);
-        
-        console.log('🔧 Optimización automática programada cada 2 horas');
+        }, interval);
+        console.log(`🔧 Optimización automática programada cada ${Math.round(interval / (60 * 60 * 1000))} horas`);
     }
 
     /**
      * Destruye el caché y limpia recursos
      */
     destroy() {
+        if (this._cleanupIntervalId) {
+            clearInterval(this._cleanupIntervalId);
+            this._cleanupIntervalId = null;
+        }
+        if (this._metricsResetIntervalId) {
+            clearInterval(this._metricsResetIntervalId);
+            this._metricsResetIntervalId = null;
+        }
+        if (this._optimizationIntervalId) {
+            clearInterval(this._optimizationIntervalId);
+            this._optimizationIntervalId = null;
+        }
+
         this.memoryCache.clear();
         this.accessPatterns.clear();
         
