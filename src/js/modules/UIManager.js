@@ -69,6 +69,9 @@ class UIManager {
         // Virtual scrolling
         this.scrollBuffers = new Map();
         this.renderQueues = new Map();
+    // Mapeos para observers por scroller
+    this.containerToScrollerId = new Map();
+    this.sentinelToScrollerId = new Map();
 
         this.init();
     }
@@ -555,53 +558,104 @@ class UIManager {
      * @param {Array} items - Items a renderizar
      * @param {Function} renderItem - Función de renderizado
      * @param {Object} options - Opciones de virtual scrolling
-     * @returns {VirtualScroller} Instancia del virtual scroller
+    * @returns {{ id: string|null, update: (items:any[])=>void, destroy: ()=>void }} API del virtual scroller
      */
     setupVirtualScrolling(container, items, renderItem, options = {}) {
-        if (!this.config.enableVirtualScrolling || items.length < this.config.virtualScrollThreshold) {
-            // Renderizado normal
+        // Si no aplica virtualización, render normal
+        if (!this.config.enableVirtualScrolling || (Array.isArray(items) && items.length < this.config.virtualScrollThreshold)) {
             this.renderAllItems(container, items, renderItem);
-            return null;
+            return {
+                id: null,
+                update: (newItems) => this.renderAllItems(container, newItems, renderItem),
+                destroy: () => {
+                    // Limpieza básica del contenedor
+                    container.innerHTML = '';
+                }
+            };
         }
 
-        // Crear nueva instancia de VirtualScroller
+        // Opciones del scroller
         const scrollerOptions = {
-            itemHeight: options.itemHeight || 60,
-            bufferSize: options.bufferSize || 10,
-            threshold: options.threshold || this.config.virtualScrollThreshold,
-            enableDynamicHeight: options.enableDynamicHeight || false,
-            overscan: options.overscan || 5,
-            scrollingDelay: options.scrollingDelay || 150,
+            itemHeight: options.itemHeight ?? 60,
+            bufferSize: options.bufferSize ?? 10,
+            threshold: options.threshold ?? this.config.virtualScrollThreshold,
+            enableDynamicHeight: options.enableDynamicHeight ?? false,
+            overscan: options.overscan ?? 5,
+            scrollingDelay: options.scrollingDelay ?? 150,
             enableSmoothScrolling: options.enableSmoothScrolling !== false,
             recycleItems: options.recycleItems !== false,
             enableVirtualization: options.enableVirtualization !== false
         };
 
-        const virtualScroller = new VirtualScroller(container, scrollerOptions);
-        
-        // Establecer datos y función de renderizado
-        virtualScroller.setData(items, renderItem);
-        
-        // Guardar referencia
-        const scrollerId = options.scrollerId || `scroller_${Date.now()}`;
-        this.virtualScrollers.set(scrollerId, virtualScroller);
-        
-        // Eventos del virtual scroller
-        this.eventBus.on('virtual-scroller:scroll', (event) => {
-            this.eventBus.emit('ui:virtual-scroll', event);
-        });
-        
-        this.eventBus.on('virtual-scroller:item-visible', (event) => {
-            this.eventBus.emit('ui:item-visible', event);
-        });
-        
-        this.eventBus.on('virtual-scroller:data-updated', (event) => {
-            this.eventBus.emit('ui:data-updated', event);
-        });
+        // Crear instancia
+        const instance = new VirtualScroller(container, scrollerOptions);
+        instance.setData(items || [], renderItem);
 
-        console.log(`📜 Virtual scrolling configured for ${items.length} items`);
-        
-        return virtualScroller;
+        // ID y registro interno
+        const scrollerId = options.scrollerId || `scroller_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+        // Observer de resize específico del contenedor para recalcular viewport
+        if (this.resizeObserver) {
+            try {
+                this.resizeObserver.observe(container);
+            } catch { /* noop */ }
+        }
+        this.containerToScrollerId.set(container, scrollerId);
+
+        // Crear sentinel inferior para carga progresiva (opcional)
+        let bottomSentinel = null;
+        let perScrollerIO = null;
+        if (window.IntersectionObserver) {
+            bottomSentinel = document.createElement('div');
+            bottomSentinel.className = 'virtual-scroll-sentinel';
+            bottomSentinel.style.cssText = 'position:absolute; left:0; right:0; height:1px; bottom:0; z-index:0;';
+            // Insertar dentro del viewport del VirtualScroller si existe, si no en el contenedor
+            const parentForSentinel = instance.viewport || container;
+            parentForSentinel.appendChild(bottomSentinel);
+
+            // Observer con root = contenedor para reaccionar al scroll interno
+            perScrollerIO = new IntersectionObserver((entries) => {
+                for (const ent of entries) {
+                    if (ent.isIntersecting) {
+                        // Pedir re-render si estamos cerca del final (pre-carga)
+                        if (typeof instance.scheduleRender === 'function') {
+                            instance.scheduleRender();
+                        }
+                    }
+                }
+            }, { root: container, rootMargin: `${(scrollerOptions.overscan ?? 5) * (scrollerOptions.itemHeight ?? 60)}px`, threshold: 0 });
+
+            perScrollerIO.observe(bottomSentinel);
+            this.sentinelToScrollerId.set(bottomSentinel, scrollerId);
+        }
+
+        // Guardar registro enriquecido
+        const record = {
+            id: scrollerId,
+            instance,
+            container,
+            options: scrollerOptions,
+            observers: {
+                // Usamos el ResizeObserver global; IntersectionObserver de items lo maneja el componente
+                resizeObserver: this.resizeObserver || null,
+                intersectionObserver: perScrollerIO
+            },
+            sentinels: { bottom: bottomSentinel }
+        };
+        this.virtualScrollers.set(scrollerId, record);
+
+        // API pública mínima
+        const api = {
+            id: scrollerId,
+            update: (newItems) => this.updateVirtualScrollerData(scrollerId, newItems),
+            destroy: () => this.destroyVirtualScroller(scrollerId)
+        };
+
+        // Telemetría ligera
+        const estimateVisible = Math.ceil((container.clientHeight || 600) / (scrollerOptions.itemHeight || 60)) + (scrollerOptions.bufferSize ?? 10) * 2;
+        console.log(`📜 Virtual scrolling ready: items=${(items||[]).length}, ~rendered<=${estimateVisible}`);
+
+        return api;
     }
 
     /**
@@ -610,11 +664,22 @@ class UIManager {
      * @param {Array} newItems - Nuevos datos
      */
     updateVirtualScrollerData(scrollerId, newItems) {
-        const virtualScroller = this.virtualScrollers.get(scrollerId);
-        if (virtualScroller) {
-            virtualScroller.updateData(newItems);
-            this.eventBus.emit('ui:virtual-scroller-updated', { scrollerId, itemCount: newItems.length });
+        const entry = this.virtualScrollers.get(scrollerId);
+        if (!entry) return;
+        const vs = entry.instance ?? entry;
+        const prevScroll = vs.container?.scrollTop ?? 0;
+        vs.updateData(Array.isArray(newItems) ? newItems : []);
+        // Preservar desplazamiento y recalcular viewport
+        if (typeof prevScroll === 'number' && vs.container) {
+            vs.container.scrollTop = prevScroll;
         }
+        if (typeof vs.updateContainerHeight === 'function') {
+            vs.updateContainerHeight();
+        }
+        if (typeof vs.scheduleRender === 'function') {
+            vs.scheduleRender();
+        }
+        this.eventBus.emit('ui:virtual-scroller-updated', { scrollerId, itemCount: (newItems || []).length });
     }
 
     /**
@@ -622,12 +687,28 @@ class UIManager {
      * @param {string} scrollerId - ID del scroller
      */
     destroyVirtualScroller(scrollerId) {
-        const virtualScroller = this.virtualScrollers.get(scrollerId);
-        if (virtualScroller) {
-            virtualScroller.destroy();
-            this.virtualScrollers.delete(scrollerId);
-            this.eventBus.emit('ui:virtual-scroller-destroyed', { scrollerId });
+        const entry = this.virtualScrollers.get(scrollerId);
+        if (!entry) return;
+        const vs = entry.instance ?? entry;
+
+        // Dejar de observar el contenedor (ResizeObserver global)
+        const container = entry.container ?? vs.container;
+        if (this.resizeObserver && container) {
+            try { this.resizeObserver.unobserve(container); } catch { /* noop */ }
         }
+        if (container) this.containerToScrollerId.delete(container);
+
+        // IntersectionObserver adicional (si en el futuro añadimos sentinels)
+        const sentinel = entry.sentinels?.bottom;
+        if (sentinel && sentinel.parentNode) sentinel.parentNode.removeChild(sentinel);
+        if (entry.observers?.intersectionObserver) {
+            try { entry.observers.intersectionObserver.disconnect(); } catch { /* noop */ }
+        }
+
+        // Destruir instancia y limpiar
+        try { vs.destroy?.(); } catch { /* noop */ }
+        this.virtualScrollers.delete(scrollerId);
+        this.eventBus.emit('ui:virtual-scroller-destroyed', { scrollerId });
     }
 
     // Métodos privados
@@ -694,7 +775,7 @@ class UIManager {
     }
 
     initializeObservers() {
-        // Resize Observer para elementos específicos
+        // Observador de resize reutilizable para todos los contenedores
         if (window.ResizeObserver) {
             this.resizeObserver = new ResizeObserver((entries) => {
                 for (const entry of entries) {
@@ -703,13 +784,13 @@ class UIManager {
             });
         }
 
-        // Intersection Observer para lazy loading
+        // Observador de intersección compartido (no imprescindible: VirtualScroller ya usa uno interno)
         if (window.IntersectionObserver) {
             this.intersectionObserver = new IntersectionObserver((entries) => {
                 for (const entry of entries) {
                     this.handleIntersection(entry);
                 }
-            });
+            }, { root: null, threshold: 0 });
         }
     }
 
@@ -885,9 +966,10 @@ class UIManager {
         this.detectDevice();
         
         // Actualizar virtual scrollers - ahora usan VirtualScroller component
-        for (const virtualScroller of this.virtualScrollers.values()) {
-            if (virtualScroller && typeof virtualScroller.updateContainerHeight === 'function') {
-                virtualScroller.updateContainerHeight();
+        for (const entry of this.virtualScrollers.values()) {
+            const vs = entry?.instance ?? entry;
+            if (vs && typeof vs.updateContainerHeight === 'function') {
+                vs.updateContainerHeight();
             }
         }
         
@@ -895,6 +977,39 @@ class UIManager {
             width: window.innerWidth, 
             height: window.innerHeight 
         });
+    }
+
+    /**
+     * Maneja resize de elementos observados (contenedores de scrollers)
+     * @param {ResizeObserverEntry} entry
+     */
+    handleElementResize(entry) {
+        const target = entry.target;
+        const scrollerId = this.containerToScrollerId.get(target);
+        if (!scrollerId) return;
+        const record = this.virtualScrollers.get(scrollerId);
+        const vs = record?.instance ?? record;
+        if (vs && typeof vs.updateContainerHeight === 'function') {
+            vs.updateContainerHeight();
+        }
+        if (vs && typeof vs.scheduleRender === 'function') {
+            vs.scheduleRender();
+        }
+    }
+
+    /**
+     * Maneja intersecciones de sentinels (si se usan)
+     * @param {IntersectionObserverEntry} entry
+     */
+    handleIntersection(entry) {
+        const target = entry.target;
+        const scrollerId = this.sentinelToScrollerId.get(target);
+        if (!scrollerId) return;
+        const record = this.virtualScrollers.get(scrollerId);
+        const vs = record?.instance ?? record;
+        if (entry.isIntersecting && vs?.scheduleRender) {
+            vs.scheduleRender();
+        }
     }
 
     handleKeydown(e) {
@@ -1133,6 +1248,11 @@ class UIManager {
         }
         this.toastTimers.clear();
 
+        // Destruir virtual scrollers antes de desconectar observers
+        for (const [scrollerId] of this.virtualScrollers) {
+            this.destroyVirtualScroller(scrollerId);
+        }
+
         // Limpiar observadores
         if (this.resizeObserver) {
             this.resizeObserver.disconnect();
@@ -1142,8 +1262,10 @@ class UIManager {
             this.intersectionObserver.disconnect();
         }
 
-        // Limpiar virtual scrollers
+        // Limpiar estructuras
         this.virtualScrollers.clear();
+        this.containerToScrollerId.clear();
+        this.sentinelToScrollerId.clear();
         this.renderQueues.clear();
 
         // Limpiar animaciones activas
