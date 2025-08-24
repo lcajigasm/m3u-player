@@ -118,12 +118,33 @@ class EPGRenderer {
      * @private
      */
     handleSetReminder(detail) {
-        const { programId, channelId } = detail;
-        
-        // Emitir evento para configurar recordatorio
-        this.container.dispatchEvent(new CustomEvent('epg:configureReminder', {
-            detail: { programId, channelId }
-        }));
+        const { programId, channelId } = detail || {};
+
+        if (!programId || !channelId) {
+            return;
+        }
+
+        // Side-effect opcional: crear recordatorio si ReminderManager está disponible y hay datos cargados
+        try {
+            const program = this.channels
+                ?.find(ch => ch.id === channelId)
+                ?.programs?.find(p => p.id === programId);
+
+            const startTime = program ? new Date(program.startTime) : null;
+
+            if (this.epgManager?.reminderManager && startTime && !isNaN(startTime)) {
+                const res = this.epgManager.reminderManager.addReminder(programId, channelId, startTime);
+                if (res && typeof res.then === 'function') {
+                    res.then(() => console.log(`🔔 Recordatorio creado (renderer): ${programId}`))
+                       .catch(err => console.warn('⚠️ Error creando recordatorio (renderer):', err));
+                }
+            }
+        } catch (err) {
+            console.warn('⚠️ Error al procesar recordatorio en renderer:', err);
+        }
+
+        // Nota: No re-emitimos 'epg:setReminder' aquí para evitar bucles, ya que
+        // este método es el handler del propio evento 'epg:setReminder'.
     }
 
     /**
