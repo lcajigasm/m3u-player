@@ -162,25 +162,83 @@ class AppController {
      * Configurar integraciones entre módulos
      */
     setupModuleIntegrations() {
-        // Conectar player con UI
-        this.modules.ui.setVideoElement = (element) => {
-            this.modules.player.setVideoElement(element);
-            this.elements.videoElement = element;
-        };
+        const { ui, player, playlist, network, config } = this.modules;
 
-        // Conectar playlist con UI para renderizado
-        this.modules.playlist.setRenderCallback((channels, container, options) => {
-            return this.modules.ui.setupVirtualScrolling(
-                container, 
-                channels, 
-                this.renderChannelItem.bind(this), 
-                options
-            );
-        });
+        // Conectar player con UI (con guardas)
+        if (ui && player && typeof player.setVideoElement === 'function') {
+            ui.setVideoElement = (element) => {
+                try {
+                    player.setVideoElement(element);
+                    this.elements.videoElement = element;
+                } catch (err) {
+                    console.warn('⚠️ Failed to set video element on player:', err);
+                }
+            };
+        }
 
-        // Conectar network con otros módulos
-        this.modules.network.setConfigManager(this.modules.config);
-        
+        // Conectar playlist con UI para renderizado (virtual scrolling) con fallback
+        if (playlist) {
+            const renderCb = (channels, container, options = {}) => {
+                try {
+                    if (ui && typeof ui.setupVirtualScrolling === 'function') {
+                        return ui.setupVirtualScrolling(
+                            container,
+                            Array.isArray(channels) ? channels : [],
+                            this.renderChannelItem.bind(this),
+                            options
+                        );
+                    }
+                } catch (err) {
+                    console.warn('⚠️ setupVirtualScrolling failed, falling back to plain render:', err);
+                }
+                // Fallback: render completo sin virtualización y API mínima
+                try {
+                    if (ui && typeof ui.renderAllItems === 'function') {
+                        ui.renderAllItems(container, Array.isArray(channels) ? channels : [], this.renderChannelItem.bind(this));
+                    } else if (container) {
+                        // Render muy básico si UI no está disponible
+                        const fragment = document.createDocumentFragment();
+                        (Array.isArray(channels) ? channels : []).forEach((ch, idx) => fragment.appendChild(this.renderChannelItem(ch, idx)));
+                        container.innerHTML = '';
+                        container.appendChild(fragment);
+                    }
+                } catch {}
+                return {
+                    id: null,
+                    update: (newItems) => {
+                        if (ui && typeof ui.renderAllItems === 'function') {
+                            ui.renderAllItems(container, Array.isArray(newItems) ? newItems : [], this.renderChannelItem.bind(this));
+                        }
+                    },
+                    destroy: () => { if (container) container.innerHTML = ''; }
+                };
+            };
+            try {
+                if (typeof playlist.setRenderCallback === 'function') {
+                    playlist.setRenderCallback(renderCb);
+                } else {
+                    // Fallback: exponer callback para consumidores que lo respeten en el futuro
+                    playlist.renderCallback = renderCb;
+                }
+            } catch (err) {
+                console.warn('⚠️ Failed to register playlist render callback:', err);
+            }
+        }
+
+        // Conectar network con gestor de config si el método existe
+        if (network && config) {
+            try {
+                if (typeof network.setConfigManager === 'function') {
+                    network.setConfigManager(config);
+                } else {
+                    // Exponer referencia de configuración de forma no intrusiva
+                    network.configManager = config;
+                }
+            } catch (err) {
+                console.warn('⚠️ Failed to wire NetworkManager with ConfigManager:', err);
+            }
+        }
+
         console.log('🔗 Module integrations configured');
     }
 
@@ -195,8 +253,8 @@ class AppController {
         this.elements.controlsContainer = document.getElementById('controlsContainer');
 
         // Configurar video element si existe
-        if (this.elements.videoElement) {
-            this.modules.player.setVideoElement(this.elements.videoElement);
+        if (this.elements.videoElement && this.modules.player && typeof this.modules.player.setVideoElement === 'function') {
+            try { this.modules.player.setVideoElement(this.elements.videoElement); } catch {}
         }
 
         // Configurar contenedores
@@ -212,31 +270,55 @@ class AppController {
      * Configurar event listeners principales
      */
     setupEventListeners() {
-        // Eventos de aplicación
+        // Eventos de aplicación (con try/catch)
         this.eventBus.on('app:change-view', (event) => {
-            this.changeView(event.data.view, event.data.options);
+            try {
+                this.changeView(event?.data?.view, event?.data?.options);
+            } catch (err) {
+                this.handleError(err, { action: 'app:change-view', event });
+            }
         });
 
         this.eventBus.on('app:load-playlist', (event) => {
-            this.loadPlaylist(event.data.file, event.data.options);
+            try {
+                this.loadPlaylist(event?.data?.file, event?.data?.options);
+            } catch (err) {
+                this.handleError(err, { action: 'app:load-playlist', event });
+            }
         });
 
         this.eventBus.on('app:play-channel', (event) => {
-            this.playChannel(event.data.channel, event.data.options);
+            try {
+                this.playChannel(event?.data?.channel, event?.data?.options);
+            } catch (err) {
+                this.handleError(err, { action: 'app:play-channel', event });
+            }
         });
 
         this.eventBus.on('app:error', (event) => {
-            this.handleError(event.data.error, event.data.context);
+            try {
+                this.handleError(event?.data?.error, event?.data?.context);
+            } catch (err) {
+                console.error('Unhandled app:error', err);
+            }
         });
 
         // Eventos de configuración
         this.eventBus.on('config:changed', (event) => {
-            this.handleConfigChange(event.data.key, event.data.value);
+            try {
+                this.handleConfigChange(event?.data?.key, event?.data?.value);
+            } catch (err) {
+                this.handleError(err, { action: 'config:changed', event });
+            }
         });
 
         // Eventos de UI
         this.eventBus.on('ui:theme-changed', (event) => {
-            this.saveCurrentState();
+            try {
+                this.saveCurrentState();
+            } catch (err) {
+                console.warn('Failed to persist state on theme change:', err);
+            }
         });
 
         // Eventos de playlist
@@ -298,8 +380,15 @@ class AppController {
         try {
             const oldView = this.state.currentView;
             this.state.currentView = view;
-
-            await this.modules.ui.showView(view, options);
+            if (this.modules.ui && typeof this.modules.ui.showView === 'function') {
+                await this.modules.ui.showView(view, options);
+            } else {
+                // Fallback: mostrar/ocultar secciones si existen
+                const oldEl = document.getElementById(`${oldView}Section`);
+                const newEl = document.getElementById(`${view}Section`);
+                if (oldEl) oldEl.style.display = 'none';
+                if (newEl) newEl.style.display = 'block';
+            }
 
             this.eventBus.emit('app:view-changed', {
                 oldView,
@@ -320,7 +409,12 @@ class AppController {
      */
     async loadPlaylist(file, options = {}) {
         try {
-            this.modules.ui.showLoadingIndicator('Loading playlist...');
+            // Mostrar loading si UI está disponible
+            try { this.modules.ui?.showLoading?.('Loading playlist...'); } catch {}
+
+            if (!this.modules.playlist || typeof this.modules.playlist.loadPlaylist !== 'function') {
+                throw new Error('Playlist module not available');
+            }
 
             const playlist = await this.modules.playlist.loadPlaylist(file, options);
             
@@ -329,10 +423,10 @@ class AppController {
                 await this.changeView('player');
             }
 
-            this.modules.ui.hideLoadingIndicator();
+            try { this.modules.ui?.hideLoading?.(); } catch {}
 
         } catch (error) {
-            this.modules.ui.hideLoadingIndicator();
+            try { this.modules.ui?.hideLoading?.(); } catch {}
             this.handleError(error, { action: 'loadPlaylist', file: file?.name });
         }
     }
@@ -448,8 +542,13 @@ class AppController {
      * @param {Object} data - Datos de la playlist
      */
     handlePlaylistLoaded(data) {
-        console.log(`📻 Playlist loaded: ${data.channels.length} channels`);
-        this.modules.ui.showNotification(`Loaded ${data.channels.length} channels`, 'success');
+        try {
+            const count = data?.channels?.length ?? data?.itemCount ?? 0;
+            console.log(`📻 Playlist loaded: ${count} channels`);
+            this.modules.ui?.showNotification?.(`Loaded ${count} channels`, 'success');
+        } catch (err) {
+            console.warn('⚠️ Failed to handle playlist:loaded UI update:', err);
+        }
     }
 
     /**
@@ -466,10 +565,15 @@ class AppController {
      */
     handlePlayerStateChange(data) {
         // Actualizar UI basado en el estado del player
-        if (data.state.playing) {
-            this.modules.ui.updatePlaybackControls('playing');
-        } else {
-            this.modules.ui.updatePlaybackControls('paused');
+        try {
+            if (!this.modules.ui || typeof this.modules.ui.updatePlaybackControls !== 'function') return;
+            if (data?.state?.playing) {
+                this.modules.ui.updatePlaybackControls('playing');
+            } else {
+                this.modules.ui.updatePlaybackControls('paused');
+            }
+        } catch (err) {
+            console.warn('⚠️ Failed to update playback controls:', err);
         }
     }
 
@@ -490,10 +594,14 @@ class AppController {
         console.log(`⚙️ Config changed: ${key} = ${value}`);
         
         // Aplicar cambios específicos
-        if (key.startsWith('ui.theme')) {
-            this.modules.ui.setTheme(value);
-        } else if (key.startsWith('player.')) {
-            this.modules.player.updateConfig(key, value);
+        try {
+            if (key?.startsWith?.('ui.theme')) {
+                this.modules.ui?.setTheme?.(value);
+            } else if (key?.startsWith?.('player.')) {
+                this.modules.player?.updateConfig?.(key, value);
+            }
+        } catch (err) {
+            console.warn('⚠️ Failed to apply config change:', err);
         }
     }
 
