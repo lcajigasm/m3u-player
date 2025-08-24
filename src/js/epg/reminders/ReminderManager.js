@@ -18,7 +18,10 @@ class ReminderManager {
             defaultAdvanceMinutes: 5,
             checkIntervalMs: 30000, // 30 segundos
             maxReminders: 50,
-            notificationDuration: 10000 // 10 segundos
+            notificationDuration: 10000, // 10 segundos
+            // Preferencias de ejecución
+            executeOnNotify: false, // Ejecutar inmediatamente al notificar
+            autoExecuteAtStart: true // Ejecutar automáticamente al llegar la hora de inicio
         };
         
         this.loadReminders();
@@ -43,9 +46,14 @@ class ReminderManager {
         const advance = advanceMinutes || this.config.defaultAdvanceMinutes;
         const notificationTime = new Date(startTime.getTime() - advance * 60 * 1000);
         
-        // Verificar que el tiempo de notificación sea futuro
-        if (notificationTime <= new Date()) {
+        const now = new Date();
+        // Verificar que el programa no haya comenzado
+        if (startTime <= now) {
             throw new Error('No se puede crear recordatorio para un programa que ya comenzó');
+        }
+        // Si el tiempo de notificación quedó en el pasado, ajustarlo a ahora para notificar inmediato
+        if (notificationTime < now) {
+            notificationTime.setTime(now.getTime());
         }
 
         // Verificar límite de recordatorios
@@ -53,12 +61,15 @@ class ReminderManager {
             throw new Error(`Máximo ${this.config.maxReminders} recordatorios permitidos`);
         }
 
-        const reminderId = this.generateReminderId(programId, channelId);
-        
-        // Verificar si ya existe un recordatorio para este programa
-        if (this.reminders.has(reminderId)) {
-            throw new Error('Ya existe un recordatorio para este programa');
+        // Evitar duplicados por programId+channelId
+        const duplicate = Array.from(this.reminders.values()).find(r =>
+            r.programId === programId && r.channelId === channelId && ['pending', 'notified'].includes(r.status)
+        );
+        if (duplicate) {
+            throw new Error('Ya existe un recordatorio para este programa en este canal');
         }
+
+        const reminderId = this.generateReminderId(programId, channelId);
 
         const reminder = {
             id: reminderId,
@@ -73,7 +84,10 @@ class ReminderManager {
         };
 
         this.reminders.set(reminderId, reminder);
-        await this.saveReminders();
+    await this.saveReminders();
+    this.dispatchUpdate();
+    // Forzar una verificación inmediata para respetar tiempos cortos
+    this.checkReminders();
         
         console.log(`⏰ Recordatorio creado: ${reminder.title} (${this.formatTime(notificationTime)})`);
         
@@ -93,6 +107,7 @@ class ReminderManager {
         const reminder = this.reminders.get(reminderId);
         this.reminders.delete(reminderId);
         await this.saveReminders();
+    this.dispatchUpdate();
         
         console.log(`🗑️ Recordatorio eliminado: ${reminder.title}`);
         
@@ -126,14 +141,24 @@ class ReminderManager {
      */
     checkReminders() {
         const now = new Date();
-        const pendingReminders = Array.from(this.reminders.values())
-            .filter(reminder => 
-                reminder.status === 'pending' && 
-                reminder.notificationTime <= now
-            );
+        const remindersArr = Array.from(this.reminders.values());
 
-        for (const reminder of pendingReminders) {
+        // Notificar cuando llegue el tiempo de notificación
+        const toNotify = remindersArr.filter(reminder => 
+            reminder.status === 'pending' && reminder.notificationTime <= now
+        );
+        for (const reminder of toNotify) {
             this.triggerReminder(reminder);
+        }
+
+        // Ejecutar automáticamente al llegar la hora de inicio
+        if (this.config.autoExecuteAtStart) {
+            const toExecute = remindersArr.filter(reminder =>
+                (reminder.status === 'notified' || reminder.status === 'pending') && reminder.startTime <= now
+            );
+            for (const reminder of toExecute) {
+                this.executeReminder(reminder);
+            }
         }
 
         // Limpiar recordatorios antiguos
@@ -158,6 +183,12 @@ class ReminderManager {
             
             // Guardar cambios
             await this.saveReminders();
+            this.dispatchUpdate();
+
+            // Ejecutar inmediatamente si está configurado
+            if (this.config.executeOnNotify) {
+                await this.executeReminder(reminder);
+            }
             
         } catch (error) {
             console.error('❌ Error disparando recordatorio:', error);
@@ -344,8 +375,9 @@ class ReminderManager {
             // Cambiar al canal correspondiente
             if (this.player && this.player.playlistData) {
                 const channelIndex = this.player.playlistData.findIndex(channel => 
-                    channel.tvgId === reminder.channelId || 
-                    channel.name === reminder.channelId
+                    channel.tvgId === reminder.channelId ||
+                    channel.tvgName === reminder.channelId ||
+                    channel.title === reminder.channelId
                 );
                 
                 if (channelIndex >= 0) {
@@ -358,6 +390,7 @@ class ReminderManager {
             
             // Guardar cambios
             await this.saveReminders();
+            this.dispatchUpdate();
             
         } catch (error) {
             console.error('❌ Error ejecutando recordatorio:', error);
@@ -420,6 +453,7 @@ class ReminderManager {
         if (cleanedCount > 0) {
             this.saveReminders();
             console.log(`🧹 ${cleanedCount} recordatorios antiguos limpiados`);
+            this.dispatchUpdate();
         }
     }
 
@@ -482,7 +516,8 @@ class ReminderManager {
      * @private
      */
     generateReminderId(programId, channelId) {
-        return `reminder_${channelId}_${programId}_${Date.now()}`;
+        // ID estable por combinación para poder detectar duplicados
+        return `reminder_${channelId}_${programId}`;
     }
 
     /**
@@ -557,6 +592,19 @@ class ReminderManager {
         });
         
         console.log('🧹 ReminderManager destruido');
+    }
+
+    /**
+     * Emite evento global para que la UI actualice
+     * @private
+     */
+    dispatchUpdate() {
+        try {
+            const event = new CustomEvent('epg:reminders:updated');
+            window.dispatchEvent(event);
+        } catch (_) {
+            // noop
+        }
     }
 }
 

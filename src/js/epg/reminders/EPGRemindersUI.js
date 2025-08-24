@@ -13,6 +13,8 @@ class EPGRemindersUI {
         this.elements = {};
         this.render();
         this.setupEventListeners();
+    // Suscribirse a cambios del ReminderManager
+    window.addEventListener('epg:reminders:updated', () => this.updateList());
     }
 
     /**
@@ -83,10 +85,8 @@ class EPGRemindersUI {
      * Limpia todos los recordatorios
      */
     async clearAllReminders() {
-        const reminders = this.reminderManager.getActiveReminders();
-        for (const r of reminders) {
-            await this.reminderManager.removeReminder(r.id);
-        }
+    const reminders = this.reminderManager.getActiveReminders();
+    await Promise.all(reminders.map(r => this.reminderManager.removeReminder(r.id)));
         this.updateList();
     }
 
