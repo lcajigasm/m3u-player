@@ -57,6 +57,7 @@ class UIManager {
         // Timers
         this.hideControlsTimer = null;
         this.toastTimers = new Map();
+    this.loadingTimeoutId = null;
         
         // Animations
         this.activeAnimations = new Set();
@@ -418,30 +419,78 @@ class UIManager {
      */
     showLoading(message = 'Loading...', options = {}) {
         this.state.loading = true;
-        
+
+        const {
+            cancellable = false,
+            showProgress = true,
+            message: msgOpt,
+            timeoutMs = 0,
+            progress
+        } = options;
+
         let overlay = document.querySelector('.loading-overlay');
         if (!overlay) {
             overlay = this.createLoadingOverlay();
         }
 
-        // Actualizar mensaje
+        // Atributos ARIA del overlay
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-live', 'polite');
+        overlay.setAttribute('aria-busy', 'true');
+        overlay.setAttribute('aria-modal', 'true');
+
+        // Mensaje
+        const effectiveMessage = msgOpt ?? message;
         const messageEl = overlay.querySelector('.loading-message');
         if (messageEl) {
-            messageEl.textContent = message;
+            messageEl.textContent = effectiveMessage;
         }
 
-        // Mostrar progreso si está disponible
-        if (options.progress !== undefined) {
-            this.updateLoadingProgress(options.progress);
+        // Progreso
+        const progressWrap = overlay.querySelector('.loading-progress');
+        if (progressWrap) {
+            progressWrap.style.display = showProgress ? 'block' : 'none';
+        }
+        if (typeof progress === 'number') {
+            this.updateLoadingProgress(progress);
+        } else {
+            // Reset a 0 si no se especifica
+            this.updateLoadingProgress(0);
+        }
+
+        // Cancelable
+        const cancelBtn = overlay.querySelector('.loading-cancel');
+        if (cancelBtn) {
+            cancelBtn.style.display = cancellable ? 'inline-flex' : 'none';
+            if (overlay._cancelHandler) {
+                cancelBtn.removeEventListener('click', overlay._cancelHandler);
+            }
+            if (cancellable) {
+                overlay._cancelHandler = () => {
+                    this.eventBus.emit('ui:loading-cancelled');
+                    this.hideLoading();
+                };
+                cancelBtn.addEventListener('click', overlay._cancelHandler);
+            }
+        }
+
+        // Auto cierre
+        if (this.loadingTimeoutId) {
+            clearTimeout(this.loadingTimeoutId);
+            this.loadingTimeoutId = null;
+        }
+        if (timeoutMs > 0) {
+            this.loadingTimeoutId = setTimeout(() => {
+                this.hideLoading();
+            }, timeoutMs);
         }
 
         overlay.style.display = 'flex';
-        
         if (this.config.enableAnimations) {
             this.animateLoading(overlay, 'in');
         }
 
-        this.eventBus.emit('ui:loading-shown', { message, options });
+        this.eventBus.emit('ui:loading-shown', { message: effectiveMessage, options });
     }
 
     /**
@@ -449,16 +498,25 @@ class UIManager {
      */
     hideLoading() {
         this.state.loading = false;
-        
+
+        // Limpiar timeout si está activo
+        if (this.loadingTimeoutId) {
+            clearTimeout(this.loadingTimeoutId);
+            this.loadingTimeoutId = null;
+        }
+
         const overlay = document.querySelector('.loading-overlay');
         if (!overlay) return;
+        overlay.setAttribute('aria-busy', 'false');
+
+        const finalizeHide = () => {
+            overlay.style.display = 'none';
+        };
 
         if (this.config.enableAnimations) {
-            this.animateLoading(overlay, 'out', () => {
-                overlay.style.display = 'none';
-            });
+            this.animateLoading(overlay, 'out', finalizeHide);
         } else {
-            overlay.style.display = 'none';
+            finalizeHide();
         }
 
         this.eventBus.emit('ui:loading-hidden');
@@ -469,14 +527,25 @@ class UIManager {
      * @param {number} progress - Progreso (0-100)
      */
     updateLoadingProgress(progress) {
-        const progressBar = document.querySelector('.loading-progress .progress-fill');
-        if (progressBar) {
-            progressBar.style.width = `${Math.max(0, Math.min(100, progress))}%`;
+        const value = Math.max(0, Math.min(100, Number(progress) || 0));
+        const overlay = document.querySelector('.loading-overlay');
+        const fill = overlay?.querySelector('.loading-progress .progress-fill');
+        if (fill) {
+            fill.style.width = `${value}%`;
         }
 
-        const progressText = document.querySelector('.loading-progress .progress-text');
-        if (progressText) {
-            progressText.textContent = `${Math.round(progress)}%`;
+        const bar = overlay?.querySelector('.loading-progress .progress-bar');
+        if (bar) {
+            bar.setAttribute('role', 'progressbar');
+            bar.setAttribute('aria-valuemin', '0');
+            bar.setAttribute('aria-valuemax', '100');
+            bar.setAttribute('aria-valuenow', String(Math.round(value)));
+        }
+
+        const text = overlay?.querySelector('.loading-progress .progress-text');
+        if (text) {
+            text.textContent = `${Math.round(value)}%`;
+            text.setAttribute('aria-live', 'polite');
         }
     }
 
@@ -585,6 +654,23 @@ class UIManager {
             this.setTheme(event.data.theme);
         });
 
+        // Loading overlay via EventBus
+        this.eventBus.on('ui:loading-show', (event) => {
+            const { message, options } = event.data || {};
+            this.showLoading(message, options);
+        });
+
+        this.eventBus.on('ui:loading-hide', () => {
+            this.hideLoading();
+        });
+
+        this.eventBus.on('ui:loading-progress', (event) => {
+            const { progress } = event.data || {};
+            if (typeof progress === 'number') {
+                this.updateLoadingProgress(progress);
+            }
+        });
+
         this.eventBus.on('ui:toggle-fullscreen', () => {
             this.toggleFullscreen();
         });
@@ -670,7 +756,22 @@ class UIManager {
             }
         };
 
-        const vars = themeVars[theme] || themeVars.dark;
+        let vars;
+        switch (theme) {
+            case 'light':
+                vars = themeVars.light;
+                break;
+            case 'gaming':
+                vars = themeVars.gaming;
+                break;
+            case 'cinema':
+                vars = themeVars.cinema;
+                break;
+            case 'dark':
+            default:
+                vars = themeVars.dark;
+                break;
+        }
         
         // Aplicar variables CSS
         Object.entries(vars).forEach(([property, value]) => {
@@ -834,9 +935,29 @@ class UIManager {
     }
 
     cycleTheme() {
-        const currentIndex = this.config.themes.indexOf(this.state.currentTheme);
-        const nextIndex = (currentIndex + 1) % this.config.themes.length;
-        this.setTheme(this.config.themes[nextIndex]);
+        const allowedThemes = ['dark', 'light', 'gaming', 'cinema'];
+        const current = allowedThemes.includes(this.state.currentTheme)
+            ? this.state.currentTheme
+            : 'dark';
+        const currentIndex = allowedThemes.indexOf(current);
+        const nextIndex = (currentIndex + 1) % 4;
+        let nextTheme;
+        switch (nextIndex) {
+            case 0:
+                nextTheme = 'dark';
+                break;
+            case 1:
+                nextTheme = 'light';
+                break;
+            case 2:
+                nextTheme = 'gaming';
+                break;
+            case 3:
+            default:
+                nextTheme = 'cinema';
+                break;
+        }
+        this.setTheme(nextTheme);
     }
 
     // Configuraciones de layout específicas
@@ -943,18 +1064,11 @@ class UIManager {
     createLoadingOverlay() {
         const overlay = document.createElement('div');
         overlay.className = 'loading-overlay';
-        overlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        `;
+        // Atributos de accesibilidad por defecto
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-live', 'polite');
+        overlay.setAttribute('aria-busy', 'true');
+        overlay.setAttribute('aria-modal', 'true');
 
         overlay.innerHTML = `
             <div class="loading-content">
@@ -966,6 +1080,7 @@ class UIManager {
                     </div>
                     <div class="progress-text">0%</div>
                 </div>
+                <button class="loading-cancel" type="button" style="display:none">Cancelar</button>
             </div>
         `;
 

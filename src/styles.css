@@ -460,6 +460,129 @@ body {
     z-index: 9999;
 }
 
+/* Loading Overlay (modular overlay for async tasks) */
+.loading-overlay {
+    position: fixed;
+    inset: 0;
+    display: none; /* controlado por JS */
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in oklab, var(--bg-primary) 80%, black);
+    backdrop-filter: blur(8px);
+    z-index: 10000;
+}
+
+.loading-overlay .loading-content {
+    width: min(420px, 92vw);
+    padding: 28px;
+    background: color-mix(in oklab, var(--bg-secondary) 90%, black 10%);
+    color: var(--text-primary);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 14px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+    text-align: center;
+}
+
+.loading-overlay .loading-message {
+    font-size: 1rem;
+    line-height: 1.4;
+    margin: 10px 0 16px;
+    color: var(--text-secondary);
+}
+
+.loading-overlay .loading-spinner {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 4px solid rgba(148, 163, 184, 0.25);
+    border-top-color: var(--accent-primary, #3b82f6);
+    animation: spin 1s linear infinite;
+    margin: 0 auto 12px;
+}
+
+.loading-overlay .loading-progress {
+    margin-top: 12px;
+}
+
+.loading-overlay .progress-bar {
+    width: 100%;
+    height: 10px;
+    background: rgba(148, 163, 184, 0.25);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.loading-overlay .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent-primary, #3b82f6), var(--accent-secondary, #60a5fa));
+    transition: width 200ms ease;
+}
+
+.loading-overlay .progress-text {
+    margin-top: 6px;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.loading-overlay .loading-cancel {
+    margin-top: 16px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    cursor: pointer;
+    transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.loading-overlay .loading-cancel:hover {
+    background: rgba(148, 163, 184, 0.15);
+    color: var(--text-primary);
+    border-color: rgba(148, 163, 184, 0.6);
+}
+
+@media (max-width: 600px) {
+    .loading-overlay .loading-content {
+        padding: 20px;
+    }
+}
+
+/* High contrast / forced colors */
+@media (forced-colors: active) {
+    .loading-overlay {
+        background: Canvas;
+    }
+    .loading-overlay .loading-content {
+        background: Canvas;
+        color: CanvasText;
+        border-color: CanvasText;
+        box-shadow: none;
+    }
+    .loading-overlay .loading-spinner {
+        border-color: GrayText;
+        border-top-color: Highlight;
+    }
+    .loading-overlay .progress-bar {
+        background: GrayText;
+    }
+    .loading-overlay .progress-fill {
+        background: Highlight;
+    }
+    .loading-overlay .loading-cancel {
+        border-color: CanvasText;
+        color: CanvasText;
+    }
+}
+
+/* Reduce Motion */
+@media (prefers-reduced-motion: reduce) {
+    .loading-overlay, .loading-overlay * {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
 .loading-content {
     text-align: center;
     max-width: 400px;
@@ -557,6 +680,18 @@ body {
 @keyframes spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
+}
+
+/* Complemento para animaciones de loading */
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
 }
 
 .app-header {

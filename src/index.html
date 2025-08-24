@@ -257,6 +257,30 @@
             <div id="fileInfo" class="file-info-modern"></div>
         </div>
 
+        <!-- Dev-only demo for Loading Overlay (enabled with ?demo=loading) -->
+        <script>
+            (function () {
+                try {
+                    const params = new URLSearchParams(window.location.search);
+                    if (params.get('demo') !== 'loading') return;
+                    // Lazy import to avoid breaking prod bundling
+                    import('./js/core/EventBus.js').then(({ getEventBus }) => {
+                        const bus = getEventBus();
+                        bus.emit('ui:loading-show', { message: 'Preparando datos...', options: { showProgress: true, cancellable: true, timeoutMs: 0 } });
+                        let p = 0;
+                        const id = setInterval(() => {
+                            p += 7;
+                            bus.emit('ui:loading-progress', { progress: p });
+                            if (p >= 100) {
+                                clearInterval(id);
+                                setTimeout(() => bus.emit('ui:loading-hide'), 400);
+                            }
+                        }, 200);
+                    }).catch(() => {});
+                } catch (e) {}
+            })();
+        </script>
+
         <div class="player-section" id="playerSection" style="display: none">
             <div class="video-container">
                 <video id="videoPlayer" controls preload="none" controlsList="nodownload">

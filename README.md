@@ -140,6 +140,38 @@ The project includes comprehensive documentation organized by category:
 - **Building the Project**: [Build Guide](docs/development/BUILD-GUIDE.md)
 - **Release Process**: [Release Tutorial](docs/releases/RELEASE-TUTORIAL.md)
 
+## ⏳ Loading Overlay API
+
+El UIManager expone un overlay de carga accesible con ARIA y progreso en tiempo real.
+
+API directa:
+
+- `uiManager.showLoading(message?: string, options?: { cancellable?: boolean; showProgress?: boolean; message?: string; timeoutMs?: number; progress?: number; })`
+- `uiManager.updateLoadingProgress(percent: number)`
+- `uiManager.hideLoading()`
+
+Eventos emitidos:
+
+- `ui:loading-shown` ({ message, options })
+- `ui:loading-hidden`
+- `ui:loading-cancelled` (cuando el usuario pulsa “Cancelar”)
+
+Uso vía EventBus:
+
+```js
+import { getEventBus } from './src/js/core/EventBus.js';
+const bus = getEventBus();
+
+bus.emit('ui:loading-show', { message: 'Preparando datos...', options: { showProgress: true, cancellable: true } });
+bus.emit('ui:loading-progress', { progress: 50 });
+bus.emit('ui:loading-hide');
+```
+
+Notas de accesibilidad:
+
+- El overlay usa `role="dialog"`, `aria-modal="true"`, `aria-live="polite"` y `aria-busy`.
+- La barra de progreso expone `role="progressbar"` con `aria-valuemin/max/now`.
+
 ## 🏗️ Project Structure
 
 ```
@@ -173,6 +205,7 @@ m3u-player/
 ### Automated Builds (GitHub Actions)
 
 #### Option 1: Auto-Release (Recommended)
+
 Create releases by pushing to a release branch:
 
 ```bash
@@ -181,6 +214,7 @@ Create releases by pushing to a release branch:
 ```
 
 #### Option 2: Manual Tag Release
+
 Create releases using traditional tags:
 
 ```bash
@@ -189,11 +223,13 @@ Create releases using traditional tags:
 ```
 
 Both methods automatically generate:
+
 - 🪟 **Windows**: `.exe` (installer) and portable
 - 🍎 **macOS**: `.dmg` and `.zip` (Intel + Apple Silicon)
 - 🐧 **Linux**: `.AppImage`, `.deb`, and `.rpm`
 
 ### Manual Build (Local)
+
 ```bash
 # For all platforms
 npm run build
@@ -210,10 +246,12 @@ npm run dist
 ## 🛠️ Development
 
 ### Prerequisites
-- Node.js 16+ 
+
+- Node.js 16+
 - npm or yarn
 
-### Development workflow:
+### Development workflow
+
 ```bash
 # Install dependencies
 npm install
@@ -228,7 +266,8 @@ npm run dev-nocache
 npm run clear-cache
 ```
 
-### Code structure:
+### Code structure
+
 - **Modern ES6+** JavaScript
 - **Modular CSS** with dark theme
 - **Electron** for desktop integration
@@ -236,12 +275,14 @@ npm run clear-cache
 
 ## 📋 Supported Formats
 
-### Video formats:
+### Video formats
+
 - **Direct streams**: MP4, WebM, OGG
 - **HLS streams**: .m3u8 with automatic HLS.js integration
 - **Live streams**: IPTV and other streaming protocols
 
-### M3U features:
+### M3U features
+
 - Complete M3U/M3U8 parsing
 - TVG attributes (tvg-logo, tvg-id, tvg-name)
 - Group organization
@@ -250,7 +291,7 @@ npm run clear-cache
 
 ## 🐛 Troubleshooting
 
-### Common issues:
+### Common issues
 
 1. **Stream not playing**:
    - Use the "🔧 Test Stream" button for diagnostics
@@ -287,7 +328,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Electron](https://www.electronjs.org/) for desktop application framework
 - Sample videos from [Google Cloud Storage](https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/)
 
-## 📚 Documentation
+## 📚 Documentation Index
 
 - 📖 **[Build Guide](docs/development/BUILD-GUIDE.md)** - Complete guide for building executables
 - 🚀 **[Release Tutorial](docs/releases/RELEASE-TUTORIAL.md)** - Step-by-step manual release process
