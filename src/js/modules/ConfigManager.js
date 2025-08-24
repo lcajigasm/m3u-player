@@ -167,9 +167,10 @@ class ConfigManager {
             // Configuración EPG
             epg: {
                 enabled: true,
-                autoUpdate: true,
-                updateInterval: 86400000, // 24 horas
-                cacheSize: 1000,
+                enableAutoUpdate: true,
+                multiLevelCache: true,
+                updateInterval: 3600000, // 1 hora
+                cacheSize: 5000,
                 enableReminders: true,
                 enableNotifications: true,
                 languages: ['en'],
@@ -243,8 +244,13 @@ class ConfigManager {
         this.schema.set('network.timeout', { type: 'number', min: 5000, max: 120000 });
         this.schema.set('network.maxConcurrentRequests', { type: 'number', min: 1, max: 20 });
         
-        this.schema.set('epg.updateInterval', { type: 'number', min: 3600000, max: 604800000 }); // 1h - 7d
-        this.schema.set('epg.cacheSize', { type: 'number', min: 100, max: 10000 });
+    this.schema.set('epg.updateInterval', { type: 'number', min: 3600000, max: 604800000 }); // 1h - 7d
+    this.schema.set('epg.cacheSize', { type: 'number', min: 100, max: 10000 });
+    this.schema.set('epg.enableAutoUpdate', { type: 'boolean' });
+    this.schema.set('epg.multiLevelCache', { type: 'boolean' });
+    this.schema.set('epg.enabled', { type: 'boolean' });
+    this.schema.set('epg.enableReminders', { type: 'boolean' });
+    this.schema.set('epg.enableNotifications', { type: 'boolean' });
         
         this.schema.set('privacy.maxHistoryItems', { type: 'number', min: 10, max: 1000 });
         this.schema.set('advanced.maxLogSize', { type: 'number', min: 1048576, max: 104857600 }); // 1MB - 100MB
@@ -284,7 +290,9 @@ class ConfigManager {
 
         // Validar si está habilitado
         if (validate && !this.validateValue(key, value)) {
-            console.warn(`⚠️ Invalid value for '${key}':`, value);
+            const errorMsg = this.getValidationError(key, value);
+            console.error(`❌ Config validation failed for '${key}': ${errorMsg}`);
+            this.eventBus.emit('config:validation-error', { key, value, error: errorMsg });
             return false;
         }
 
@@ -426,6 +434,41 @@ class ConfigManager {
     }
 
     /**
+     * Obtener mensaje de error de validación legible
+     * @param {string} key
+     * @param {*} value
+     * @returns {string}
+     */
+    getValidationError(key, value) {
+        if (!this.schema.has(key)) return 'No validation rule defined';
+        const rule = this.schema.get(key);
+        const typeOfVal = typeof value;
+
+        if (rule.type && typeOfVal !== rule.type) {
+            return `expected type ${rule.type}, got ${typeOfVal}`;
+        }
+        if (rule.type === 'number') {
+            if (rule.min !== undefined && value < rule.min) {
+                return `value ${value} is less than minimum ${rule.min}`;
+            }
+            if (rule.max !== undefined && value > rule.max) {
+                return `value ${value} exceeds maximum ${rule.max}`;
+            }
+        }
+        if (rule.enum && !rule.enum.includes(value)) {
+            return `value '${value}' not in allowed set: ${rule.enum.join(', ')}`;
+        }
+        if (rule.required && (value === undefined || value === null)) {
+            return 'value is required but missing';
+        }
+        if (rule.validator && typeof rule.validator === 'function') {
+            // No detalle adicional sin ejecutar el validador personalizado
+            return 'custom validator rejected value';
+        }
+        return 'invalid value';
+    }
+
+    /**
      * Agregar validador personalizado
      * @param {string} key - Clave de configuración
      * @param {Function} validator - Función validadora
@@ -532,6 +575,9 @@ class ConfigManager {
 
                 // Merge con configuración actual
                 this.config = this.mergeConfig(this.defaultConfig, configData);
+
+                // Migraciones de esquema (compatibilidad)
+                this.migrateConfig();
                 
                 // Validar configuración cargada
                 if (this.options.enableValidation) {
@@ -840,13 +886,30 @@ class ConfigManager {
         return false;
     }
 
+    migrateConfig() {
+        try {
+            // Migrar epg.autoUpdate -> epg.enableAutoUpdate
+            if (this.config && this.config.epg) {
+                const epg = this.config.epg;
+                if (Object.prototype.hasOwnProperty.call(epg, 'autoUpdate') &&
+                    !Object.prototype.hasOwnProperty.call(epg, 'enableAutoUpdate')) {
+                    epg.enableAutoUpdate = Boolean(epg.autoUpdate);
+                    delete epg.autoUpdate;
+                }
+            }
+        } catch (e) {
+            console.warn('⚠️ EPG config migration skipped:', e?.message || e);
+        }
+    }
+
     validateLoadedConfig() {
         const errors = [];
         
         for (const [key, rule] of this.schema) {
             const value = this.get(key);
             if (!this.validateValue(key, value)) {
-                errors.push(key);
+                const reason = this.getValidationError(key, value);
+                errors.push({ key, reason, value });
                 // Reset a valor por defecto
                 const defaultValue = this.getNestedValue(this.defaultConfig, key);
                 if (defaultValue !== undefined) {
@@ -857,6 +920,7 @@ class ConfigManager {
 
         if (errors.length > 0) {
             console.warn('⚠️ Invalid config values reset to defaults:', errors);
+            this.eventBus.emit('config:validation-error', { errors });
         }
     }
 
