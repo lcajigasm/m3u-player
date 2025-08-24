@@ -25,6 +25,15 @@ body {
     transition: background-color var(--transition-base), color var(--transition-base);
 }
 
+/* Global reduced motion: disable animations/transitions when user prefers less motion */
+@media (prefers-reduced-motion: reduce) {
+    html:focus-within { scroll-behavior: auto; }
+    *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
 /* ========================================
    ☀️ Light Theme Body
 ======================================== */
@@ -483,6 +492,30 @@ body {
     text-align: center;
 }
 
+/* Alto contraste para overlay de carga */
+.loading-overlay {
+    color: #ffffff;
+}
+.loading-overlay .loading-message { color: #e5e7eb; }
+.loading-overlay .progress-text { color: #ffffff; }
+.loading-overlay .loading-cancel { color: #f8fafc; border-color: rgba(248, 250, 252, 0.6); }
+.loading-overlay .loading-cancel:hover { color: #ffffff; border-color: #ffffff; }
+
+/* Tema claro: asegurar contraste adecuado en overlay de carga */
+[data-theme="light"] .loading-overlay {
+    background: rgba(15, 23, 42, 0.8); /* oscurecer overlay */
+    color: var(--text-primary);
+}
+[data-theme="light"] .loading-overlay .loading-content {
+    background: var(--bg-modal);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+[data-theme="light"] .loading-overlay .loading-message,
+[data-theme="light"] .loading-overlay .progress-text {
+    color: var(--text-primary);
+}
+
 .loading-overlay .loading-message {
     font-size: 1rem;
     line-height: 1.4;
@@ -494,8 +527,8 @@ body {
     width: 48px;
     height: 48px;
     border-radius: 50%;
-    border: 4px solid rgba(148, 163, 184, 0.25);
-    border-top-color: var(--accent-primary, #3b82f6);
+    border: 4px solid rgba(148, 163, 184, 0.35);
+    border-top-color: #ffffff; /* Mejora contraste */
     animation: spin 1s linear infinite;
     margin: 0 auto 12px;
 }
@@ -575,7 +608,7 @@ body {
     }
 }
 
-/* Reduce Motion */
+/* Reduce Motion específico (ya cubierto globalmente, se mantiene por seguridad) */
 @media (prefers-reduced-motion: reduce) {
     .loading-overlay, .loading-overlay * {
         animation: none !important;
@@ -2132,6 +2165,27 @@ footer {
     animation: modalSlideIn 0.3s ease;
 }
 
+/* Focus trap visible y estilos de enfoque accesibles en modales y overlay */
+.modal button:focus-visible,
+.modal a:focus-visible,
+.modal input:focus-visible,
+.modal select:focus-visible,
+.modal textarea:focus-visible,
+.modal [tabindex]:focus-visible,
+.loading-overlay button:focus-visible,
+.loading-overlay a:focus-visible,
+.loading-overlay [tabindex]:focus-visible {
+    outline: 3px solid #93c5fd; /* azul claro alto contraste */
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.35);
+}
+
+/* Cuando un focus-trap esté activo (añadir esta clase desde JS) */
+.focus-trap-active .modal-content,
+.focus-trap-active .loading-content {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.6), 0 20px 40px rgba(0, 0, 0, 0.6);
+}
+
 /* Modal Animation */
 @keyframes modalSlideIn {
     from {
@@ -2398,18 +2452,28 @@ footer {
         width: 100%;
     }
 
-    .loading-content {
+    .loading-content,
+    .loading-overlay .loading-content {
         max-width: 320px;
         padding: 24px;
     }
 
     .loading-stats {
-        grid-template-columns: 1fr;
-        gap: 8px;
+        grid-template-columns: 1fr; /* columnas apiladas para legibilidad */
+        gap: 10px;
     }
 
     .stat-item {
-        padding: 8px;
+        padding: 10px;
+        font-size: 0.95rem;
+    }
+
+    /* Botón accesible: tamaño mínimo táctil */
+    .loading-overlay .loading-cancel {
+        padding: 12px 16px;
+        min-height: 44px;
+        min-width: 44px;
+        font-size: 1rem;
     }
 }
 

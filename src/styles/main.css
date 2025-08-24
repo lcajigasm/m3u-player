@@ -21,6 +21,15 @@ body {
   transition: background-color var(--transition-base), color var(--transition-base);
 }
 
+/* Global reduced motion: respeta prefers-reduced-motion desactivando animaciones y transiciones */
+@media (prefers-reduced-motion: reduce) {
+    html:focus-within { scroll-behavior: auto; }
+    *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
 /* ===== App Container ===== */
 .app-container {
   display: flex;
@@ -484,8 +493,8 @@ body {
     display: none; /* OCULTO POR DEFECTO */
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
+    background: rgba(0, 0, 0, 0.9); /* mayor contraste */
+    color: #ffffff;
     pointer-events: none;
     border-radius: 10px;
     backdrop-filter: blur(5px);
@@ -509,7 +518,7 @@ body {
     width: 40px;
     height: 40px;
     border: 4px solid #333;
-    border-top: 4px solid #fff;
+    border-top: 4px solid #ffffff; /* mejor contraste */
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 0 auto 15px;
@@ -1476,7 +1485,7 @@ footer {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.6); /* ligeramente más oscuro para contraste */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1491,6 +1500,25 @@ footer {
     width: 90%;
     max-height: 80vh;
     overflow-y: auto;
+}
+
+/* Focus visible para trap de teclado dentro de modales y overlays */
+.modal button:focus-visible,
+.modal a:focus-visible,
+.modal input:focus-visible,
+.modal select:focus-visible,
+.modal textarea:focus-visible,
+.modal [tabindex]:focus-visible,
+.video-overlay button:focus-visible,
+.video-overlay a:focus-visible,
+.video-overlay [tabindex]:focus-visible {
+    outline: 3px solid #2563eb; /* azul accesible */
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.35);
+}
+
+.focus-trap-active .modal-content {
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.6), 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .modal-header {
@@ -1586,8 +1614,21 @@ footer {
         flex-direction: column;
     }
     
-    .modal-footer .upload-btn {
+        .modal-footer .upload-btn {
         width: 100%;
+    }
+}
+
+/* Ajustes móviles para estadísticas de carga y botones en overlays */
+@media (max-width: 768px) {
+    .loading-stats { grid-template-columns: 1fr; gap: 10px; }
+    .stat-item { padding: 10px; font-size: 0.95rem; }
+    .video-overlay .control-btn,
+    .video-overlay .test-stream-btn,
+    .modal .control-btn,
+    .modal .upload-btn {
+        min-height: 44px; /* área táctil mínima */
+        min-width: 44px;
     }
 }
 
