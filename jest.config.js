@@ -29,6 +29,10 @@ module.exports = {
   collectCoverageFrom: [
     'src/lib/**/*.ts',
     'src/store/**/*.ts',
+    // Añadimos cobertura para los módulos JS bajo prueba
+    'src/js/modules/UIManager.js',
+    'src/js/components/VirtualScroller.js',
+    'src/js/epg/reminders/ReminderManager.js',
     '!node_modules/**',
     '!dist/**'
   ],
