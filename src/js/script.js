@@ -245,6 +245,11 @@ class M3UPlayer {
         this.errorMessage = document.getElementById('errorMessage');
         this.errorText = document.getElementById('errorText');
         this.retryBtn = document.getElementById('retryBtn');
+
+    // Header: Shortcuts modal elements
+    this.shortcutsModal = document.getElementById('shortcutsModal');
+    this.shortcutsHeaderBtn = document.getElementById('shortcutsHeaderBtn');
+    this.closeShortcutsBtn = document.getElementById('closeShortcuts');
     }
 
     setupEventListeners() {
@@ -366,6 +371,23 @@ class M3UPlayer {
         // Header buttons
         document.getElementById('settingsHeaderBtn')?.addEventListener('click', () => this.showSettings());
         document.getElementById('aboutHeaderBtn')?.addEventListener('click', () => this.showAbout());
+
+        // Keyboard Shortcuts modal
+        this.shortcutsHeaderBtn?.addEventListener('click', () => this.showShortcuts());
+        this.closeShortcutsBtn?.addEventListener('click', () => this.hideShortcuts());
+        document.addEventListener('keydown', (e) => {
+            // Open shortcuts with Shift+/
+            if (e.shiftKey && e.key === '?') {
+                e.preventDefault();
+                this.showShortcuts();
+            }
+            if (e.key === 'Escape') {
+                // Close shortcuts modal if open
+                if (this.shortcutsModal && this.shortcutsModal.style.display !== 'none') {
+                    this.hideShortcuts();
+                }
+            }
+        }, { capture: true });
     }
 
     setupElectronEvents() {
@@ -423,6 +445,20 @@ class M3UPlayer {
             }
         } else {
             this.config = this.getDefaultConfig();
+        }
+    }
+
+    showShortcuts() {
+        if (this.shortcutsModal) {
+            this.shortcutsModal.style.display = 'block';
+            const closeBtn = this.closeShortcutsBtn;
+            closeBtn?.focus();
+        }
+    }
+
+    hideShortcuts() {
+        if (this.shortcutsModal) {
+            this.shortcutsModal.style.display = 'none';
         }
     }
 

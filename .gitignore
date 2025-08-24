@@ -36,6 +36,7 @@ Desktop.ini
 # IDE files
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 *~
