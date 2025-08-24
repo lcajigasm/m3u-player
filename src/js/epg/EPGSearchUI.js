@@ -54,7 +54,16 @@ class EPGSearchUI {
                 
                 if (query.length >= 2) {
                     this.showSuggestions(query);
-                    this.performSearch(query);
+                    // Usar directamente el SearchManager para alinear API con tests
+                    if (this.epgManager && this.epgManager.searchManager &&
+                        typeof this.epgManager.searchManager.searchWithDebounce === 'function') {
+                        this.epgManager.searchManager.searchWithDebounce(query, (results) => {
+                            this.displaySearchResults(results, query);
+                        });
+                    } else {
+                        // Fallback a método existente del manager si aplica
+                        this.performSearch(query);
+                    }
                 } else {
                     this.hideSuggestions();
                     this.exitSearchMode();
@@ -202,8 +211,9 @@ class EPGSearchUI {
      */
     updateChannelFilter() {
         if (!this.elements.channelFilter) return;
-
-        const channels = this.epgManager.getAvailableChannels();
+        // Obtener canales desde SearchManager para compatibilidad con tests
+        const channels = this.epgManager?.searchManager?.getAvailableChannels()
+            || this.epgManager.getAvailableChannels();
         const currentValue = this.elements.channelFilter.value;
         
         // Limpiar opciones existentes (excepto la primera)
@@ -386,13 +396,27 @@ class EPGSearchUI {
             timeRange: this.getTimeRangeFromFilter()
         };
 
-        // Aplicar filtros al manager
-        this.epgManager.setSearchFilters(filters);
+        // Aplicar filtros directamente en SearchManager (compatibilidad con tests)
+        const sm = this.epgManager?.searchManager;
+        if (sm) {
+            sm.setGenreFilter(filters.genre);
+            sm.setChannelFilter(filters.channel);
+            sm.setTimeRangeFilter(filters.timeRange);
+        } else if (this.epgManager?.setSearchFilters) {
+            // Fallback al método del manager
+            this.epgManager.setSearchFilters(filters);
+        }
 
         // Reejecutar búsqueda si hay una consulta activa
         const currentQuery = this.elements.searchInput?.value.trim();
         if (currentQuery && currentQuery.length >= 2) {
-            this.performSearch(currentQuery);
+            if (sm?.searchWithDebounce) {
+                sm.searchWithDebounce(currentQuery, (results) => {
+                    this.displaySearchResults(results, currentQuery);
+                });
+            } else {
+                this.performSearch(currentQuery);
+            }
         }
     }
 
@@ -461,8 +485,24 @@ class EPGSearchUI {
             this.elements.timeFilter.value = '';
         }
 
-        this.epgManager.clearSearchFilters();
-        this.applyFilters();
+        // Limpiar filtros del SearchManager directamente y re-ejecutar si aplica
+        if (this.epgManager?.searchManager?.clearFilters) {
+            this.epgManager.searchManager.clearFilters();
+        } else if (this.epgManager?.clearSearchFilters) {
+            this.epgManager.clearSearchFilters();
+        }
+
+        const currentQuery = this.elements.searchInput?.value.trim();
+        if (currentQuery && currentQuery.length >= 2) {
+            const sm = this.epgManager?.searchManager;
+            if (sm?.searchWithDebounce) {
+                sm.searchWithDebounce(currentQuery, (results) => {
+                    this.displaySearchResults(results, currentQuery);
+                });
+            } else {
+                this.performSearch(currentQuery);
+            }
+        }
     }
 
     /**
@@ -811,11 +851,48 @@ class EPGSearchUI {
      * @param {string} channelId - Channel ID
      * @private
      */
-    handleSetReminder(programId, channelId) {
-        // Emitir evento para configurar recordatorio
-        this.container.dispatchEvent(new CustomEvent('epg:setReminder', {
-            detail: { programId, channelId }
-        }));
+    handleSetReminder(arg1, arg2) {
+        // Soporta llamada con objeto result { program, channel } o con (programId, channelId)
+        let programId, channelId, program = null, channel = null;
+
+        if (arg1 && typeof arg1 === 'object' && arg1.program && arg1.channel) {
+            // Llamada desde tests u otros: handleSetReminder(result)
+            program = arg1.program;
+            channel = arg1.channel;
+            programId = program?.id;
+            channelId = channel?.id;
+        } else {
+            // Firma original: handleSetReminder(programId, channelId)
+            programId = arg1;
+            channelId = arg2;
+            // Intentar resolver program/channel desde resultados actuales
+            const found = this.currentResults?.find(r => r.program?.id === programId && r.channel?.id === channelId);
+            if (found) {
+                program = found.program;
+                channel = found.channel;
+            }
+        }
+
+        // Si hay ReminderManager, crear recordatorio directamente para unificar comportamiento
+        if (this.epgManager?.reminderManager && program && channel) {
+            try {
+                // No bloquear la UI; manejar promesa en background
+                const p = this.epgManager.reminderManager.addReminder(program.id, channel.id, program.startTime);
+                if (p && typeof p.then === 'function') {
+                    p.then(() => console.log(`🔔 Recordatorio creado para ${program.id}`))
+                     .catch(err => console.warn('⚠️ Error creando recordatorio:', err));
+                }
+            } catch (err) {
+                console.warn('⚠️ Error invocando ReminderManager:', err);
+            }
+        }
+
+        // Emitir evento para compatibilidad con EPGRenderer u otros listeners
+        if (programId && channelId) {
+            this.container.dispatchEvent(new CustomEvent('epg:setReminder', {
+                detail: { programId, channelId }
+            }));
+        }
         
         console.log(`🔔 Solicitud de recordatorio: ${programId}`);
     }
@@ -834,8 +911,13 @@ class EPGSearchUI {
         this.totalResults = 0;
         this.currentPage = 1;
         
-        // Limpiar filtros del manager
-        this.epgManager.clearSearchFilters();
+        // Limpiar filtros del SearchManager directamente para compatibilidad con tests
+        if (this.epgManager?.searchManager?.clearFilters) {
+            this.epgManager.searchManager.clearFilters();
+        } else if (this.epgManager?.clearSearchFilters) {
+            // Fallback al método del manager
+            this.epgManager.clearSearchFilters();
+        }
     }
 
     /**
