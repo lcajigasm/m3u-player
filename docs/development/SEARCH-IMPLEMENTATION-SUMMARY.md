@@ -288,3 +288,81 @@ npm start
 ```
 
 Y buscando el botón "🔍 Demo Búsqueda" en el modal EPG para ver ejemplos interactivos.
+
+## Detalles de Scoring y Filtros
+
+### Scoring
+
+- Título contiene término: +50
+- Título empieza con término: +25
+- Descripción contiene término: +30
+- Por palabra (tras normalización y stop-words):
+    - Palabra en título: +20
+    - Palabra en descripción: +10
+    - Palabra en género: +15
+    - Palabra en canal: +5
+- Bonus temporal: programa actual o próximo (<2h): +10
+
+Notas:
+
+- Match insensible a acentos y mayúsculas; score máximo 100.
+
+### API de Filtros
+
+- `setFilter(type, value)`: `type` en `genre | channel | timeRange`.
+- `timeRange` admite `{ start: Date, end: Date }` o tokens: `now`, `today`, `tomorrow`, `next2h`, `next6h`.
+- Helpers: `setGenreFilter`, `setChannelFilter`, `setTimeRangeFilter`.
+- Utilidades: `clearFilters`, `getAvailableGenres`, `getAvailableChannels`, `getSearchStats`.
+
+## Eventos y Recordatorios
+
+- `epg:watchProgram` `{ programId, channelId }`
+- `epg:showProgramDetails` `{ programId, channelId }`
+- `epg:setReminder` `{ programId, channelId }` → `EPGRenderer` invoca `ReminderManager.addReminder(...)`
+- `epg:reminders:updated` (window) cuando cambia el estado de recordatorios
+
+Recordatorios: notificación nativa si hay permiso; fallback en-app. Auto-ejecución opcional al inicio.
+
+## Caché Multinivel (EPGCache)
+
+- Niveles: Memoria → localStorage → IndexedDB
+- TTL por entrada: 2h; retención máx.: 7 días
+- Limpieza: cada hora; reset de métricas: 24h; optimización: ~2h (promoción/expulsión por patrones de acceso)
+- Métricas: `getStorageStats()`, `getPerformanceMetrics()`
+
+Ejemplo:
+
+```js
+epgManager.cache.getStorageStats()
+epgManager.cache.getPerformanceMetrics()
+```
+
+## A11y y Rendimiento
+
+- Navegación por teclado en grilla, foco visible
+- Debouncing de búsqueda (300ms por defecto)
+- Virtual scrolling de filas
+- Arquitectura lista para mover parseo/índice a Web Workers
+
+## Pasos de Prueba Reproducibles
+
+1. Búsqueda y scoring
+
+- Buscar un término y verificar orden; prefijos en título arriba.
+- Aplicar filtros `genre`, `channel`, `timeRange` (`now`, `today`, `next2h`).
+- Ver sugerencias con `getSuggestions()`; stop-words no alteran.
+
+1. Recordatorios
+
+- Desde resultados, crear recordatorio; ver `epg:setReminder` y creación.
+- Esperar notificación; confirmar notificación/auto-ejecución.
+
+1. Caché
+
+- Consultar `getStorageStats()` y `getPerformanceMetrics()` tras cargar.
+- Recargar y confirmar reutilización de datos cacheados.
+
+1. A11y & perf
+
+- Navegar con teclado; foco visible.
+- Scroll largo en grilla; UI fluida por virtualización.

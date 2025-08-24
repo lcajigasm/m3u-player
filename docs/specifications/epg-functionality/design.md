@@ -157,9 +157,53 @@ class ReminderManager {
 }
 ```
 
+## Búsqueda y Scoring
+
+La búsqueda está gestionada por `EPGSearchManager` y la UI por `EPGSearchUI`.
+
+### Pesos de scoring (relevancia)
+
+- Coincidencia en título (incluye término): +50
+- Coincidencia al inicio del título (prefix): +25
+- Coincidencia en descripción (incluye término): +30
+- Por cada palabra del término de búsqueda:
+    - Título: +20 por palabra coincidente
+    - Descripción: +10 por palabra
+    - Género: +15 por palabra
+    - Canal: +5 por palabra
+- Bonus temporal: programa actual o próximo (<2h): +10
+
+Notas:
+- Todas las comparaciones se hacen normalizadas (minúsculas y sin diacríticos).
+- Se filtran stop-words en español/inglés.
+- El score se limita a 100.
+
+### API de filtros de búsqueda
+
+Filtros disponibles: género, canal e intervalo de tiempo.
+
+- `setFilter(type, value)` donde `type ∈ { 'genre', 'channel', 'timeRange' }` y `value` puede ser:
+    - Para `genre`: string de género exacto.
+    - Para `channel`: string con ID del canal.
+    - Para `timeRange`: objeto `{ start: Date, end: Date }` o token string: `now | today | tomorrow | next2h | next6h`.
+- Métodos específicos: `setGenreFilter(genre)`, `setChannelFilter(channelId)`, `setTimeRangeFilter({start, end} | null)`.
+- Otros:
+    - `clearFilters()` limpia todos los filtros.
+    - `getAvailableGenres()` devuelve array ordenado de géneros únicos.
+    - `getAvailableChannels()` devuelve array ordenado `{ id, name, group }`.
+    - `getSearchStats()` devuelve estadísticas: `totalPrograms`, `currentQuery`, `resultCount`, `activeFilters`, conteo de géneros y canales.
+
+### Eventos de búsqueda y acciones
+
+- `epg:watchProgram` detail: `{ programId, channelId }` (cambiar a canal del resultado).
+- `epg:showProgramDetails` detail: `{ programId, channelId }` (mostrar modal de detalles).
+- `epg:setReminder` detail: `{ programId, channelId }` (solicitar crear recordatorio). Lo emite la búsqueda y la grilla; lo maneja `EPGRenderer`, que a su vez invoca `ReminderManager.addReminder(...)` si está disponible.
+- `epg:reminders:updated` (global, `window`): sin detail. Lo emite `ReminderManager` cuando cambian los recordatorios, lo consume `EPGRemindersUI`.
+
 ## Modelos de Datos
 
 ### Programa EPG
+
 ```javascript
 interface EPGProgram {
     id: string
@@ -185,6 +229,7 @@ interface EPGProgram {
 ```
 
 ### Canal EPG
+
 ```javascript
 interface EPGChannel {
     id: string
@@ -197,6 +242,7 @@ interface EPGChannel {
 ```
 
 ### Recordatorio
+
 ```javascript
 interface Reminder {
     id: string
@@ -248,6 +294,7 @@ interface Reminder {
 ### Estilos CSS
 
 Los estilos seguirán el tema oscuro existente con:
+
 - Gradientes similares a los componentes actuales
 - Colores consistentes con la paleta existente
 - Animaciones suaves para transiciones
@@ -312,6 +359,71 @@ class EPGLogger {
 - Tiempo de navegación: < 100ms
 - Uso de memoria: < 50MB para 7 días de datos
 - Tamaño de caché: < 10MB en disco
+
+## Caché Multinivel y Métricas
+
+Implementado en `EPGCache` con niveles: Memoria → localStorage → IndexedDB.
+
+- TTL por defecto: 2h (por entrada). Retención máx.: 7 días.
+- Almacenamiento:
+    - Memoria: entradas recientes y canales más usados (hasta ~50MB, configurable).
+    - localStorage: datos del día actual (hasta ~10MB, configurable) con expulsión inteligente.
+    - IndexedDB: persistencia a largo plazo (histórico/futuro hasta 7 días).
+- Limpieza y optimización:
+    - Limpieza automática cada hora (expirados y corruptos).
+    - Reset de métricas cada 24h.
+    - Optimización cada ~2h: promoción/expulsión basada en patrones de acceso (frecuencia y antigüedad).
+- Métricas en tiempo real:
+    - `getStorageStats()` devuelve tamaños y recuentos por nivel.
+    - `getPerformanceMetrics()` devuelve `hitRate`, `totalRequests`, breakdown de `hits`, `misses`, `stores`, `evictions`, `averageResponseTime`, y `accessPatterns` (canales más accedidos).
+
+Ejemplo de uso en consola:
+
+```js
+// Tamaños de almacenamiento
+epgManager.cache.getStorageStats()
+// Métricas de rendimiento
+epgManager.cache.getPerformanceMetrics()
+```
+
+## Accesibilidad (A11y)
+
+- Navegación por teclado en la grilla: flechas, PageUp/PageDown, Home/End (gestiona `EPGRenderer`).
+- Focus management al abrir/cerrar el modal EPG.
+- Roles ARIA y labels en controles de búsqueda y filtros.
+- Contraste adecuado en tema oscuro; estados de foco visibles.
+- Notificaciones de recordatorios con alternativas dentro de la app si el permiso del sistema no está concedido.
+
+## Rendimiento adicional
+
+- Virtual scrolling en grilla (filas virtualizadas, buffer configurable).
+- Debouncing en búsqueda (300ms por defecto, configurable).
+- Carga diferida de datos y render incremental.
+- Trabajos pesados: el parseo y cacheo pueden moverse a Web Workers; hoy la búsqueda corre en hilo principal pero está preparada para migrar.
+
+## Pasos de Prueba Reproducibles
+
+1. Búsqueda y scoring
+
+- Cargar EPG y abrir el modal. Buscar un término; verificar orden de resultados y que prefijos en título se priorizan.
+- Probar filtros: género, canal y `timeRange` con tokens `now`, `today`, `next2h`.
+- Validar sugerencias con `getSuggestions()` y que stop-words no afecten el resultado.
+
+1. Recordatorios
+
+- En un resultado, usar “Recordatorio”. Ver que se dispare `epg:setReminder` y que `ReminderManager` cree el recordatorio.
+- Esperar a la hora de notificación y confirmar notificación/ejecución (cambio de canal si procede).
+
+1. Caché
+
+- Tras cargar, consultar `epgManager.cache.getStorageStats()` y `getPerformanceMetrics()` en consola.
+- Recargar la app y confirmar que se reutiliza localStorage/IndexedDB cuando aplique.
+
+1. A11y y rendimiento
+
+- Navegar la grilla con teclado; verificar foco visible.
+- Desplazarse por muchos canales y confirmar que la UI se mantiene fluida (virtualización).
+
 
 ## Configuración y Personalización
 

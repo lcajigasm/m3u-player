@@ -203,6 +203,82 @@ container.addEventListener('epg:filtersChanged', (e) => {
 - `next2h` - Next 2 hours
 - `next6h` - Next 6 hours
 
+## Scoring Details
+
+- Title contains term: +50; startsWith: +25
+- Description contains term: +30
+- Per-word weights:
+    - Title: +20
+    - Description: +10
+    - Genre: +15
+    - Channel: +5
+- Time bonus: now/next (~2h): +10
+
+Notes: matching is accent-insensitive and case-insensitive. Max score 100.
+
+## Filters API
+
+- `setFilter(type, value)` where `type` is `genre | channel | timeRange`
+- `timeRange` accepts `{ start: Date, end: Date }` or tokens `now|today|tomorrow|next2h|next6h`
+- Helpers: `setGenreFilter`, `setChannelFilter`, `setTimeRangeFilter`
+- Utilities: `clearFilters`, `getAvailableGenres`, `getAvailableChannels`, `getSearchStats`
+
+## Events and Reminders
+
+- `epg:watchProgram` `{ programId, channelId }`
+- `epg:showProgramDetails` `{ programId, channelId }`
+- `epg:setReminder` `{ programId, channelId }` → handled in `EPGRenderer` creating reminders via `ReminderManager`
+- `epg:reminders:updated` (window) upon reminder list changes
+
+Reminder behavior: native notifications when available, otherwise in-app; optional auto-execution at program start.
+
+## Cache and Metrics
+
+EPG data is cached by `EPGCache` in three levels: Memory → localStorage → IndexedDB.
+
+- Defaults: TTL 2h per entry, retention up to 7 days
+- Housekeeping: hourly cleanup; metrics reset every 24h; optimization every ~2h
+- Metrics:
+    - `getStorageStats()` sizes per level
+    - `getPerformanceMetrics()` hitRate, totals, avg response time, access patterns
+
+Example:
+
+```js
+epgManager.cache.getStorageStats()
+epgManager.cache.getPerformanceMetrics()
+```
+
+## A11y & Performance
+
+- Keyboard navigation in grid and visible focus states
+- Search debouncing (300ms default)
+- Virtualized rows for large datasets
+- Worker-ready architecture for heavy parsing/indexing (future)
+
+## Reproducible Test Steps
+
+1. Search and scoring
+
+- Search a term; title-prefix matches should rank higher.
+- Apply filters `genre`, `channel`, `timeRange` tokens.
+- Check `getSuggestions()`; stop-words shouldn't change results.
+
+1. Reminders
+
+- From a result, create a reminder; ensure `epg:setReminder` fires and a reminder is created.
+- Wait until notification; confirm notification/auto-execution.
+
+1. Cache
+
+- Inspect `getStorageStats()` and `getPerformanceMetrics()` after EPG load.
+- Reload and confirm cached data reuse.
+
+1. A11y & perf
+
+- Navigate grid with keyboard; focus is visible.
+- Long scroll is smooth due to virtualization.
+
 ## Configuration
 
 ### SearchManager Options
@@ -397,34 +473,33 @@ import { EPGSearchDemo } from './epg/EPGSearchDemo.js';
 ```
 
 La demo incluye:
+
 - Ejemplos de búsqueda predefinidos
 - Datos de prueba realistas
 - Interfaz para probar filtros
 - Visualización de resultados
 
-## Troubleshooting
+## Troubleshooting (Search)
 
-### Common Issues
-
-**1. No Results Appear**
+### 1) No Results Appear
 
 - Verify that the index is built: `searchManager.searchIndex.size > 0`
 - Check that the query has more than 2 characters
 - Review active filters
 
-**2. Slow Performance**
+### 2) Slow Performance
 
 - Reduce `resultsPerPage` if there are many results
 - Verify there are no memory leaks in the index
 - Consider increasing `debounceDelay` for slow users
 
-**3. Incorrect Styles**
+### 3) Incorrect Styles
 
 - Verify that `epg.css` is loaded
 - Check for CSS conflicts
 - Use developer tools to inspect elements
 
-### Debug:
+### Debug
 
 ```javascript
 // Activar logs detallados
@@ -439,12 +514,12 @@ console.log('Estadísticas:', stats);
 
 ## Roadmap
 
-### Future Improvements
+### Future Improvements (Search)
 
 - [ ] Voice search
 - [ ] Search history
 - [ ] Fuzzy search (error tolerance)
-- [ ] Rating and duration filters 
+- [ ] Rating and duration filters
 - [ ] Export results
 - [ ] Favorites integration
 - [ ] Episode description search
@@ -461,6 +536,7 @@ Para contribuir a la funcionalidad de búsqueda:
 5. Documentar cambios significativos
 
 Los archivos principales están en:
+
 - `src/js/epg/EPGSearchManager.js`
 - `src/js/epg/EPGSearchUI.js`
 - `src/styles/epg.css` (sección de búsqueda)
