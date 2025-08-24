@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>M3U Player — Desktop IPTV Player</title>
+    <meta name="description" content="M3U Player is a professional, cross‑platform IPTV player for Windows, macOS and Linux. Parse M3U/M3U8, play HLS streams, and enjoy a modern UX without CORS limitations." />
+    <link rel="icon" href="https://raw.githubusercontent.com/lcajigasm/m3u-player/main/assets/icon.png" />
+    <meta property="og:title" content="M3U Player — Desktop IPTV Player" />
+    <meta property="og:description" content="Professional IPTV player for Windows, macOS and Linux. Full M3U/M3U8 support, HLS playback, diagnostics and more." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://raw.githubusercontent.com/lcajigasm/m3u-player/main/assets/og-cover.png" />
+    <meta property="og:url" content="https://m3u-player.eu" />
+    <style>
+        :root {
+            --bg: #0b0f14;   /* deep neutral */
+            --fg: #e6eef7;   /* near-white */
+            --muted: #aab9cc;
+            --acc: #5cc8ff;  /* accent */
+            --acc-2: #8b5cf6; /* secondary accent */
+            --card: #121822;
+            --border: #223046;
+            --ok: #10b981;
+            --warn: #f59e0b;
+            --err: #ef4444;
+        }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; height: 100%; }
+        body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji"; background: radial-gradient(1200px 800px at 80% -10%, rgba(92,200,255,0.15), transparent), radial-gradient(800px 600px at -10% 10%, rgba(139,92,246,0.12), transparent), var(--bg); color: var(--fg); line-height: 1.6; }
+        a { color: var(--acc); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .container { max-width: 1120px; margin: 0 auto; padding: 24px; }
+        header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; }
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand img { width: 36px; height: 36px; border-radius: 12px; }
+        .brand h1 { font-size: 20px; margin: 0; letter-spacing: .3px; }
+        .lang { display: inline-flex; gap: 8px; background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 6px; }
+        .lang button { background: transparent; border: 0; color: var(--muted); padding: 6px 12px; border-radius: 999px; cursor: pointer; font-weight: 600; }
+        .lang button.active { background: linear-gradient(90deg, var(--acc), var(--acc-2)); color: #00121f; }
+        
+        .hero { display: grid; grid-template-columns: 1.2fr 1fr; gap: 28px; align-items: center; padding: 40px 0; }
+        .hero h2 { font-size: clamp(28px, 4.5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
+        .hero p { font-size: clamp(15px, 1.6vw, 18px); color: var(--muted); margin: 0 0 20px; }
+        .hero .cta { display: flex; flex-wrap: wrap; gap: 12px; }
+        .btn { display: inline-flex; align-items: center; gap: 10px; background: linear-gradient(90deg, var(--acc), var(--acc-2)); color: #00121f; border: 0; padding: 12px 16px; font-weight: 800; border-radius: 14px; box-shadow: 0 10px 30px rgba(92,200,255,.15); cursor: pointer; }
+        .btn.secondary { background: transparent; border: 1px solid var(--border); color: var(--fg); box-shadow: none; }
+        .note { font-size: 13px; color: var(--muted); margin-top: 6px; }
+        .screen { border: 1px solid var(--border); background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01)); border-radius: 16px; overflow: hidden; }
+        .screen img { width: 100%; display: block; }
+        
+        .pill { display:inline-flex; gap:8px; align-items:center; padding:6px 10px; border-radius:999px; border:1px solid var(--border); background: #0f1721; color: var(--muted); font-size: 12px; }
+        
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .card { border: 1px solid var(--border); background: var(--card); border-radius: 16px; padding: 18px; }
+        .card h3 { margin: 0 0 6px; font-size: 18px; }
+        .card p { margin: 0; color: var(--muted); }
+        
+        .downloads { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .dl { border: 1px solid var(--border); background: var(--card); border-radius: 16px; padding: 18px; display:flex; flex-direction:column; gap:10px; }
+        .dl h4 { margin:0; font-size: 16px; }
+        .dl .buttons { display:flex; flex-wrap:wrap; gap:8px; }
+        .dl .buttons a { display:inline-block; border:1px solid var(--border); padding:8px 10px; border-radius:10px; color: var(--fg); text-decoration:none; font-weight:700; }
+        .dl .buttons a.primary { background: linear-gradient(90deg, var(--acc), var(--acc-2)); color:#00121f; border:0; }
+        .dl small { color: var(--muted); }
+        
+        .kbd { font: 600 12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: #0d1420; border: 1px solid var(--border); border-bottom: 2px solid #0a0f18; border-radius: 6px; padding: 2px 6px; }
+        
+        footer { margin: 50px 0 20px; font-size: 14px; color: var(--muted); }
+        footer .row { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+        
+        @media (max-width: 980px) {
+            .hero { grid-template-columns: 1fr; }
+            .grid { grid-template-columns: 1fr; }
+            .downloads { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="brand">
+                <img alt="M3U Player" src="https://raw.githubusercontent.com/lcajigasm/m3u-player/main/assets/icon.png" />
+                <h1>M3U Player</h1>
+                <span class="pill" id="latest-pill">v—</span>
+            </div>
+            <div class="lang" role="group" aria-label="Language switcher">
+                <button id="btn-es" class="active" aria-pressed="true">ES</button>
+                <button id="btn-en" aria-pressed="false">EN</button>
+            </div>
+        </header>
+        
+        <section class="hero">
+            <div>
+                <div class="pill" id="pill-top"></div>
+                <h2 id="hero-title">Professional desktop IPTV player</h2>
+                <p id="hero-lead">No CORS limitations. Full M3U/M3U8 parsing. HLS support. Modern UI for Windows, macOS and Linux.</p>
+                <div class="cta">
+                    <a class="btn" id="primary-download" href="#downloads">Descargar</a>
+                    <a class="btn secondary" href="https://github.com/lcajigasm/m3u-player" target="_blank" rel="noopener">GitHub</a>
+                </div>
+                <div class="note" id="release-note">—</div>
+            </div>
+            <div class="screen">
+                <img alt="Screenshot" src="https://raw.githubusercontent.com/lcajigasm/m3u-player/main/assets/screenshot-landing.png" />
+            </div>
+        </section>
+        
+        <section>
+            <div class="grid">
+                <div class="card">
+                    <h3 id="f1-title">No CORS limitations</h3>
+                    <p id="f1-desc">Play streams that fail in web browsers. Custom headers, User‑Agent y Referer configurables.</p>
+                </div>
+                <div class="card">
+                    <h3 id="f2-title">Parser M3U/M3U8 completo</h3>
+                    <p id="f2-desc">Soporta metadatos, grupos, logos y atributos TVG; búsqueda avanzada y filtrado por grupos.</p>
+                </div>
+                <div class="card">
+                    <h3 id="f3-title">Reproductor HLS con diagnósticos</h3>
+                    <p id="f3-desc">Wrapper de HLS.js con ABR configurable, reintentos y panel de diagnóstico en tiempo real.</p>
+                </div>
+            </div>
+        </section>
+        
+        <section id="downloads" style="margin-top:34px;">
+            <h2 id="dl-title">Descargas</h2>
+            <p id="dl-sub">Siempre te ofrecemos la última versión estable.</p>
+            <div class="downloads">
+                <div class="dl" id="dl-windows">
+                    <h4>Windows</h4>
+                    <div class="buttons" id="dl-windows-btns"></div>
+                    <small id="dl-windows-note"></small>
+                </div>
+                <div class="dl" id="dl-macos">
+                    <h4>macOS</h4>
+                    <div class="buttons" id="dl-macos-btns"></div>
+                    <small id="dl-macos-note"></small>
+                </div>
+                <div class="dl" id="dl-linux">
+                    <h4>Linux</h4>
+                    <div class="buttons" id="dl-linux-btns"></div>
+                    <small id="dl-linux-note"></small>
+                </div>
+            </div>
+            <p class="note" id="dl-help">Consejo: en Linux recuerda marcar el archivo <span class="kbd">.AppImage</span> como ejecutable.</p>
+        </section>
+        
+        <section style="margin-top:34px;">
+            <h2 id="guide-title">Guía rápida</h2>
+            <ol id="guide-list">
+                <li>Abre un archivo <span class="kbd">.m3u/.m3u8</span> o arrástralo a la ventana.</li>
+                <li>Carga desde URL y pega el enlace de tu playlist.</li>
+                <li>Usa <span class="kbd">PiP</span>, <span class="kbd">Pantalla completa</span> y búsqueda instantánea.</li>
+            </ol>
+            <p class="note" id="legal-note">M3U Player no incluye listas ni contenido. Debes aportar tus propias fuentes/playlist legales.</p>
+        </section>
+        
+        <footer>
+            <div class="row">
+                <div>© <span id="year"></span> M3U Player • <a href="https://github.com/lcajigasm/m3u-player" target="_blank" rel="noopener">Código en GitHub</a></div>
+                <div><a href="https://github.com/lcajigasm/m3u-player/releases/latest" target="_blank" rel="noopener">Última release</a> • <a href="mailto:hello@m3u-player.eu">Contacto</a></div>
+            </div>
+        </footer>
+    </div>
+    
+    <script>
+        const i18n = {
+            es: {
+                pill: "Reproducción sin límites",
+                heroTitle: "Reproductor IPTV de escritorio profesional",
+                heroLead: "Sin límites CORS. Parser M3U/M3U8 completo. Soporte HLS. UI moderna para Windows, macOS y Linux.",
+                primaryCta: "Descargar",
+                features: [
+                ["Sin límites CORS", "Reproduce streams que fallan en el navegador. Cabeceras, User‑Agent y Referer configurables."],
+                ["Parser M3U/M3U8 completo", "Soporta metadatos, grupos, logos y atributos TVG; búsqueda avanzada y filtrado por grupos."],
+                ["Reproductor HLS con diagnósticos", "Wrapper de HLS.js con ABR configurable, reintentos y panel de diagnóstico en tiempo real."]
+                ],
+                downloads: {
+                    title: "Descargas",
+                    sub: "Siempre te ofrecemos la última versión estable.",
+                    help: "Consejo: en Linux recuerda marcar el archivo .AppImage como ejecutable.",
+                    windowsNote: "Instalador .exe recomendado o portátil .zip",
+                    macosNote: "Universal .dmg (Intel + Apple Silicon)",
+                    linuxNote: "Elige .AppImage, .deb o .rpm según tu distro",
+                },
+                guide: {
+                    title: "Guía rápida",
+                    list: [
+                    "Abre un archivo .m3u/.m3u8 o arrástralo a la ventana.",
+                    "Carga desde URL y pega el enlace de tu playlist.",
+                    "Usa PiP, Pantalla completa y búsqueda instantánea.",
+                    ],
+                    legal: "M3U Player no incluye listas ni contenido. Debes aportar tus propias fuentes/playlist legales."
+                },
+                latest: (v, date) => `Versión ${v} • publicada el ${date}`,
+            },
+            en: {
+                pill: "Playback without limits",
+                heroTitle: "Professional desktop IPTV player",
+                heroLead: "No CORS limitations. Full M3U/M3U8 parsing. HLS support. Modern UI for Windows, macOS and Linux.",
+                primaryCta: "Download",
+                features: [
+                ["No CORS limitations", "Play streams that fail in browsers. Configurable headers, User‑Agent and Referer."],
+                ["Complete M3U/M3U8 parser", "Supports metadata, groups, logos and TVG attributes; advanced search and group filters."],
+                ["HLS player with diagnostics", "HLS.js wrapper with configurable ABR, retries and a real‑time diagnostics panel."]
+                ],
+                downloads: {
+                    title: "Downloads",
+                    sub: "Always the latest stable release.",
+                    help: "Tip: on Linux make the .AppImage file executable.",
+                    windowsNote: ".exe installer recommended or portable .zip",
+                    macosNote: "Universal .dmg (Intel + Apple Silicon)",
+                    linuxNote: "Choose .AppImage, .deb or .rpm depending on your distro",
+                },
+                guide: {
+                    title: "Quick start",
+                    list: [
+                    "Open a .m3u/.m3u8 file or drag & drop it.",
+                    "Load from URL and paste your playlist link.",
+                    "Use PiP, Fullscreen and instant search.",
+                    ],
+                    legal: "M3U Player ships without playlists or content. Bring your own legal sources/playlists."
+                },
+                latest: (v, date) => `Version ${v} • released on ${date}`,
+            }
+        };
+        
+        const state = { lang: 'es', release: null };
+        
+        function fmtDate(d) {
+            try {
+                const dt = new Date(d);
+                return dt.toLocaleDateString(state.lang === 'es' ? 'es-ES' : 'en-GB', { year: 'numeric', month: 'short', day: '2-digit' });
+            } catch { return d; }
+        }
+        
+        function setLang(lang) {
+            state.lang = lang;
+            const t = i18n[lang];
+            document.getElementById('pill-top').textContent = t.pill;
+            document.getElementById('hero-title').textContent = t.heroTitle;
+            document.getElementById('hero-lead').textContent = t.heroLead;
+            document.getElementById('primary-download').textContent = t.primaryCta;
+            document.getElementById('dl-title').textContent = t.downloads.title;
+            document.getElementById('dl-sub').textContent = t.downloads.sub;
+            document.getElementById('dl-help').textContent = t.downloads.help.replace('.AppImage', '');
+            document.getElementById('guide-title').textContent = t.guide.title;
+            
+            const [f1t, f1d] = t.features[0];
+            const [f2t, f2d] = t.features[1];
+            const [f3t, f3d] = t.features[2];
+            document.getElementById('f1-title').textContent = f1t;
+            document.getElementById('f1-desc').textContent = f1d;
+            document.getElementById('f2-title').textContent = f2t;
+            document.getElementById('f2-desc').textContent = f2d;
+            document.getElementById('f3-title').textContent = f3t;
+            document.getElementById('f3-desc').textContent = f3d;
+            
+            document.getElementById('dl-windows-note').textContent = t.downloads.windowsNote;
+            document.getElementById('dl-macos-note').textContent = t.downloads.macosNote;
+            document.getElementById('dl-linux-note').textContent = t.downloads.linuxNote;
+            
+            if (state.release) {
+                document.getElementById('release-note').textContent = t.latest(state.release.tag_name, fmtDate(state.release.published_at));
+            }
+            
+            document.getElementById('btn-es').classList.toggle('active', lang==='es');
+            document.getElementById('btn-en').classList.toggle('active', lang==='en');
+            document.getElementById('btn-es').setAttribute('aria-pressed', lang==='es');
+            document.getElementById('btn-en').setAttribute('aria-pressed', lang==='en');
+        }
+        
+        async function loadRelease() {
+            try {
+                const res = await fetch('https://api.github.com/repos/lcajigasm/m3u-player/releases/latest', { headers: { 'Accept': 'application/vnd.github+json' }});
+                const data = await res.json();
+                state.release = data;
+                document.getElementById('latest-pill').textContent = data.tag_name || 'latest';
+                const lang = (navigator.language || 'es').startsWith('es') ? 'es' : 'en';
+                setLang(lang);
+                buildDownloads(data);
+            } catch (e) {
+                console.error('Failed to load release', e);
+                setLang((navigator.language || 'es').startsWith('es') ? 'es' : 'en');
+            }
+            document.getElementById('year').textContent = new Date().getFullYear();
+        }
+        
+        function addBtn(container, href, label, primary=true) {
+            if (!href) return;
+            const a = document.createElement('a');
+            a.href = href; a.target = '_blank'; a.rel = 'noopener';
+            a.textContent = label; if (primary) a.classList.add('primary');
+            container.appendChild(a);
+        }
+        
+        function assetFor(assets, pattern) {
+            return assets.find(a => pattern.test(a.name))?.browser_download_url;
+        }
+        
+        function buildDownloads(rel) {
+            const a = rel.assets || [];
+            // Windows
+            const winBtns = document.getElementById('dl-windows-btns');
+            addBtn(winBtns, assetFor(a, /Setup.*\.exe$/i), 'Installer (.exe)');
+            addBtn(winBtns, assetFor(a, /win.*\.zip$/i), 'Portable (.zip)', false);
+            // macOS
+            const macBtns = document.getElementById('dl-macos-btns');
+            addBtn(macBtns, assetFor(a, /\.dmg$/i), 'Disk Image (.dmg)');
+            addBtn(macBtns, assetFor(a, /mac.*\.zip$/i), 'ZIP (.zip)', false);
+            // Linux
+            const linBtns = document.getElementById('dl-linux-btns');
+            addBtn(linBtns, assetFor(a, /\.AppImage$/i), 'AppImage (.AppImage)');
+            addBtn(linBtns, assetFor(a, /\.deb$/i), 'Debian (.deb)', false);
+            addBtn(linBtns, assetFor(a, /\.rpm$/i), 'RPM (.rpm)', false);
+        }
+        
+        document.getElementById('btn-es').addEventListener('click', () => setLang('es'));
+        document.getElementById('btn-en').addEventListener('click', () => setLang('en'));
+        
+        loadRelease();
+    </script>
+</body>
+</html>
