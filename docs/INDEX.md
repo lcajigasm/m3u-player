@@ -10,7 +10,6 @@ Technical documentation for developers:
 - [`BUILD-GUIDE.md`](development/BUILD-GUIDE.md) - Complete build and deployment guide
 - [`DEBUG.md`](development/DEBUG.md) - Debugging guide and troubleshooting
 - [`PERMISSIONS-FIX.md`](development/PERMISSIONS-FIX.md) - File permissions and security fixes
-- [`IMPLEMENTATION-SUMMARY.md`](development/IMPLEMENTATION-SUMMARY.md) - Implementation details and summaries
 - [`SEARCH-IMPLEMENTATION-SUMMARY.md`](development/SEARCH-IMPLEMENTATION-SUMMARY.md) - Search functionality implementation
 
 ### 📁 **specifications/**

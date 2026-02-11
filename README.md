@@ -247,7 +247,7 @@ npm run dist
 
 ### Prerequisites
 
-- Node.js 16+
+- Node.js 20.18.1+ (or compatible Node 20 LTS)
 - npm or yarn
 
 ### Development workflow

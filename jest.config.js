@@ -49,10 +49,10 @@ module.exports = {
   // Coverage thresholds
   coverageThreshold: {
     global: {
-      branches: 0,
-      functions: 0,
-      lines: 0,
-      statements: 0
+      branches: 5,
+      functions: 5,
+      lines: 5,
+      statements: 5
     }
   },
   
@@ -108,10 +108,7 @@ module.exports = {
     '<rootDir>/node_modules/',
     '<rootDir>/dist/',
     '.*\\.bench\\..*',
-    '<rootDir>/tests/e2e/',
-    '<rootDir>/tests/modules/',
-    '<rootDir>/tests/core/',
-    '<rootDir>/src/js/epg/__tests__/'
+    '<rootDir>/tests/e2e/'
   ],
   
   // Mock configuration

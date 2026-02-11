@@ -3,6 +3,8 @@ const path = require('path');
 const fs = require('fs');
 const https = require('https');
 const http = require('http');
+const net = require('net');
+const crypto = require('crypto');
 const { URL } = require('url');
 const Store = require('electron-store');
 
@@ -11,10 +13,18 @@ let mainWindow;
 
 // Proxy server for IPTV streams
 let proxyServer = null;
+let proxyToken = null;
+const approvedWritePaths = new Set();
 
 // Create configuration directory if it doesn't exist
 const userDataPath = app.getPath('userData');
 const configPath = path.join(userDataPath, 'config.json');
+const runtimeDebugMode = process.argv.includes('--dev') || process.argv.includes('--verbose') || process.env.NODE_ENV === 'development';
+const appLog = (...args) => {
+  if (runtimeDebugMode) {
+    console.log(...args);
+  }
+};
 
 // Default configuration
 const defaultConfig = {
@@ -91,6 +101,61 @@ function saveConfig(config) {
   }
 }
 
+function resolveWithin(baseDir, candidatePath) {
+  const resolvedBase = path.resolve(baseDir);
+  const resolvedTarget = path.resolve(candidatePath);
+  const isInside = resolvedTarget === resolvedBase || resolvedTarget.startsWith(`${resolvedBase}${path.sep}`);
+  return { resolvedBase, resolvedTarget, isInside };
+}
+
+function isInternalAppUrl(rawUrl) {
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol === 'about:') return parsed.href === 'about:blank';
+    if (parsed.protocol !== 'file:') return false;
+
+    const filePath = decodeURIComponent(parsed.pathname);
+    const { isInside } = resolveWithin(__dirname, filePath);
+    return isInside;
+  } catch {
+    return false;
+  }
+}
+
+function isExternalHttpUrl(rawUrl) {
+  try {
+    const parsed = new URL(rawUrl);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function isDisallowedProxyTarget(hostname) {
+  const host = String(hostname || '').toLowerCase();
+  if (!host) return true;
+  if (host === 'localhost') return true;
+
+  const ipVersion = net.isIP(host);
+  if (ipVersion === 4) {
+    if (host.startsWith('127.')) return true;
+    if (host === '0.0.0.0') return true;
+  }
+
+  if (ipVersion === 6) {
+    if (host === '::1' || host === '::') return true;
+  }
+
+  return false;
+}
+
+function getProxyToken() {
+  if (!proxyToken) {
+    proxyToken = crypto.randomBytes(24).toString('hex');
+  }
+  return proxyToken;
+}
+
 function createWindow() {
   if (!app.isReady()) {
     // Previene creación prematura
@@ -101,7 +166,7 @@ function createWindow() {
   
   // Create the browser window
   const iconPath = path.join(__dirname, 'assets', process.platform === 'darwin' ? 'icon.icns' : process.platform === 'win32' ? 'icon.ico' : 'icon.png');
-  console.log('Using icon path:', iconPath);
+  appLog('Using icon path:', iconPath);
   
   const windowOptions = {
     width: config.windowSize.width,
@@ -182,13 +247,13 @@ function createWindow() {
   // Handle window resize
   mainWindow.on('resize', () => {
     const bounds = mainWindow.getBounds();
-    console.log(`Window resized to: ${bounds.width}x${bounds.height}`);
+    appLog(`Window resized to: ${bounds.width}x${bounds.height}`);
   });
 
   // Handle window move
   mainWindow.on('move', () => {
     const bounds = mainWindow.getBounds();
-    console.log(`Window moved to: ${bounds.x}, ${bounds.y}`);
+    appLog(`Window moved to: ${bounds.x}, ${bounds.y}`);
   });
 
   // Save window size and position on close
@@ -206,29 +271,26 @@ function createWindow() {
 
   // Bloquear navegación fuera de la app
   mainWindow.webContents.on('will-navigate', (event, url) => {
-    if (!isSafeAppUrl(url)) {
-      event.preventDefault();
-      console.warn('Bloqueo de navegación a origen externo:', url);
+    if (isInternalAppUrl(url)) return;
+
+    event.preventDefault();
+    if (isExternalHttpUrl(url)) {
+      shell.openExternal(url).catch((error) => {
+        console.error('Failed to open external URL:', error);
+      });
     }
+    console.warn('Bloqueo de navegación interna a URL no permitida:', url);
   });
 
-  // Bloquear apertura de nuevas ventanas a orígenes externos
+  // Bloquear apertura de nuevas ventanas dentro del renderer
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (!isSafeAppUrl(url)) {
-      return { action: 'deny' };
+    if (isExternalHttpUrl(url)) {
+      shell.openExternal(url).catch((error) => {
+        console.error('Failed to open external URL:', error);
+      });
     }
-    return { action: 'allow' };
+    return { action: 'deny' };
   });
-
-  // Filtrar URLs aceptadas (http/https) para listas/streams
-  function isSafeAppUrl(url) {
-    try {
-      const parsed = new URL(url);
-      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-    } catch {
-      return false;
-    }
-  }
 
   // webRequest: sólo si hay headers por canal y sólo para dominios de la playlist activa
   const { session } = mainWindow.webContents;
@@ -499,9 +561,53 @@ async function openFileDialog() {
   }
 }
 
+function isAllowedHttpUrl(rawUrl) {
+  try {
+    const parsed = new URL(rawUrl);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function resolveRedirectUrl(baseUrl, locationHeader) {
+  return new URL(locationHeader, baseUrl).toString();
+}
+
+function getConfigValue(config, dottedKey) {
+  if (typeof dottedKey !== 'string' || !dottedKey) return undefined;
+  return dottedKey.split('.').reduce((acc, key) => (acc == null ? undefined : acc[key]), config);
+}
+
+function setConfigValue(config, dottedKey, value) {
+  if (typeof dottedKey !== 'string' || !dottedKey) return false;
+  const parts = dottedKey.split('.');
+  let current = config;
+  for (let i = 0; i < parts.length - 1; i += 1) {
+    const part = parts[i];
+    if (typeof current[part] !== 'object' || current[part] === null) {
+      current[part] = {};
+    }
+    current = current[part];
+  }
+  current[parts[parts.length - 1]] = value;
+  return true;
+}
+
 // Function to make HTTP/HTTPS requests with custom headers
-function fetchUrl(url, options = {}) {
+function fetchUrl(url, options = {}, redirectCount = 0) {
   return new Promise((resolve, reject) => {
+    if (!isAllowedHttpUrl(url)) {
+      reject(new Error('Only HTTP/HTTPS URLs are allowed'));
+      return;
+    }
+
+    const maxRedirects = typeof options.maxRedirects === 'number' ? options.maxRedirects : 5;
+    if (redirectCount > maxRedirects) {
+      reject(new Error(`Too many redirects (>${maxRedirects})`));
+      return;
+    }
+
     const urlObj = new URL(url);
     const isHttps = urlObj.protocol === 'https:';
     const client = isHttps ? https : http;
@@ -529,12 +635,25 @@ function fetchUrl(url, options = {}) {
     const req = client.request(requestOptions, (res) => {
       // Handle redirects
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        console.log(`Following redirect from ${url} to ${res.headers.location}`);
-        fetchUrl(res.headers.location, options).then(result => {
+        let redirectedUrl;
+        try {
+          redirectedUrl = resolveRedirectUrl(url, res.headers.location);
+        } catch {
+          reject(new Error(`Invalid redirect location: ${res.headers.location}`));
+          return;
+        }
+
+        if (!isAllowedHttpUrl(redirectedUrl)) {
+          reject(new Error(`Disallowed redirect target protocol: ${redirectedUrl}`));
+          return;
+        }
+
+        appLog(`Following redirect from ${url} to ${redirectedUrl}`);
+        fetchUrl(redirectedUrl, options, redirectCount + 1).then(result => {
           // Pass the final URL up the chain
           resolve({
             ...result,
-            finalUrl: result.finalUrl || res.headers.location
+            finalUrl: result.finalUrl || redirectedUrl
           });
         }).catch(reject);
         return;
@@ -583,8 +702,24 @@ ipcMain.handle('save-config', (event, config) => {
   return true;
 });
 
+ipcMain.handle('settings-get', (event, key) => {
+  const config = loadConfig();
+  return getConfigValue(config, key);
+});
+
+ipcMain.handle('settings-put', (event, key, value) => {
+  const config = loadConfig();
+  const updated = setConfigValue(config, key, value);
+  if (!updated) return false;
+  saveConfig(config);
+  return true;
+});
+
 ipcMain.handle('fetch-url', async (event, url, options = {}) => {
   try {
+    if (!isAllowedHttpUrl(url)) {
+      throw new Error('Only HTTP/HTTPS URLs are allowed');
+    }
     const response = await fetchUrl(url, options);
     return {
       success: true,
@@ -603,6 +738,69 @@ ipcMain.handle('fetch-url', async (event, url, options = {}) => {
 
 ipcMain.handle('open-file-dialog', async () => {
   await openFileDialog();
+});
+
+ipcMain.handle('playlists-import-url', async (event, playlistUrl) => {
+  try {
+    if (!isAllowedHttpUrl(playlistUrl)) {
+      return { success: false, error: 'Only HTTP/HTTPS URLs are allowed' };
+    }
+
+    const response = await fetchUrl(playlistUrl, { timeout: 30000 });
+    return {
+      success: true,
+      data: response.data,
+      statusCode: response.statusCode,
+      finalUrl: response.finalUrl || playlistUrl
+    };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('playlists-import-file', async (event, file) => {
+  try {
+    const candidatePath = typeof file === 'string' ? file : file?.path;
+    if (!candidatePath) {
+      return { success: false, error: 'File path is required' };
+    }
+
+    if (!path.isAbsolute(candidatePath)) {
+      return { success: false, error: 'playlists-import-file requires an absolute path' };
+    }
+    const ext = path.extname(candidatePath).toLowerCase();
+    if (ext !== '.m3u' && ext !== '.m3u8') {
+      return { success: false, error: 'Unsupported file extension' };
+    }
+    const stats = fs.statSync(candidatePath);
+    if (stats.size > 20 * 1024 * 1024) {
+      return { success: false, error: 'File too large (max 20MB)' };
+    }
+
+    const content = fs.readFileSync(candidatePath, 'utf8');
+    return {
+      success: true,
+      data: content,
+      filename: path.basename(candidatePath),
+      fullPath: candidatePath
+    };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('streams-test', async (event, streamUrl, headers = {}) => {
+  try {
+    if (!isAllowedHttpUrl(streamUrl)) return false;
+
+    const head = await fetchUrl(streamUrl, { method: 'HEAD', headers, timeout: 10000 });
+    if (head.statusCode >= 200 && head.statusCode < 400) return true;
+
+    const get = await fetchUrl(streamUrl, { method: 'GET', headers, timeout: 10000 });
+    return get.statusCode >= 200 && get.statusCode < 400;
+  } catch {
+    return false;
+  }
 });
 
 // Library IPC
@@ -696,24 +894,45 @@ function startProxyServer() {
     return proxyServer.address().port;
   }
 
+  const token = getProxyToken();
+
   proxyServer = http.createServer((req, res) => {
-    const urlPath = req.url;
-    
+    const requestUrl = new URL(req.url || '/', 'http://localhost');
+    const urlPath = requestUrl.pathname;
+    const requestToken = requestUrl.searchParams.get('token');
+
     // Handle CORS preflight
     if (req.method === 'OPTIONS') {
       res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', '*');
       res.writeHead(200);
       res.end();
       return;
     }
-    
+
+    if (requestToken !== token) {
+      res.writeHead(403);
+      res.end('Forbidden');
+      return;
+    }
+
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      res.writeHead(405);
+      res.end('Method not allowed');
+      return;
+    }
+
     // Parse proxy URL: /proxy/originalUrl or /hls/originalUrl
     if (urlPath.startsWith('/hls/')) {
       // Generate HLS manifest for IPTV stream
       const originalUrl = decodeURIComponent(urlPath.replace('/hls/', ''));
-      console.log(`🎬 Generating HLS manifest for: ${originalUrl}`);
+      if (!isExternalHttpUrl(originalUrl)) {
+        res.writeHead(400);
+        res.end('Invalid URL');
+        return;
+      }
+      appLog(`🎬 Generating HLS manifest for: ${originalUrl}`);
       
       const manifest = `#EXTM3U
 #EXT-X-VERSION:3
@@ -721,7 +940,7 @@ function startProxyServer() {
 #EXT-X-MEDIA-SEQUENCE:0
 #EXT-X-PLAYLIST-TYPE:EVENT
 #EXTINF:10.0,
-/proxy/${encodeURIComponent(originalUrl)}
+/proxy/${encodeURIComponent(originalUrl)}?token=${encodeURIComponent(token)}
 #EXT-X-ENDLIST`;
 
       res.setHeader('Access-Control-Allow-Origin', '*');
@@ -738,33 +957,49 @@ function startProxyServer() {
     }
 
     const originalUrl = decodeURIComponent(urlPath.replace('/proxy/', ''));
-    console.log(`🔄 Proxying request to: ${originalUrl}`);
+    appLog(`🔄 Proxying request to: ${originalUrl}`);
 
     try {
       const targetUrl = new URL(originalUrl);
+      if (!isExternalHttpUrl(originalUrl)) {
+        res.writeHead(400);
+        res.end('Invalid URL');
+        return;
+      }
+      if (isDisallowedProxyTarget(targetUrl.hostname)) {
+        res.writeHead(403);
+        res.end('Blocked target');
+        return;
+      }
       const isHttps = targetUrl.protocol === 'https:';
       const client = isHttps ? https : http;
+
+      const upstreamHeaders = {
+        'User-Agent': 'VLC/3.0.8 LibVLC/3.0.8',
+        'Referer': `${targetUrl.protocol}//${targetUrl.hostname}/`,
+        'Accept': '*/*',
+        'Connection': 'keep-alive',
+      };
+      if (req.headers.range) {
+        upstreamHeaders.Range = req.headers.range;
+      }
 
       const proxyReq = client.request({
         hostname: targetUrl.hostname,
         port: targetUrl.port,
         path: targetUrl.pathname + targetUrl.search,
         method: req.method,
-        headers: {
-          'User-Agent': 'VLC/3.0.8 LibVLC/3.0.8',
-          'Referer': `${targetUrl.protocol}//${targetUrl.hostname}/`,
-          'Accept': '*/*',
-          'Connection': 'keep-alive',
-          ...req.headers
-        }
+        headers: upstreamHeaders
       }, (proxyRes) => {
         // Set CORS headers for browser access
         res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', '*');
-        res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'video/mp2t');
-        
-        res.writeHead(proxyRes.statusCode, proxyRes.headers);
+        const safeHeaders = { ...proxyRes.headers };
+        delete safeHeaders['set-cookie'];
+        delete safeHeaders['set-cookie2'];
+
+        res.writeHead(proxyRes.statusCode, safeHeaders);
         proxyRes.pipe(res);
       });
 
@@ -774,7 +1009,7 @@ function startProxyServer() {
         res.end('Proxy error');
       });
 
-      req.pipe(proxyReq);
+      proxyReq.end();
       
     } catch (error) {
       console.error('❌ Invalid URL:', error);
@@ -784,7 +1019,7 @@ function startProxyServer() {
   });
 
   proxyServer.listen(13337, 'localhost', () => {
-    console.log('🌐 IPTV Proxy server started on port 13337');
+    appLog('🌐 IPTV Proxy server started on port 13337');
   });
 
   return 13337;
@@ -795,15 +1030,19 @@ function stopProxyServer() {
   if (proxyServer) {
     proxyServer.close();
     proxyServer = null;
-    console.log('🔌 IPTV Proxy server stopped');
+    appLog('🔌 IPTV Proxy server stopped');
   }
 }
 
 // IPC handler for proxy URLs
 ipcMain.handle('get-proxy-url', async (event, originalUrl) => {
   try {
+    if (!isExternalHttpUrl(originalUrl)) {
+      throw new Error('Only HTTP/HTTPS URLs are allowed');
+    }
     const port = startProxyServer();
-    const hlsUrl = `http://localhost:${port}/hls/${encodeURIComponent(originalUrl)}`;
+    const token = getProxyToken();
+    const hlsUrl = `http://localhost:${port}/hls/${encodeURIComponent(originalUrl)}?token=${encodeURIComponent(token)}`;
     
     return {
       success: true,
@@ -820,12 +1059,23 @@ ipcMain.handle('get-proxy-url', async (event, originalUrl) => {
 
 ipcMain.handle('show-save-dialog', async (event, options) => {
   const result = await dialog.showSaveDialog(mainWindow, options);
+  if (!result.canceled && result.filePath) {
+    approvedWritePaths.add(path.resolve(result.filePath));
+  }
   return result;
 });
 
 ipcMain.handle('write-file', async (event, filePath, content) => {
   try {
-    fs.writeFileSync(filePath, content, 'utf8');
+    if (typeof filePath !== 'string' || !path.isAbsolute(filePath)) {
+      return { success: false, error: 'write-file only accepts absolute paths' };
+    }
+    const resolvedPath = path.resolve(filePath);
+    if (!approvedWritePaths.has(resolvedPath)) {
+      return { success: false, error: 'Path not approved by save dialog' };
+    }
+    approvedWritePaths.delete(resolvedPath);
+    fs.writeFileSync(resolvedPath, String(content), 'utf8');
     return { success: true };
   } catch (error) {
     return { success: false, error: error.message };
@@ -834,7 +1084,16 @@ ipcMain.handle('write-file', async (event, filePath, content) => {
 
 ipcMain.handle('read-file', async (event, filePath) => {
   try {
-    const content = fs.readFileSync(filePath, 'utf8');
+    if (typeof filePath !== 'string' || !filePath.trim()) {
+      return { success: false, error: 'Invalid file path' };
+    }
+    const targetPath = path.resolve(__dirname, filePath);
+    const allowedBase = path.resolve(__dirname, 'examples');
+    const { isInside } = resolveWithin(allowedBase, targetPath);
+    if (!isInside) {
+      return { success: false, error: 'read-file only allows examples directory' };
+    }
+    const content = fs.readFileSync(targetPath, 'utf8');
     return { success: true, content };
   } catch (error) {
     return { success: false, error: error.message };
@@ -847,7 +1106,18 @@ ipcMain.handle('get-app-version', () => {
 
 ipcMain.handle('save-file', async (event, relativePath, content) => {
   try {
-    const fullPath = path.join(__dirname, relativePath);
+    if (typeof relativePath !== 'string' || !relativePath.trim()) {
+      throw new Error('Invalid relative path');
+    }
+    if (path.isAbsolute(relativePath)) {
+      throw new Error('Absolute paths are not allowed for save-file');
+    }
+    const allowedBase = path.resolve(__dirname, 'examples');
+    const fullPath = path.resolve(__dirname, relativePath);
+    const { isInside } = resolveWithin(allowedBase, fullPath);
+    if (!isInside) {
+      throw new Error('save-file only allows examples directory');
+    }
     const dir = path.dirname(fullPath);
     
     // Create directory if it doesn't exist
@@ -863,16 +1133,21 @@ ipcMain.handle('save-file', async (event, relativePath, content) => {
   }
 });
 
+const isDevMode = process.argv.includes('--dev') || process.env.NODE_ENV === 'development';
+
 // Suppress various Electron warnings and improve compatibility
-app.commandLine.appendSwitch('ignore-certificate-errors');
-app.commandLine.appendSwitch('ignore-ssl-errors');
-app.commandLine.appendSwitch('ignore-certificate-errors-spki-list');
-app.commandLine.appendSwitch('ignore-urlfetcher-cert-requests');
-app.commandLine.appendSwitch('disable-web-security');
-app.commandLine.appendSwitch('disable-features', 'VizDisplayCompositor,OutOfBlinkCors,CertVerifierBuiltin');
-app.commandLine.appendSwitch('disable-site-isolation-trials');
-app.commandLine.appendSwitch('allow-running-insecure-content');
-app.commandLine.appendSwitch('disable-extensions-except');
+if (isDevMode) {
+  app.commandLine.appendSwitch('ignore-certificate-errors');
+  app.commandLine.appendSwitch('ignore-ssl-errors');
+  app.commandLine.appendSwitch('ignore-certificate-errors-spki-list');
+  app.commandLine.appendSwitch('ignore-urlfetcher-cert-requests');
+  app.commandLine.appendSwitch('disable-web-security');
+  app.commandLine.appendSwitch('disable-features', 'VizDisplayCompositor,OutOfBlinkCors,CertVerifierBuiltin');
+  app.commandLine.appendSwitch('disable-site-isolation-trials');
+  app.commandLine.appendSwitch('allow-running-insecure-content');
+  app.commandLine.appendSwitch('disable-extensions-except');
+  process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
+}
 app.commandLine.appendSwitch('log-level', '3'); // Only show fatal errors
 
 // Performance optimizations
@@ -883,10 +1158,11 @@ app.commandLine.appendSwitch('max-old-space-size', '4096');
 
 // Suppress macOS specific warnings
 if (process.platform === 'darwin') {
-  app.commandLine.appendSwitch('disable-gpu-sandbox');
-  app.commandLine.appendSwitch('disable-software-rasterizer');
+  if (isDevMode) {
+    app.commandLine.appendSwitch('disable-gpu-sandbox');
+    app.commandLine.appendSwitch('disable-software-rasterizer');
+  }
   // Reduce font-related warnings
-  process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
   process.env.ELECTRON_DISABLE_RENDERER_BACKGROUNDING = 'true';
   // Suppress CoreText warnings
   process.env.CT_DISABLE_FONT_WARNINGS = 'true';
@@ -959,6 +1235,6 @@ app.on('open-file', (event, filePath) => {
 
 // Cleanup on app quit
 app.on('before-quit', () => {
-  console.log('🔌 Application shutting down...');
+  appLog('🔌 Application shutting down...');
   stopProxyServer();
 });
