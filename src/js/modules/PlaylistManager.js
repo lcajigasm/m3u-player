@@ -843,12 +843,63 @@ class PlaylistManager {
         if (!playlist || !playlist.metadata.sourceUrl) return;
 
         try {
-            // Implementar refresh desde URL original
             this.eventBus.emit('playlist:refresh-start', { playlistId });
-            
-            // TODO: Implementar fetch y actualización
-            
-            this.eventBus.emit('playlist:refreshed', { playlistId });
+
+            const sourceUrl = playlist.metadata.sourceUrl;
+            let content = '';
+
+            if (window?.api?.fetchUrl) {
+                const response = await window.api.fetchUrl(sourceUrl, {
+                    timeout: 30000,
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+                if (!response?.success) {
+                    throw new Error(response?.error || 'Failed to refresh playlist');
+                }
+                content = String(response.data || '');
+            } else {
+                const response = await fetch(sourceUrl, { cache: 'no-store' });
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                content = await response.text();
+            }
+
+            if (!content.trim()) {
+                throw new Error('Empty playlist content received');
+            }
+
+            const previousCount = playlist.items.length;
+            const items = await this.parseM3UContent(content, playlist.filename);
+            if (items.length === 0) {
+                throw new Error('Refreshed playlist contains no valid items');
+            }
+
+            playlist.content = content;
+            playlist.items = items;
+            playlist.metadata.lastModified = Date.now();
+            playlist.metadata.totalItems = items.length;
+            playlist.metadata.totalDuration = this.calculateTotalDuration(items);
+            playlist.metadata.groups = this.extractGroups(items);
+            playlist.metadata.streamTypes = this.extractStreamTypes(items);
+            playlist.metadata.hasLogos = items.some(item => item.logo);
+            playlist.statistics.timesLoaded = (playlist.statistics.timesLoaded || 0) + 1;
+            playlist.statistics.lastAccessed = Date.now();
+
+            if (this.activePlaylistId === playlistId && this.currentIndex >= items.length) {
+                this.currentIndex = items.length - 1;
+            }
+
+            this.updateSearchIndex(playlistId, items);
+            this.saveToStorage();
+
+            this.eventBus.emit('playlist:refreshed', {
+                playlistId,
+                previousCount,
+                itemCount: items.length
+            });
         } catch (error) {
             console.error('❌ Playlist refresh error:', error);
             this.eventBus.emit('playlist:refresh-error', { playlistId, error: error.message });

@@ -1,4 +1,3 @@
-
 const { contextBridge, ipcRenderer } = require('electron');
 
 /**
@@ -16,7 +15,16 @@ const { contextBridge, ipcRenderer } = require('electron');
  * @property {(url: string, headers?: object) => Promise<boolean>} test
  */
 
-contextBridge.exposeInMainWorld('api', {
+function subscribe(channel, listener) {
+  if (typeof listener !== 'function') {
+    throw new TypeError(`${channel}: listener must be a function`);
+  }
+  const wrapped = (_event, payload) => listener(payload);
+  ipcRenderer.on(channel, wrapped);
+  return () => ipcRenderer.removeListener(channel, wrapped);
+}
+
+const api = {
   /** @type {SettingsAPI} */
   settings: {
     /** @param {string} key */
@@ -49,7 +57,17 @@ contextBridge.exposeInMainWorld('api', {
     /** @param {File} file */
     importFromFile: (file) => {
       if (!file || typeof file !== 'object') throw new TypeError('playlists.importFromFile: file must be File');
-      return ipcRenderer.invoke('playlists-import-file', file);
+      if (typeof file.path === 'string' && file.path) {
+        return ipcRenderer.invoke('playlists-import-file', file.path);
+      }
+      if (typeof file.text === 'function') {
+        return file.text().then((data) => ({
+          success: true,
+          data,
+          filename: file.name || 'playlist.m3u'
+        }));
+      }
+      throw new Error('playlists.importFromFile: unsupported File object');
     },
     /** @param {string} url */
     importFromUrl: (url) => {
@@ -75,4 +93,48 @@ contextBridge.exposeInMainWorld('api', {
     if (options && typeof options !== 'object') throw new TypeError('fetchUrl: options must be object');
     return ipcRenderer.invoke('fetch-url', url, options);
   }
-});
+};
+
+const electronAPI = {
+  loadConfig: () => ipcRenderer.invoke('load-config'),
+  saveConfig: (config) => ipcRenderer.invoke('save-config', config),
+  openFileDialog: () => ipcRenderer.invoke('open-file-dialog'),
+  fetchUrl: (url, options = {}) => api.fetchUrl(url, options),
+  showSaveDialog: (options) => ipcRenderer.invoke('show-save-dialog', options),
+  writeFile: (filePath, content) => ipcRenderer.invoke('write-file', filePath, content),
+  readFile: async (filePath) => {
+    const result = await ipcRenderer.invoke('read-file', filePath);
+    return {
+      success: !!result?.success,
+      data: result?.content,
+      error: result?.error
+    };
+  },
+  saveFile: (relativePath, content) => ipcRenderer.invoke('save-file', relativePath, content),
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  getProxyUrl: (originalUrl) => ipcRenderer.invoke('get-proxy-url', originalUrl),
+
+  onFileLoaded: (listener) => subscribe('file-loaded', listener),
+  onShowUrlDialog: (listener) => subscribe('show-url-dialog', listener),
+  onShowSettings: (listener) => subscribe('show-settings', listener),
+  onShowAbout: (listener) => subscribe('show-about', listener),
+  onTogglePlayback: (listener) => subscribe('toggle-playback', listener),
+  onStopPlayback: (listener) => subscribe('stop-playback', listener),
+  onVolumeUp: (listener) => subscribe('volume-up', listener),
+  onVolumeDown: (listener) => subscribe('volume-down', listener),
+  onToggleMute: (listener) => subscribe('toggle-mute', listener),
+};
+
+const appInfo = {
+  isElectron: true,
+  platform: process.platform,
+  versions: {
+    electron: process.versions.electron,
+    node: process.versions.node,
+    chrome: process.versions.chrome,
+  }
+};
+
+contextBridge.exposeInMainWorld('api', api);
+contextBridge.exposeInMainWorld('electronAPI', electronAPI);
+contextBridge.exposeInMainWorld('appInfo', appInfo);

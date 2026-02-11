@@ -37,7 +37,7 @@ Se ha implementado un sistema completo de integración EPG (Electronic Program G
   - Búsqueda y filtrado de canales
 
 ### 4. Mejoras en el Parser M3U
-- **Archivo**: `src/js/main.js` (método `parseM3U`)
+- **Archivo**: `src/js/script.js` (método `parseM3U`)
 - **Mejoras**:
   - Extracción mejorada de atributos tvg-country, tvg-language
   - Detección automática de país desde el título del canal
@@ -125,7 +125,7 @@ const CONFIG = {
 - `src/styles/epg-admin.css`
 
 ### Modified Files
-- `src/js/main.js` - EPG integration and parseM3U improvement
+- `src/js/script.js` - EPG integration and parseM3U improvement
 - `src/js/epg/EPGManager.js` - Integration with new modules
 - `src/index.html` - EPG styles inclusion
 - `package.json` - New dependencies

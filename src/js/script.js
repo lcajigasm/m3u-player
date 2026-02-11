@@ -1,6 +1,21 @@
 // M3U Player Electron - Main Script
 // IPTV Player without CORS limitations
 
+const runtimeDebugEnabled = (() => {
+    try {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('debug') === '1' || localStorage.getItem('m3u-debug') === '1';
+    } catch {
+        return false;
+    }
+})();
+
+const appLog = (...args) => {
+    if (runtimeDebugEnabled) {
+        console.log(...args);
+    }
+};
+
 class M3UPlayer {
     constructor() {
         this.playlist = [];
@@ -759,11 +774,11 @@ class M3UPlayer {
                     this.iptvOrgContent = fileResult.data;
                     const tempData = await this.parseM3U(fileResult.data);
                     const channelCount = tempData.length;
-                    console.log(`📊 Canales encontrados en IPTV-ORG: ${channelCount}`);
+                    appLog(`📊 Canales encontrados en IPTV-ORG: ${channelCount}`);
                     
                     if (channelCount > 0) {
                         this.updateIPTVOrgButton(`▶ Play IPTV-ORG (${channelCount})`, false);
-                        console.log(`✅ Found existing IPTV-ORG playlist with ${channelCount} channels`);
+                        appLog(`✅ Found existing IPTV-ORG playlist with ${channelCount} channels`);
                         
                         // Auto-cargar IPTV-ORG existente
                         // Auto-loading existing IPTV-ORG
@@ -797,7 +812,7 @@ class M3UPlayer {
         // Check the tile title instead of full textContent
         const tileTitle = this.iptvOrgBtn.querySelector('.tile-title');
         const titleText = tileTitle ? tileTitle.textContent.trim() : '';
-        console.log(`📝 IPTV-ORG button title: "${titleText}"`);
+        appLog(`📝 IPTV-ORG button title: "${titleText}"`);
         
         if (titleText.includes('Download') || titleText.includes('Update') || titleText.includes('IPTV-ORG')) {
             // Starting IPTV-ORG download
@@ -875,7 +890,7 @@ class M3UPlayer {
                 }, 1000);
             }, 1000);
             
-            console.log(`✅ Downloaded ${channelCount} channels from IPTV-ORG`);
+            appLog(`✅ Downloaded ${channelCount} channels from IPTV-ORG`);
             
         } catch (error) {
             console.error('❌ Error downloading IPTV-ORG playlist:', error);
@@ -1037,27 +1052,27 @@ class M3UPlayer {
                 // Looking for free-tv-channels.m3u8 file
                 const fileResult = await window.electronAPI.readFile('examples/free-tv-channels.m3u8');
                 if (fileResult.success && fileResult.data) {
-                    console.log('✅ Archivo Free-TV encontrado, contando canales...');
+                    appLog('✅ Archivo Free-TV encontrado, contando canales...');
                     const channelCount = this.countChannelsInM3U(fileResult.data);
-                    console.log(`📊 Canales encontrados en Free-TV: ${channelCount}`);
+                    appLog(`📊 Canales encontrados en Free-TV: ${channelCount}`);
                     if (channelCount > 0) {
                         this.freeTvContent = fileResult.data; // Store content in memory
                         this.updateFreeTvButton(`▶ Play Free-TV (${channelCount})`, false);
                         
                         // Auto-load existing Free-TV playlist
-                        console.log('🚀 Auto-cargando Free-TV existente...');
+                        appLog('🚀 Auto-cargando Free-TV existente...');
                         setTimeout(() => {
                             this.loadFreeTvPlaylist();
                         }, 1000);
                         return;
                     }
                 } else {
-                    console.log('❌ Archivo Free-TV no encontrado o vacío');
+                    appLog('❌ Archivo Free-TV no encontrado o vacío');
                 }
             }
 
             // If file doesn't exist or has no channels, show download option
-            console.log('📺 Mostrando opción de descarga para Free-TV');
+            appLog('📺 Mostrando opción de descarga para Free-TV');
             this.updateFreeTvButton('📺 Download Free-TV', false);
         } catch (error) {
             console.error('Error checking Free-TV playlist status:', error);
@@ -1066,7 +1081,7 @@ class M3UPlayer {
     }
 
     async handleFreeTvButton() {
-        console.log('🖱️ Free-TV button clicked!');
+        appLog('🖱️ Free-TV button clicked!');
         if (!this.freeTvBtn) {
             console.error('❌ Free-TV button not found!');
             return;
@@ -1075,22 +1090,22 @@ class M3UPlayer {
         // Check the tile title instead of full textContent
         const tileTitle = this.freeTvBtn.querySelector('.tile-title');
         const titleText = tileTitle ? tileTitle.textContent.trim() : '';
-        console.log(`📝 Free-TV button title: "${titleText}"`);
+        appLog(`📝 Free-TV button title: "${titleText}"`);
         
         if (titleText.includes('Download') || titleText.includes('Update') || titleText.includes('Free-TV')) {
-            console.log('⬇️ Iniciando descarga de Free-TV...');
+            appLog('⬇️ Iniciando descarga de Free-TV...');
             await this.downloadFreeTvPlaylist();
         } else if (titleText.includes('Play') || titleText.includes('Reproducir')) {
-            console.log('▶️ Iniciando reproducción de Free-TV...');
+            appLog('▶️ Iniciando reproducción de Free-TV...');
             await this.loadFreeTvPlaylist();
         } else {
-            console.log('❓ Acción no reconocida para Free-TV');
+            appLog('❓ Acción no reconocida para Free-TV');
         }
     }
 
     async downloadFreeTvPlaylist() {
         try {
-            console.log('📺 Downloading Free-TV playlist...');
+            appLog('📺 Downloading Free-TV playlist...');
             this.showLoadingScreen(
                 window.t ? window.t('downloading_free_tv') : 'Downloading Free-TV', 
                 window.t ? window.t('fetching_free_tv_playlist') : 'Fetching the latest playlist from Free-TV/IPTV...'
@@ -1126,7 +1141,7 @@ class M3UPlayer {
             if (this.isElectron && window.electronAPI) {
                 try {
                     await window.electronAPI.saveFile('examples/free-tv-channels.m3u8', content);
-                    console.log('✅ Free-TV playlist saved to local file');
+                    appLog('✅ Free-TV playlist saved to local file');
                 } catch (saveError) {
                     console.warn('⚠️  Could not save Free-TV playlist locally:', saveError.message);
                 }
@@ -1139,7 +1154,7 @@ class M3UPlayer {
 
             // Count channels for user feedback
             const channelCount = this.countChannelsInM3U(content);
-            console.log(`📺 Free-TV playlist downloaded: ${channelCount} channels`);
+            appLog(`📺 Free-TV playlist downloaded: ${channelCount} channels`);
 
             this.updateLoadingProgress(100, 'Download complete!');
 
@@ -1150,7 +1165,7 @@ class M3UPlayer {
                     this.updateFreeTvButton(`▶ Play Free-TV (${channelCount})`, false);
                     
                     // Auto-load the downloaded playlist
-                    console.log('🚀 Auto-cargando Free-TV después de descarga...');
+                    appLog('🚀 Auto-cargando Free-TV después de descarga...');
                     setTimeout(() => {
                         this.loadFreeTvPlaylist();
                     }, 1000);
@@ -1170,7 +1185,7 @@ class M3UPlayer {
 
     async loadFreeTvPlaylist() {
         try {
-            console.log('📺 Loading Free-TV playlist...');
+            appLog('📺 Loading Free-TV playlist...');
             this.showFileInfo('Loading Free-TV playlist...', 'loading');
             
             let content = this.freeTvContent;
@@ -1183,29 +1198,29 @@ class M3UPlayer {
                     if (fileResult.success) {
                         content = fileResult.data;
                         isLargeFile = content.length > 50000; // Real Free-TV files are large
-                        console.log('✅ Loaded Free-TV from local file');
+                        appLog('✅ Loaded Free-TV from local file');
                     }
                 } catch (fileError) {
-                    console.log('📁 Local file not found');
+                    appLog('📁 Local file not found');
                 }
             }
             
             // If still no content, use fallback
             if (!content) {
-                console.log('📋 Using fallback test content');
+                appLog('📋 Using fallback test content');
                 content = this.getTestPlaylistContent();
                 isLargeFile = false; // Test content is small
             }
             
-            console.log(`📋 Content loaded, size: ${content.length} characters, isLarge: ${isLargeFile}`);
-            console.log(`📋 Content preview: ${content.substring(0, 200)}...`);
+            appLog(`📋 Content loaded, size: ${content.length} characters, isLarge: ${isLargeFile}`);
+            appLog(`📋 Content preview: ${content.substring(0, 200)}...`);
             
             // Use appropriate processing method based on content size
             if (isLargeFile) {
-                console.log('📋 Using large file processing');
+                appLog('📋 Using large file processing');
                 await this.processLargeM3UContent(content, 'free-tv-channels.m3u8');
             } else {
-                console.log('📋 Using standard processing for small content');
+                appLog('📋 Using standard processing for small content');
                 await this.processM3UContent(content, 'free-tv-channels.m3u8');
             }
             
@@ -1276,8 +1291,8 @@ class M3UPlayer {
 
     // Now Playing Widget Methods
     updateNowPlayingWidget(channel = null) {
-        console.log('🎵 === NOW PLAYING WIDGET UPDATE ===');
-        console.log('🎵 Widget element found:', !!this.nowPlayingWidget);
+        appLog('🎵 === NOW PLAYING WIDGET UPDATE ===');
+        appLog('🎵 Widget element found:', !!this.nowPlayingWidget);
         
         if (!this.nowPlayingWidget) {
             console.error('🎵 Now Playing widget element not found!');
@@ -1286,13 +1301,13 @@ class M3UPlayer {
         
         if (!channel && this.currentIndex >= 0 && this.playlistData[this.currentIndex]) {
             channel = this.playlistData[this.currentIndex];
-            console.log('🎵 Using current channel from index:', this.currentIndex);
+            appLog('🎵 Using current channel from index:', this.currentIndex);
         }
         
-        console.log('🎵 Channel data:', channel ? channel.title : 'No channel');
+        appLog('🎵 Channel data:', channel ? channel.title : 'No channel');
         
         if (channel) {
-            console.log('🎵 Updating widget with channel:', channel.title);
+            appLog('🎵 Updating widget with channel:', channel.title);
             
             // Update widget content
             this.nowPlayingTitle.textContent = channel.title || 'Unknown Channel';
@@ -1319,22 +1334,22 @@ class M3UPlayer {
             if (isInDashboard && !isInPlayer) {
                 // Show the widget only when in dashboard
                 this.nowPlayingWidget.style.display = 'block';
-                console.log('🎵 Widget shown, display set to block');
+                appLog('🎵 Widget shown, display set to block');
                 
                 // Ensure the Return to Player button listener is attached
                 setTimeout(() => this.attachReturnToPlayerListener(), 50);
             } else {
                 // Hide the widget when in player section
                 this.nowPlayingWidget.style.display = 'none';
-                console.log('🎵 Widget hidden - in player section');
+                appLog('🎵 Widget hidden - in player section');
             }
         } else {
-            console.log('🎵 No channel, hiding widget');
+            appLog('🎵 No channel, hiding widget');
             // Hide the widget if no channel is playing
             this.nowPlayingWidget.style.display = 'none';
         }
         
-        console.log('🎵 === NOW PLAYING WIDGET UPDATE END ===');
+        appLog('🎵 === NOW PLAYING WIDGET UPDATE END ===');
     }
     
     getChannelIcon(channel) {
@@ -1368,52 +1383,52 @@ class M3UPlayer {
     }
     
     returnToPlayer() {
-        console.log('🎬 === RETURN TO PLAYER DEBUG ===');
-        console.log('🎬 Method called successfully');
+        appLog('🎬 === RETURN TO PLAYER DEBUG ===');
+        appLog('🎬 Method called successfully');
         
         // Debug current state
         const dashboardSection = document.getElementById('dashboardSection');
         const playerSection = document.getElementById('playerSection');
         
-        console.log('🎬 Dashboard section:', dashboardSection ? 'found' : 'NOT FOUND');
-        console.log('🎬 Dashboard display style:', dashboardSection?.style.display || 'not set');
-        console.log('🎬 Dashboard computed display:', dashboardSection ? window.getComputedStyle(dashboardSection).display : 'not found');
-        console.log('🎬 Player section:', playerSection ? 'found' : 'NOT FOUND');
-        console.log('🎬 Player display style:', playerSection?.style.display || 'not set');
-        console.log('🎬 Player computed display:', playerSection ? window.getComputedStyle(playerSection).display : 'not found');
-        console.log('🎬 Playlist data available:', this.playlistData ? `Yes (${this.playlistData.length} items)` : 'No');
-        console.log('🎬 Current index:', this.currentIndex);
+        appLog('🎬 Dashboard section:', dashboardSection ? 'found' : 'NOT FOUND');
+        appLog('🎬 Dashboard display style:', dashboardSection?.style.display || 'not set');
+        appLog('🎬 Dashboard computed display:', dashboardSection ? window.getComputedStyle(dashboardSection).display : 'not found');
+        appLog('🎬 Player section:', playerSection ? 'found' : 'NOT FOUND');
+        appLog('🎬 Player display style:', playerSection?.style.display || 'not set');
+        appLog('🎬 Player computed display:', playerSection ? window.getComputedStyle(playerSection).display : 'not found');
+        appLog('🎬 Playlist data available:', this.playlistData ? `Yes (${this.playlistData.length} items)` : 'No');
+        appLog('🎬 Current index:', this.currentIndex);
         
         const isInDashboard = dashboardSection && (window.getComputedStyle(dashboardSection).display !== 'none');
         const isInPlayer = playerSection && (window.getComputedStyle(playerSection).display !== 'none');
-        console.log('🎬 Is in dashboard:', isInDashboard);
-        console.log('🎬 Is in player:', isInPlayer);
+        appLog('🎬 Is in dashboard:', isInDashboard);
+        appLog('🎬 Is in player:', isInPlayer);
         
         // If we have a playlist loaded
         if (this.playlistData && this.playlistData.length > 0) {
-            console.log('🎬 Playlist available, proceeding...');
+            appLog('🎬 Playlist available, proceeding...');
             
             // Always hide the now playing widget first
             if (this.nowPlayingWidget) {
-                console.log('🎬 Hiding Now Playing widget');
+                appLog('🎬 Hiding Now Playing widget');
                 this.nowPlayingWidget.style.display = 'none';
             }
             
             if (isInDashboard && !isInPlayer) {
                 // We're in dashboard, need to navigate to player
-                console.log('🎬 In dashboard, calling showPlayerSection...');
+                appLog('🎬 In dashboard, calling showPlayerSection...');
                 this.showPlayerSection();
-                console.log('🎬 showPlayerSection called');
+                appLog('🎬 showPlayerSection called');
             } else if (isInPlayer) {
                 // We're already in player section
-                console.log('🎬 Already in player section - just hiding widget');
+                appLog('🎬 Already in player section - just hiding widget');
             } else {
                 // Neither dashboard nor player is visible, force show player
-                console.log('🎬 Neither section visible, forcing player section...');
+                appLog('🎬 Neither section visible, forcing player section...');
                 this.showPlayerSection();
             }
         } else {
-            console.log('🎬 No playlist data available');
+            appLog('🎬 No playlist data available');
             // No playlist loaded, just hide the widget and show message
             if (this.nowPlayingWidget) {
                 this.nowPlayingWidget.style.display = 'none';
@@ -1421,18 +1436,18 @@ class M3UPlayer {
             this.showFileInfo(window.t ? window.t('no_playlist_loaded') : 'No playlist currently loaded', 'warning');
         }
         
-        console.log('🎬 === RETURN TO PLAYER DEBUG END ===');
+        appLog('🎬 === RETURN TO PLAYER DEBUG END ===');
     }
 
     // Enhanced method to attach Return to Player listener with multiple strategies
     attachReturnToPlayerListener() {
-        console.log('🎬 === ATTACHING RETURN TO PLAYER LISTENER ===');
+        appLog('🎬 === ATTACHING RETURN TO PLAYER LISTENER ===');
         
         const attachListener = () => {
             this.returnToPlayerBtn = document.getElementById('returnToPlayerBtn');
             
             if (this.returnToPlayerBtn) {
-                console.log('✅ Return to Player button found');
+                appLog('✅ Return to Player button found');
                 
                 // Remove any existing listeners to prevent duplicates
                 this.returnToPlayerBtn.replaceWith(this.returnToPlayerBtn.cloneNode(true));
@@ -1440,7 +1455,7 @@ class M3UPlayer {
                 
                 // Add click event listener
                 this.returnToPlayerBtn.addEventListener('click', (e) => {
-                    console.log('🎬 Return to Player button clicked!', e);
+                    appLog('🎬 Return to Player button clicked!', e);
                     e.preventDefault();
                     e.stopPropagation();
                     this.returnToPlayer();
@@ -1449,7 +1464,7 @@ class M3UPlayer {
                 // Add enter key support
                 this.returnToPlayerBtn.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
-                        console.log('🎬 Return to Player activated via keyboard');
+                        appLog('🎬 Return to Player activated via keyboard');
                         e.preventDefault();
                         this.returnToPlayer();
                     }
@@ -1458,7 +1473,7 @@ class M3UPlayer {
                 // Mark as having listeners attached
                 this.returnToPlayerBtn.dataset.listenerAttached = 'true';
                 
-                console.log('✅ Return to Player event listeners attached successfully');
+                appLog('✅ Return to Player event listeners attached successfully');
                 return true;
             } else {
                 console.error('❌ Return to Player button NOT found');
@@ -1469,7 +1484,7 @@ class M3UPlayer {
         // Try to attach immediately
         if (!attachListener()) {
             // If not found, try again after DOM is fully loaded
-            console.log('🎬 Retrying Return to Player attachment after DOM load...');
+            appLog('🎬 Retrying Return to Player attachment after DOM load...');
             
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', attachListener);
@@ -1484,7 +1499,7 @@ class M3UPlayer {
                     if (mutation.type === 'childList') {
                         const returnBtn = document.getElementById('returnToPlayerBtn');
                         if (returnBtn && !returnBtn.dataset.listenerAttached) {
-                            console.log('🎬 Return to Player button found via MutationObserver');
+                            appLog('🎬 Return to Player button found via MutationObserver');
                             returnBtn.dataset.listenerAttached = 'true';
                             observer.disconnect();
                             attachListener();
@@ -1505,7 +1520,7 @@ class M3UPlayer {
 
     // Internationalization Methods
     initializeI18n() {
-        console.log('🌐 Initializing i18n system...');
+        appLog('🌐 Initializing i18n system...');
         
         if (typeof window.i18n !== 'undefined') {
             // Set the language selector to current language
@@ -1523,7 +1538,7 @@ class M3UPlayer {
     }
     
     changeLanguage(languageCode) {
-        console.log('🌐 Changing language to:', languageCode);
+        appLog('🌐 Changing language to:', languageCode);
         
         if (typeof window.i18n !== 'undefined') {
             window.i18n.setLanguage(languageCode);
@@ -1537,11 +1552,11 @@ class M3UPlayer {
     
     // Debug method to force translation update (can be called from console)
     forceTranslationUpdate() {
-        console.log('🌐 Forcing translation update...');
+        appLog('🌐 Forcing translation update...');
         if (typeof window.i18n !== 'undefined') {
             window.i18n.updateUI();
             this.updateDynamicTranslations();
-            console.log('🌐 Translation update forced successfully');
+            appLog('🌐 Translation update forced successfully');
         } else {
             console.error('🌐 i18n system not available!');
         }
@@ -1549,44 +1564,44 @@ class M3UPlayer {
     
     // Debug method to test Return to Player functionality
     testReturnToPlayer() {
-        console.log('🎬 === TESTING RETURN TO PLAYER ===');
+        appLog('🎬 === TESTING RETURN TO PLAYER ===');
         
         // Re-scan for button
         this.returnToPlayerBtn = document.getElementById('returnToPlayerBtn');
         
-        console.log('🎬 returnToPlayerBtn element:', this.returnToPlayerBtn);
-        console.log('🎬 Button visible:', this.returnToPlayerBtn ? window.getComputedStyle(this.returnToPlayerBtn).display : 'N/A');
-        console.log('🎬 nowPlayingWidget element:', this.nowPlayingWidget);
-        console.log('🎬 Widget visible:', this.nowPlayingWidget ? window.getComputedStyle(this.nowPlayingWidget).display : 'N/A');
-        console.log('🎬 Playlist data length:', this.playlistData?.length || 0);
-        console.log('🎬 Current index:', this.currentIndex);
+        appLog('🎬 returnToPlayerBtn element:', this.returnToPlayerBtn);
+        appLog('🎬 Button visible:', this.returnToPlayerBtn ? window.getComputedStyle(this.returnToPlayerBtn).display : 'N/A');
+        appLog('🎬 nowPlayingWidget element:', this.nowPlayingWidget);
+        appLog('🎬 Widget visible:', this.nowPlayingWidget ? window.getComputedStyle(this.nowPlayingWidget).display : 'N/A');
+        appLog('🎬 Playlist data length:', this.playlistData?.length || 0);
+        appLog('🎬 Current index:', this.currentIndex);
         
         if (this.returnToPlayerBtn) {
-            console.log('🎬 Button found, testing click event...');
+            appLog('🎬 Button found, testing click event...');
             
             // Test if event listeners are properly attached
             const hasListeners = this.returnToPlayerBtn.dataset.listenerAttached === 'true';
-            console.log('🎬 Has listeners attached:', hasListeners);
+            appLog('🎬 Has listeners attached:', hasListeners);
             
             if (!hasListeners) {
-                console.log('🎬 Re-attaching listeners...');
+                appLog('🎬 Re-attaching listeners...');
                 this.attachReturnToPlayerListener();
             }
             
             // Simulate click
-            console.log('🎬 Simulating button click...');
+            appLog('🎬 Simulating button click...');
             this.returnToPlayer();
         } else {
             console.error('🎬 Return to Player button not found! Re-attaching...');
             this.attachReturnToPlayerListener();
         }
         
-        console.log('🎬 === TEST COMPLETE ===');
+        appLog('🎬 === TEST COMPLETE ===');
     }
     
     // Debug method to force show Now Playing widget for testing
     forceShowNowPlayingWidget() {
-        console.log('🎵 Forcing Now Playing widget to show...');
+        appLog('🎵 Forcing Now Playing widget to show...');
         
         if (this.nowPlayingWidget) {
             // Show the widget regardless of state
@@ -1603,7 +1618,7 @@ class M3UPlayer {
                 this.nowPlayingType.textContent = 'Test Stream';
             }
             
-            console.log('🎵 Widget forced to show with test content');
+            appLog('🎵 Widget forced to show with test content');
         } else {
             console.error('🎵 Now Playing widget element not found!');
         }
@@ -1722,7 +1737,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
     async processM3UContent(content, filename) {
         try {
-            console.log(`📁 Processing file: ${filename}`);
+            appLog(`📁 Processing file: ${filename}`);
             
             // Store filename for playlist title
             this.lastLoadedFilename = filename;
@@ -1735,7 +1750,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             }
 
             this.playlistData = await this.parseM3U(content, isLargeFile);
-            console.log(`📋 ${this.playlistData.length} elements in playlist`);
+            appLog(`📋 ${this.playlistData.length} elements in playlist`);
 
             // Update dashboard stats after loading playlist
             this.updateDashboardStats();
@@ -1773,7 +1788,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
     async processLargeM3UContent(content, filename) {
         try {
-            console.log(`📁 Processing large file: ${filename} (${Math.round(content.length / 1024)}KB)`);
+            appLog(`📁 Processing large file: ${filename} (${Math.round(content.length / 1024)}KB)`);
             
             // Store filename for playlist title
             this.lastLoadedFilename = filename;
@@ -1787,7 +1802,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
             // Use chunked parsing for better performance
             this.playlistData = await this.parseM3UChunked(content);
-            console.log(`📋 ${this.playlistData.length} elements in playlist`);
+            appLog(`📋 ${this.playlistData.length} elements in playlist`);
 
             // Update dashboard stats after loading playlist
             this.updateDashboardStats();
@@ -1902,7 +1917,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         const chunkSize = 500; // Process 500 lines at a time
         const totalLines = lines.length;
         
-        console.log(`📋 Processing ${totalLines} lines in chunks of ${chunkSize}`);
+        appLog(`📋 Processing ${totalLines} lines in chunks of ${chunkSize}`);
 
         for (let startIdx = 0; startIdx < totalLines; startIdx += chunkSize) {
             const endIdx = Math.min(startIdx + chunkSize, totalLines);
@@ -1971,7 +1986,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             await new Promise(resolve => requestAnimationFrame(resolve));
         }
 
-        console.log(`✅ Chunked parsing complete: ${items.length} items processed`);
+        appLog(`✅ Chunked parsing complete: ${items.length} items processed`);
         return items;
     }
 
@@ -2036,10 +2051,10 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
     }
 
     renderPlaylist() {
-        console.log('🔍 renderPlaylist called - Starting debug...');
-        console.log('this.playlist:', this.playlist);
-        console.log('this.playlistData:', this.playlistData);
-        console.log('this.playlistData length:', this.playlistData?.length);
+        appLog('🔍 renderPlaylist called - Starting debug...');
+        appLog('this.playlist:', this.playlist);
+        appLog('this.playlistData:', this.playlistData);
+        appLog('this.playlistData length:', this.playlistData?.length);
         
         if (!this.playlist || !this.playlistData) {
             console.error('❌ Cannot render playlist - missing elements:', {
@@ -2050,14 +2065,14 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             return;
         }
 
-        console.log(`📋 Rendering ${this.playlistData.length} elements...`);
+        appLog(`📋 Rendering ${this.playlistData.length} elements...`);
         
         // Show skeleton loading for better UX
         this.showSkeletonLoading();
 
         // For large playlists, use virtual scrolling + indexed search
         if (this.playlistData.length > 1000) {
-            console.log('🚀 Using virtual list + indexed search for large playlist');
+            appLog('🚀 Using virtual list + indexed search for large playlist');
             this.setupVirtualPlaylist();
             // Configure filters and counter
             this.populateGroupFilter();
@@ -2069,7 +2084,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         }
 
         // For smaller playlists, use optimized batch rendering
-        console.log('📋 Using batched rendering for smaller playlist');
+        appLog('📋 Using batched rendering for smaller playlist');
         this.renderBatchedPlaylist();
 
         // Configure filters and counter
@@ -2080,7 +2095,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         // Hide skeleton loading after rendering
         setTimeout(() => {
             this.hideSkeletonLoading();
-            console.log('✅ Playlist rendering complete, skeleton hidden');
+            appLog('✅ Playlist rendering complete, skeleton hidden');
         }, 100);
         
         // Preload logos in background (limited for performance)
@@ -2133,7 +2148,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             // Hide skeleton once ready
             setTimeout(() => this.hideSkeletonLoading(), 100);
 
-            console.log('✅ Virtual list initialized');
+            appLog('✅ Virtual list initialized');
         } catch (e) {
             console.warn('⚠️ Virtual list failed, falling back to built-in virtual scrolling:', e);
             this.isVirtualMode = false;
@@ -2163,7 +2178,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         const playlistSkeleton = document.getElementById('playlistSkeleton');
         const playlist = document.getElementById('playlist');
         
-        console.log('🔄 Hiding skeleton loading...');
+        appLog('🔄 Hiding skeleton loading...');
         
         if (playlistSkeleton && playlist) {
             // Force hide skeleton
@@ -2174,8 +2189,8 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             playlist.style.display = 'block';
             playlist.style.visibility = 'visible';
             
-            console.log('✅ Skeleton hidden, playlist shown');
-            console.log('Playlist has', playlist.children.length, 'children');
+            appLog('✅ Skeleton hidden, playlist shown');
+            appLog('Playlist has', playlist.children.length, 'children');
         } else {
             console.error('❌ Could not hide skeleton - elements missing:', {
                 skeleton: !!playlistSkeleton,
@@ -2190,13 +2205,13 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         let currentBatch = 0;
         let totalItemsRendered = 0;
 
-        console.log(`📋 Starting batched rendering with ${this.playlistData.length} items, batch size: ${batchSize}`);
+        appLog(`📋 Starting batched rendering with ${this.playlistData.length} items, batch size: ${batchSize}`);
 
         const renderBatch = () => {
             const start = currentBatch * batchSize;
             const end = Math.min(start + batchSize, this.playlistData.length);
 
-            console.log(`📋 Rendering batch ${currentBatch + 1}, items ${start}-${end-1}`);
+            appLog(`📋 Rendering batch ${currentBatch + 1}, items ${start}-${end-1}`);
 
             for (let i = start; i < end; i++) {
                 const item = this.playlistData[i];
@@ -2223,11 +2238,11 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
                 if (this.playlist) {
                     this.playlist.innerHTML = '';
                     this.playlist.appendChild(fragment);
-                    console.log(`✅ Playlist rendered completely: ${totalItemsRendered}/${this.playlistData.length} items`);
+                    appLog(`✅ Playlist rendered completely: ${totalItemsRendered}/${this.playlistData.length} items`);
                     
                     // Verify the playlist is visible
                     if (this.playlist.children.length > 0) {
-                        console.log(`✅ Playlist container has ${this.playlist.children.length} visible items`);
+                        appLog(`✅ Playlist container has ${this.playlist.children.length} visible items`);
                     } else {
                         console.error('❌ Playlist container is empty after rendering!');
                     }
@@ -2241,7 +2256,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
     }
 
     initVirtualScrolling() {
-        console.log(`🚀 Using virtual scrolling for ${this.playlistData.length} items`);
+        appLog(`🚀 Using virtual scrolling for ${this.playlistData.length} items`);
         
         // CRITICAL: Ensure playlist is visible
         this.playlist.style.display = 'block';
@@ -2350,7 +2365,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         });
 
         if (logosToPreload.length > 0) {
-            console.log(`🖼️ Preloading ${logosToPreload.length} logos...`);
+            appLog(`🖼️ Preloading ${logosToPreload.length} logos...`);
         }
     }
 
@@ -2361,16 +2376,16 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
     }
 
     showPlayerSection() {
-        console.log('🎬 Attempting to show player section...');
+        appLog('🎬 Attempting to show player section...');
         
         if (this.playerSection) {
-            console.log('✅ Player section element found');
+            appLog('✅ Player section element found');
             
             // Ocultar sección de dashboard
             const dashboardSection = document.getElementById('dashboardSection');
             if (dashboardSection) {
                 dashboardSection.style.display = 'none';
-                console.log('📱 Dashboard section hidden');
+                appLog('📱 Dashboard section hidden');
             } else {
                 console.warn('⚠️ Dashboard section not found');
             }
@@ -2379,13 +2394,13 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             this.playerSection.style.display = 'block';
             this.playerSection.style.opacity = '0';
             this.playerSection.style.transform = 'translateY(20px)';
-            console.log('🎬 Player section display set to block');
+            appLog('🎬 Player section display set to block');
 
             requestAnimationFrame(() => {
                 this.playerSection.style.transition = 'all 0.5s ease';
                 this.playerSection.style.opacity = '1';
                 this.playerSection.style.transform = 'translateY(0)';
-                console.log('🎬 Player section animation applied');
+                appLog('🎬 Player section animation applied');
             });
             
             // Verify playlist element is visible within player section
@@ -2394,9 +2409,9 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
                 const displayStyle = getComputedStyle(this.playlist).display;
                 const visibility = getComputedStyle(this.playlist).visibility;
                 
-                console.log(`📋 Playlist element found with ${childrenCount} children`);
-                console.log(`📋 Playlist display style: ${displayStyle}`);
-                console.log(`📋 Playlist visibility: ${visibility}`);
+                appLog(`📋 Playlist element found with ${childrenCount} children`);
+                appLog(`📋 Playlist display style: ${displayStyle}`);
+                appLog(`📋 Playlist visibility: ${visibility}`);
                 
             } else {
                 console.error('❌ Playlist element not found in player section!');
@@ -2409,7 +2424,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         try {
             this.updatePlayPauseButton();
             this.initializeTimeDisplay();
-            console.log('✅ Player controls initialized');
+            appLog('✅ Player controls initialized');
         } catch (error) {
             console.error('❌ Error initializing player controls:', error);
         }
@@ -2417,14 +2432,14 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         // Update playlist title info
         this.updatePlaylistTitle();
         
-        console.log('🎬 Reproductor mostrado');
+        appLog('🎬 Reproductor mostrado');
     }
 
     async playItem(index) {
         if (index < 0 || index >= this.playlistData.length) return;
 
         const item = this.playlistData[index];
-        console.log(`🎬 Cargando: ${item.title}`);
+        appLog(`🎬 Cargando: ${item.title}`);
 
         // Clear any previous audio-only styling
         this.clearAudioOnlyDisplay();
@@ -2478,7 +2493,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             if (this.brightnessSlider) this.brightnessSlider.value = 100;
             if (this.contrastSlider) this.contrastSlider.value = 100;
 
-            console.log('🔄 Filtros de video reseteados');
+            appLog('🔄 Filtros de video reseteados');
         }
     }
 
@@ -2490,7 +2505,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         }
         
         return new Promise((resolve, reject) => {
-            console.log('📡 Cargando stream HLS con HLS.js');
+            appLog('📡 Cargando stream HLS con HLS.js');
 
             // Configure HLS.js with special headers for Solanaflix
             const hlsConfig = {
@@ -2503,7 +2518,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             // Check if URL contains credentials or comes from IPTV providers
             const needsAuth = this.streamNeedsAuthentication(item.url);
             if (needsAuth) {
-                console.log('🔐 Aplicando headers de autenticación para stream HLS');
+                appLog('🔐 Aplicando headers de autenticación para stream HLS');
                 const url = new URL(item.url);
                 const referer = `${url.protocol}//${url.hostname}/`;
                 
@@ -2521,7 +2536,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             this.hls.attachMedia(this.videoPlayer);
 
             this.hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
-                console.log('✅ Stream HLS cargado correctamente');
+                appLog('✅ Stream HLS cargado correctamente');
                 this.hideLoading();
                 this.startBandwidthMonitoring();
 
@@ -2572,13 +2587,13 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
     async loadDirectStream(item) {
         return new Promise((resolve, reject) => {
-            console.log(`🎥 Cargando stream directo (${item.type}): ${item.url}`);
+            appLog(`🎥 Cargando stream directo (${item.type}): ${item.url}`);
 
             // Special handling for TS streams
             const isTS = item.url.toLowerCase().includes('.ts');
             
             const handleCanPlay = () => {
-                console.log('✅ Stream directo cargado correctamente');
+                appLog('✅ Stream directo cargado correctamente');
                 this.hideLoading();
 
                 if (this.config.playerSettings?.autoplay) {
@@ -2595,7 +2610,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             };
 
             const handleLoadedData = () => {
-                console.log('✅ Stream data loaded');
+                appLog('✅ Stream data loaded');
                 this.hideLoading();
                 
                 if (this.config.playerSettings?.autoplay) {
@@ -2634,7 +2649,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             
             // Set source with proper headers for TS streams
             if (isTS) {
-                console.log('🎬 Configurando para stream TS');
+                appLog('🎬 Configurando para stream TS');
                 this.videoPlayer.src = item.url;
             } else {
                 this.videoPlayer.src = item.url;
@@ -2686,7 +2701,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
     async isAudioOnlyStream(url) {
         try {
-            console.log('🎵 Checking if stream is audio-only...');
+            appLog('🎵 Checking if stream is audio-only...');
             const response = await window.api.fetchUrl(url, {
                 method: 'HEAD',
                 timeout: 5000
@@ -2706,7 +2721,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
                     const manifest = manifestResponse.data;
                     // Check for audio-only codec patterns
                     if (manifest.includes('CODECS="mp4a.') && !manifest.includes('avc1.') && !manifest.includes('hvc1.')) {
-                        console.log('🎵 Detected audio-only stream from manifest');
+                        appLog('🎵 Detected audio-only stream from manifest');
                         return true;
                     }
                 }
@@ -2714,13 +2729,13 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             
             return false;
         } catch (error) {
-            console.log('⚠️ Could not determine if stream is audio-only:', error.message);
+            appLog('⚠️ Could not determine if stream is audio-only:', error.message);
             return false;
         }
     }
 
     async loadIPTVStream(item) {
-        console.log(`📡 Cargando stream IPTV: ${item.url}`);
+        appLog(`📡 Cargando stream IPTV: ${item.url}`);
         
         // Use original item for now to avoid conflicts with normal streams
         let finalItem = { ...item };
@@ -2735,9 +2750,9 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         
         for (let i = 0; i < approaches.length; i++) {
             try {
-                console.log(`🔄 Intentando método ${i + 1}/${approaches.length}`);
+                appLog(`🔄 Intentando método ${i + 1}/${approaches.length}`);
                 await approaches[i]();
-                console.log(`✅ Stream IPTV cargado con método ${i + 1}`);
+                appLog(`✅ Stream IPTV cargado con método ${i + 1}`);
                 return;
             } catch (error) {
                 console.warn(`⚠️ Método ${i + 1} falló:`, error.message);
@@ -2753,7 +2768,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             const url = new URL(originalUrl);
             const referer = `${url.protocol}//${url.hostname}/`;
             
-            console.log(`🔍 Resolviendo URL final para: ${originalUrl}`);
+            appLog(`🔍 Resolviendo URL final para: ${originalUrl}`);
             
             const headResponse = await window.api.fetchUrl(originalUrl, {
                 method: 'HEAD',
@@ -2769,7 +2784,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
             if (headResponse.success) {
                 const finalUrl = headResponse.finalUrl || originalUrl;
-                console.log(`✅ URL final obtenida: ${finalUrl}`);
+                appLog(`✅ URL final obtenida: ${finalUrl}`);
                 return finalUrl;
             } else {
                 console.warn(`⚠️ HEAD request falló: ${headResponse.error}`);
@@ -2783,7 +2798,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
     async tryIPTVWithProxy(item) {
         return new Promise(async (resolve, reject) => {
-            console.log('🧪 Probando IPTV con proxy local...');
+            appLog('🧪 Probando IPTV con proxy local...');
             
             if (!this.isElectron || !window.electronAPI) {
                 reject(new Error('Proxy requiere Electron'));
@@ -2798,7 +2813,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
                     throw new Error(`Error creando proxy: ${proxyResponse.error}`);
                 }
 
-                console.log(`✅ HLS Manifest URL creada: ${proxyResponse.proxyUrl}`);
+                appLog(`✅ HLS Manifest URL creada: ${proxyResponse.proxyUrl}`);
 
                 // Use HLS.js with the generated manifest
                 if (!window.Hls || !window.Hls.isSupported()) {
@@ -2829,7 +2844,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
                 
                 this.hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
                     if (!resolved) {
-                        console.log('✅ IPTV manifest proxy parseado');
+                        appLog('✅ IPTV manifest proxy parseado');
                         resolved = true;
                         clearTimeout(timeout);
                         this.hideLoading();
@@ -2865,7 +2880,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         }
 
         return new Promise((resolve, reject) => {
-            console.log('🧪 Probando IPTV como HLS...');
+            appLog('🧪 Probando IPTV como HLS...');
             
             this.hls = new window.Hls({
                 debug: false,
@@ -2884,7 +2899,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
             this.hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
                 if (!resolved) {
-                    console.log('✅ IPTV stream detectado como HLS');
+                    appLog('✅ IPTV stream detectado como HLS');
                     this.hideLoading();
                     if (this.config.playerSettings?.autoplay) {
                         this.videoPlayer.play().catch(e => console.warn('Autoplay:', e));
@@ -2925,13 +2940,13 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
     async tryIPTVAsDirect(item) {
         return new Promise((resolve, reject) => {
-            console.log('🧪 Probando IPTV como stream directo...');
+            appLog('🧪 Probando IPTV como stream directo...');
             
             let resolved = false;
             
             const handleSuccess = () => {
                 if (!resolved) {
-                    console.log('✅ IPTV cargado como stream directo');
+                    appLog('✅ IPTV cargado como stream directo');
                     this.hideLoading();
                     if (this.config.playerSettings?.autoplay) {
                         this.videoPlayer.play().catch(e => console.warn('Autoplay:', e));
@@ -2980,7 +2995,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
     async tryIPTVWithHeaders(item) {
         return new Promise(async (resolve, reject) => {
-            console.log('🧪 Probando IPTV con headers especiales...');
+            appLog('🧪 Probando IPTV con headers especiales...');
             
             // This approach tries to load with special headers via fetch
             // and then use blob URL
@@ -2995,7 +3010,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
                 const referer = `${url.protocol}//${url.hostname}/`;
 
                 // First, get the final URL by following redirects
-                console.log('🔄 Resolviendo URL final mediante HEAD request...');
+                appLog('🔄 Resolviendo URL final mediante HEAD request...');
                 let finalUrl = item.url;
                 let attempts = 0;
                 const maxRedirects = 5;
@@ -3022,7 +3037,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
                         // The fetchUrl already followed redirects, so we should get the final URL
                         break;
                     } else if (headResponse.statusCode === 200) {
-                        console.log(`✅ URL final encontrada. Content-Type: ${headResponse.headers['content-type']}`);
+                        appLog(`✅ URL final encontrada. Content-Type: ${headResponse.headers['content-type']}`);
                         break;
                     }
                     
@@ -3030,7 +3045,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
                 }
 
                 // Now try to use the stream directly - MPEG-TS streams should work with direct video element
-                console.log('🎬 Intentando reproducir stream TS directamente...');
+                appLog('🎬 Intentando reproducir stream TS directamente...');
                 
                 // For MPEG-TS streams, try direct approach first
                 this.videoPlayer.src = finalUrl;
@@ -3046,7 +3061,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
                 
                 this.videoPlayer.addEventListener('canplay', () => {
                     if (!resolved) {
-                        console.log('✅ Stream TS cargado directamente');
+                        appLog('✅ Stream TS cargado directamente');
                         resolved = true;
                         clearTimeout(timeout);
                         this.hideLoading();
@@ -3058,7 +3073,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
                 }, { once: true });
 
                 this.videoPlayer.addEventListener('loadedmetadata', () => {
-                    console.log('✅ Metadata del stream cargada');
+                    appLog('✅ Metadata del stream cargada');
                 }, { once: true });
 
                 this.videoPlayer.addEventListener('error', (e) => {
@@ -3093,7 +3108,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         // Auto-avanzar al siguiente después de un error
         setTimeout(() => {
             if (this.currentIndex < this.playlistData.length - 1) {
-                console.log('⏭️ Auto-avanzando al siguiente stream...');
+                appLog('⏭️ Auto-avanzando al siguiente stream...');
                 this.playNext();
             }
         }, 3000);
@@ -3101,7 +3116,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
     async testStream(index) {
         const item = this.playlistData[index];
-        console.log(`🔧 Probando stream: ${item.title}`);
+        appLog(`🔧 Probando stream: ${item.title}`);
 
         try {
             let result;
@@ -3213,7 +3228,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         if (this.currentUrl) this.currentUrl.textContent = '';
         if (this.streamInfo) this.streamInfo.innerHTML = '';
 
-        console.log('⏹️ Reproducción detenida');
+        appLog('⏹️ Reproducción detenida');
     }
 
     setVolume(value) {
@@ -3270,10 +3285,10 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
             if (document.pictureInPictureElement) {
                 await document.exitPictureInPicture();
-                console.log('📺 Saliendo de Picture-in-Picture');
+                appLog('📺 Saliendo de Picture-in-Picture');
             } else {
                 await this.videoPlayer.requestPictureInPicture();
-                console.log('📺 Entrando en Picture-in-Picture');
+                appLog('📺 Entrando en Picture-in-Picture');
             }
         } catch (error) {
             console.error('Error con Picture-in-Picture:', error);
@@ -3297,10 +3312,10 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         try {
             if (document.fullscreenElement) {
                 document.exitFullscreen();
-                console.log('⛶ Saliendo de pantalla completa');
+                appLog('⛶ Saliendo de pantalla completa');
             } else {
                 this.videoPlayer.requestFullscreen();
-                console.log('⛶ Entrando en pantalla completa');
+                appLog('⛶ Entrando en pantalla completa');
             }
         } catch (error) {
             console.error('Error con pantalla completa:', error);
@@ -3313,7 +3328,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             const brightness = value / 100;
             const contrast = this.contrastSlider ? this.contrastSlider.value / 100 : 1.0;
             this.videoPlayer.style.filter = `brightness(${brightness}) contrast(${contrast}) saturate(1.1)`;
-            console.log(`☀️ Brillo ajustado a: ${value}%`);
+            appLog(`☀️ Brillo ajustado a: ${value}%`);
         }
     }
 
@@ -3322,7 +3337,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             const contrast = value / 100;
             const brightness = this.brightnessSlider ? this.brightnessSlider.value / 100 : 1.0;
             this.videoPlayer.style.filter = `brightness(${brightness}) contrast(${contrast}) saturate(1.1)`;
-            console.log(`🔆 Contraste ajustado a: ${value}%`);
+            appLog(`🔆 Contraste ajustado a: ${value}%`);
         }
     }
 
@@ -3351,7 +3366,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         if (this.durationDisplay) {
             this.durationDisplay.textContent = '00:00';
         }
-        console.log('⏰ Time display initialized');
+        appLog('⏰ Time display initialized');
     }
 
     updateTimeDisplay() {
@@ -3365,7 +3380,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         if (this.durationDisplay && this.videoPlayer) {
             const duration = this.formatTime(this.videoPlayer.duration);
             this.durationDisplay.textContent = duration;
-            console.log(`⏰ Duration updated: ${duration}`);
+            appLog(`⏰ Duration updated: ${duration}`);
         }
     }
 
@@ -3422,7 +3437,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
     }
 
     setupAudioOnlyDisplay(item) {
-        console.log('🎵 Setting up audio-only display for radio stream');
+        appLog('🎵 Setting up audio-only display for radio stream');
         
         // Show a visual indicator that this is an audio-only stream
         if (this.videoPlayer) {
@@ -3679,62 +3694,94 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
     // Crear elemento de playlist optimizado
     createPlaylistItem(item, originalIndex, displayNumber = null) {
-        console.log(`🔍 Creating item ${originalIndex}:`, {
-            title: item.title,
-            logo: item.logo,
-            hasLogo: !!(item.logo && item.logo.trim() !== '')
-        });
-        
         const playlistItem = document.createElement('div');
         playlistItem.className = 'playlist-item';
         playlistItem.dataset.index = originalIndex; // Use original index for data lookup
 
         // Determinar tipo de stream
         const streamType = this.getStreamType(item.url);
-        const typeClass = streamType.toLowerCase();
+        const streamTypeClassMap = {
+            hls: 'hls',
+            dash: 'dash',
+            audio: 'audio',
+            direct: 'direct',
+            unknown: 'unknown'
+        };
+        const typeClass = streamTypeClassMap[(streamType || 'unknown').toLowerCase()] || 'unknown';
 
         const numberToShow = displayNumber !== null ? displayNumber : originalIndex + 1;
 
-        const logoHtml = item.logo && item.logo.trim() !== '' ?
-            `<img src="${item.logo}" alt="Logo" />` :
-            `<div class="logo-placeholder">📺</div>`;
-        
-        console.log(`🖼️ Logo HTML for ${item.title}:`, logoHtml);
+        const itemNumber = document.createElement('div');
+        itemNumber.className = 'playlist-item-number';
+        itemNumber.textContent = String(numberToShow);
 
-        playlistItem.innerHTML = `
-            <div class="playlist-item-number">${numberToShow}</div>
-            <div class="playlist-item-logo">
-                ${logoHtml}
-            </div>
-            <div class="playlist-item-content">
-                <div class="playlist-item-title" title="${this.escapeHtml(item.title)}">
-                    ${this.escapeHtml(item.title)}
-                </div>
-                <div class="playlist-item-meta">
-                    <span class="stream-type ${typeClass}">${streamType}</span>
-                    ${item.group && item.group !== 'Unknown' ? `<span class="group-tag">${this.escapeHtml(item.group)}</span>` : ''}
-                </div>
-            </div>
-            <div class="playlist-item-actions">
-                <button class="favorite-btn" title="Add to favorites" data-url="${item.url}">
-                    ${this.isFavoriteChannel(item.url) ? '⭐' : '☆'}
-                </button>
-                <button class="test-stream-btn" title="Probar stream">🔧</button>
-            </div>
-        `;
+        const logoContainer = document.createElement('div');
+        logoContainer.className = 'playlist-item-logo';
+        const setLogoPlaceholder = () => {
+            logoContainer.replaceChildren();
+            const placeholder = document.createElement('div');
+            placeholder.className = 'logo-placeholder';
+            placeholder.textContent = '📺';
+            logoContainer.appendChild(placeholder);
+        };
 
-        // Handle logo error fallback via JavaScript instead of onerror
-        const logoImg = playlistItem.querySelector('img');
-        if (logoImg) {
-            console.log(`🔗 Setting up logo error handler for: ${item.logo}`);
-            logoImg.addEventListener('error', function() {
-                console.log(`❌ Logo failed to load: ${item.logo}`);
-                this.parentElement.innerHTML = '<div class="logo-placeholder">📺</div>';
-            });
-            logoImg.addEventListener('load', function() {
-                console.log(`✅ Logo loaded successfully: ${item.logo}`);
-            });
+        const rawLogo = typeof item.logo === 'string' ? item.logo.trim() : '';
+        if (rawLogo && /^https?:\/\//i.test(rawLogo)) {
+            const logoImg = document.createElement('img');
+            logoImg.src = rawLogo;
+            logoImg.alt = 'Logo';
+            logoImg.referrerPolicy = 'no-referrer';
+            logoImg.addEventListener('error', () => setLogoPlaceholder());
+            logoContainer.appendChild(logoImg);
+        } else {
+            setLogoPlaceholder();
         }
+
+        const content = document.createElement('div');
+        content.className = 'playlist-item-content';
+
+        const title = document.createElement('div');
+        title.className = 'playlist-item-title';
+        title.textContent = String(item.title || '');
+        title.title = String(item.title || '');
+
+        const meta = document.createElement('div');
+        meta.className = 'playlist-item-meta';
+        const streamTypeEl = document.createElement('span');
+        streamTypeEl.classList.add('stream-type', typeClass);
+        streamTypeEl.textContent = streamType;
+        meta.appendChild(streamTypeEl);
+
+        if (item.group && item.group !== 'Unknown') {
+            const groupTag = document.createElement('span');
+            groupTag.className = 'group-tag';
+            groupTag.textContent = String(item.group);
+            meta.appendChild(groupTag);
+        }
+
+        content.appendChild(title);
+        content.appendChild(meta);
+
+        const actions = document.createElement('div');
+        actions.className = 'playlist-item-actions';
+        const favoriteBtn = document.createElement('button');
+        favoriteBtn.className = 'favorite-btn';
+        favoriteBtn.title = 'Add to favorites';
+        favoriteBtn.dataset.url = String(item.url || '');
+        favoriteBtn.textContent = this.isFavoriteChannel(item.url) ? '⭐' : '☆';
+
+        const testBtn = document.createElement('button');
+        testBtn.className = 'test-stream-btn';
+        testBtn.title = 'Probar stream';
+        testBtn.textContent = '🔧';
+
+        actions.appendChild(favoriteBtn);
+        actions.appendChild(testBtn);
+
+        playlistItem.appendChild(itemNumber);
+        playlistItem.appendChild(logoContainer);
+        playlistItem.appendChild(content);
+        playlistItem.appendChild(actions);
 
         // Use the originalIndex parameter directly (no need to redeclare)
         
@@ -3745,13 +3792,11 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             }
         });
 
-        const testBtn = playlistItem.querySelector('.test-stream-btn');
         testBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             this.testStream(originalIndex);
         });
-        
-        const favoriteBtn = playlistItem.querySelector('.favorite-btn');
+
         favoriteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             this.toggleFavorite(originalIndex);
@@ -3795,7 +3840,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         // Aplicar filtros limpios inmediatamente
         this.handleSearch();
 
-        console.log('🧹 Filtros limpiados');
+        appLog('🧹 Filtros limpiados');
     }
 
     updateChannelCount(visible, total = null) {
@@ -3831,7 +3876,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             this.groupFilter.appendChild(option);
         });
 
-        console.log(`📂 ${groups.length} grupos encontrados`);
+        appLog(`📂 ${groups.length} grupos encontrados`);
     }
 
     updateFilterCounts() {
@@ -3887,11 +3932,11 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         this.renderPlaylist();
         this.handleSearch(); // Reaplicar filtros
 
-        console.log(`🔄 Lista ordenada ${this.sortAscending ? 'A-Z' : 'Z-A'}`);
+        appLog(`🔄 Lista ordenada ${this.sortAscending ? 'A-Z' : 'Z-A'}`);
     }
 
     refreshPlaylist() {
-        console.log('🔄 Actualizando playlist...');
+        appLog('🔄 Actualizando playlist...');
         this.renderPlaylist();
         this.populateGroupFilter();
         this.handleSearch();
@@ -4065,7 +4110,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         // Update dashboard stats
         this.updateDashboardStats();
         
-        console.log('📊 Dashboard initialized');
+        appLog('📊 Dashboard initialized');
     }
 
     setupDashboardEventListeners() {
@@ -4245,7 +4290,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
     }
 
     playFavoriteChannel(channel) {
-        console.log('🎬 Playing favorite channel:', channel.title);
+        appLog('🎬 Playing favorite channel:', channel.title);
         
         // First, try to find the channel in current playlist
         if (this.playlistData && this.playlistData.length > 0) {
@@ -4286,7 +4331,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
     }
 
     removeFavoriteChannel(url) {
-        console.log('🗑️ Removing favorite channel with URL:', url);
+        appLog('🗑️ Removing favorite channel with URL:', url);
         
         const initialLength = this.favoriteChannels.length;
         this.favoriteChannels = this.favoriteChannels.filter(channel => channel.url !== url);
@@ -4304,7 +4349,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             // Show feedback
             this.showBriefFeedback('Removed from favorites');
             
-            console.log('✅ Favorite channel removed successfully');
+            appLog('✅ Favorite channel removed successfully');
         } else {
             console.warn('⚠️ Channel not found in favorites');
         }
@@ -4398,7 +4443,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         if (isCurrentlyFavorite) {
             // Remove from favorites
             this.favoriteChannels = this.favoriteChannels.filter(channel => channel.url !== item.url);
-            console.log(`💔 Removed from favorites: ${item.title}`);
+            appLog(`💔 Removed from favorites: ${item.title}`);
         } else {
             // Add to favorites
             const favoriteChannel = {
@@ -4409,7 +4454,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
                 addedAt: Date.now()
             };
             this.favoriteChannels.push(favoriteChannel);
-            console.log(`⭐ Added to favorites: ${item.title}`);
+            appLog(`⭐ Added to favorites: ${item.title}`);
         }
         
         // Save to localStorage
@@ -4499,7 +4544,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         // Setup enhanced search event listeners
         this.setupEnhancedSearchEventListeners();
         
-        console.log('🔍 Enhanced search initialized');
+        appLog('🔍 Enhanced search initialized');
     }
 
     setupEnhancedSearchEventListeners() {
@@ -4805,7 +4850,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
             country: countryFilter
         };
         
-        console.log('Advanced filters applied:', this.advancedFiltersState);
+        appLog('Advanced filters applied:', this.advancedFiltersState);
         
         // Trigger search with current filters
         this.handleSearch();
@@ -4883,7 +4928,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
         if (index < 0 || index >= this.playlistData.length) return;
 
         const item = this.playlistData[index];
-        console.log(`🎬 Cargando: ${item.title}`);
+        appLog(`🎬 Cargando: ${item.title}`);
 
         // Add to recent channels
         this.addToRecentChannels(item);
@@ -4909,7 +4954,7 @@ https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5cb0cae7a461406ffe
 
 // Función para forzar visibilidad de controles
 function forceControlsVisibility() {
-    console.log('🔧 Forzando visibilidad de controles...');
+    appLog('🔧 Forzando visibilidad de controles...');
 
     // OCULTAR OVERLAY DE EMERGENCIA
     const overlay = document.getElementById('videoOverlay');
@@ -4961,7 +5006,7 @@ function forceControlsVisibility() {
 document.addEventListener('DOMContentLoaded', () => {
     // Verificar si HLS.js está disponible
     if (window.Hls) {
-        console.log('✅ HLS.js cargado');
+        appLog('✅ HLS.js cargado');
     } else {
         console.warn('⚠️ HLS.js no disponible - solo streams directos');
     }
@@ -4976,7 +5021,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Make debugging methods globally accessible
     window.testI18n = () => {
-        console.log('🌐 Testing i18n system...');
+        appLog('🌐 Testing i18n system...');
         if (window.i18n && window.i18n.testTranslations) {
             window.i18n.testTranslations();
         }
@@ -5021,7 +5066,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         const controlsDiv = document.querySelector('.controls');
         if (controlsDiv) {
-            console.log('✅ Controles encontrados y forzados a visible');
+            appLog('✅ Controles encontrados y forzados a visible');
             controlsDiv.style.border = '5px solid red';
             controlsDiv.style.background = 'yellow';
             setTimeout(() => {
@@ -5036,7 +5081,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Bandwidth monitoring methods for M3UPlayer class
 M3UPlayer.prototype.startBandwidthMonitoring = function() {
-    console.log('📊 Starting bandwidth monitoring...');
+    appLog('📊 Starting bandwidth monitoring...');
     this.bandwidthStats.monitoring = true;
     this.bandwidthStats.samples = [];
     this.bandwidthStats.peak = 0;
@@ -5054,7 +5099,7 @@ M3UPlayer.prototype.startBandwidthMonitoring = function() {
 };
 
 M3UPlayer.prototype.stopBandwidthMonitoring = function() {
-    console.log('📊 Stopping bandwidth monitoring...');
+    appLog('📊 Stopping bandwidth monitoring...');
     this.bandwidthStats.monitoring = false;
     
     if (this.bandwidthInterval) {
@@ -5096,7 +5141,7 @@ M3UPlayer.prototype.updateBandwidthStats = function(data) {
         const sum = this.bandwidthStats.samples.reduce((a, b) => a + b, 0);
         this.bandwidthStats.average = sum / this.bandwidthStats.samples.length;
         
-        console.log(`📊 Bandwidth: ${bandwidth.toFixed(2)} Mbps`);
+        appLog(`📊 Bandwidth: ${bandwidth.toFixed(2)} Mbps`);
     }
 };
 

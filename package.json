@@ -24,6 +24,7 @@
     "postinstall": "electron-builder install-app-deps",
     "clear-cache": "rm -rf node_modules/.cache && npm run dev-nocache",
     "lint": "eslint . --ext .js,.html",
+    "typecheck": "tsc --noEmit",
     "test": "jest -c jest.config.js",
     "test:m3u": "jest -c jest.m3u.config.js",
     "test:watch": "jest -c jest.m3u.config.js --watch",

@@ -30,10 +30,15 @@ class ConfigManager {
             enableEncryption: options.enableEncryption || false,
             enableSync: options.enableSync || false,
             syncInterval: options.syncInterval || 30000,
+            syncEndpoint: options.syncEndpoint || '',
+            syncAuthToken: options.syncAuthToken || '',
+            syncPushEnabled: options.syncPushEnabled !== false,
+            syncPullEnabled: options.syncPullEnabled !== false,
             storageKey: options.storageKey || 'm3u_config',
             backupCount: options.backupCount || 5,
             enableSchema: options.enableSchema !== false,
-            enableWatching: options.enableWatching !== false
+            enableWatching: options.enableWatching !== false,
+            encryptionSecret: options.encryptionSecret || options.storageKey || 'm3u_config'
         };
 
         // Watchers y callbacks
@@ -837,10 +842,71 @@ class ConfigManager {
         this.syncInProgress = true;
         
         try {
-            // TODO: Implementar sincronización con servidor remoto
+            if (!this.options.syncEndpoint) {
+                this.eventBus.emit('config:sync-skipped', { reason: 'missing-endpoint' });
+                return;
+            }
+
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            if (this.options.syncAuthToken) {
+                headers.Authorization = `Bearer ${this.options.syncAuthToken}`;
+            }
+
+            let merged = this.deepClone(this.config);
+
+            // Push local config snapshot
+            if (this.options.syncPushEnabled) {
+                const payload = {
+                    config: this.deepClone(this.config),
+                    updatedAt: Date.now(),
+                    source: 'm3u-player'
+                };
+
+                const pushRes = await fetch(this.options.syncEndpoint, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(payload)
+                });
+
+                if (!pushRes.ok) {
+                    throw new Error(`Sync push failed (${pushRes.status})`);
+                }
+
+                // Optional response payload may contain canonical config
+                try {
+                    const body = await pushRes.json();
+                    if (body && typeof body.config === 'object') {
+                        merged = this.mergeConfig(merged, body.config);
+                    }
+                } catch {
+                    // Non-JSON response is allowed
+                }
+            }
+
+            // Pull latest config if enabled
+            if (this.options.syncPullEnabled) {
+                const pullRes = await fetch(this.options.syncEndpoint, {
+                    method: 'GET',
+                    headers
+                });
+                if (!pullRes.ok) {
+                    throw new Error(`Sync pull failed (${pullRes.status})`);
+                }
+                const body = await pullRes.json().catch(() => null);
+                if (body && typeof body.config === 'object') {
+                    merged = this.mergeConfig(merged, body.config);
+                }
+            }
+
+            this.config = this.mergeConfig(this.defaultConfig, merged);
+            this.dirty = false;
+            this.eventBus.emit('config:synced', { config: this.config });
             console.log('🔄 Config sync completed');
         } catch (error) {
             console.error('❌ Config sync error:', error);
+            this.eventBus.emit('config:sync-error', { error: error.message });
         } finally {
             this.syncInProgress = false;
         }
@@ -988,13 +1054,97 @@ class ConfigManager {
     }
 
     async encrypt(data) {
-        // TODO: Implementar encriptación
-        return { encrypted: true, data };
+        const serialized = JSON.stringify(data);
+        const key = await this.getCryptoKey().catch(() => null);
+
+        // Preferred encryption path with Web Crypto (AES-GCM)
+        if (key && globalThis.crypto?.subtle && globalThis.crypto?.getRandomValues) {
+            const iv = globalThis.crypto.getRandomValues(new Uint8Array(12));
+            const encoded = new TextEncoder().encode(serialized);
+            const cipherBuffer = await globalThis.crypto.subtle.encrypt(
+                { name: 'AES-GCM', iv },
+                key,
+                encoded
+            );
+
+            return {
+                encrypted: true,
+                algorithm: 'AES-GCM',
+                iv: Array.from(iv),
+                data: this.uint8ToBase64(new Uint8Array(cipherBuffer))
+            };
+        }
+
+        // Fallback for environments without subtle crypto
+        return {
+            encrypted: true,
+            algorithm: 'BASE64',
+            data: this.textToBase64(serialized)
+        };
     }
 
     async decrypt(encryptedData) {
-        // TODO: Implementar desencriptación
-        return encryptedData.data;
+        if (!encryptedData || typeof encryptedData !== 'object' || !encryptedData.encrypted) {
+            return encryptedData;
+        }
+
+        if (encryptedData.algorithm === 'AES-GCM' && Array.isArray(encryptedData.iv)) {
+            const key = await this.getCryptoKey();
+            const iv = new Uint8Array(encryptedData.iv);
+            const cipherBytes = this.base64ToUint8(String(encryptedData.data || ''));
+            const plainBuffer = await globalThis.crypto.subtle.decrypt(
+                { name: 'AES-GCM', iv },
+                key,
+                cipherBytes
+            );
+            const plainText = new TextDecoder().decode(plainBuffer);
+            return JSON.parse(plainText);
+        }
+
+        if (typeof encryptedData.data === 'string') {
+            const plainText = this.base64ToText(encryptedData.data);
+            return JSON.parse(plainText);
+        }
+
+        throw new Error('Invalid encrypted config payload');
+    }
+
+    async getCryptoKey() {
+        if (this.encryptionKey) return this.encryptionKey;
+        if (!globalThis.crypto?.subtle) return null;
+
+        const secret = String(this.options.encryptionSecret || this.options.storageKey || 'm3u_config');
+        const raw = new TextEncoder().encode(secret);
+        const hash = await globalThis.crypto.subtle.digest('SHA-256', raw);
+        this.encryptionKey = await globalThis.crypto.subtle.importKey(
+            'raw',
+            hash,
+            { name: 'AES-GCM' },
+            false,
+            ['encrypt', 'decrypt']
+        );
+        return this.encryptionKey;
+    }
+
+    uint8ToBase64(bytes) {
+        let binary = '';
+        for (const b of bytes) binary += String.fromCharCode(b);
+        return btoa(binary);
+    }
+
+    base64ToUint8(b64) {
+        const binary = atob(b64);
+        const out = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
+        return out;
+    }
+
+    textToBase64(text) {
+        return btoa(unescape(encodeURIComponent(text)));
+    }
+
+    base64ToText(b64) {
+        return decodeURIComponent(escape(atob(b64)));
     }
 
     setupEventListeners() {

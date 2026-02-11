@@ -7,7 +7,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http:; media-src 'self' https: http: blob:; connect-src 'self' https: http: ws: wss: blob: data:; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self';" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http:; media-src 'self' https: http: blob:; connect-src 'self' https: http: ws: wss: blob: data:; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self';" />
     <title>M3U Player - Professional IPTV Streaming Platform</title>
     <link rel="stylesheet" href="styles.css?v=1.2.0" />
     <link rel="stylesheet" href="styles/epg-admin.css?v=1.0.0" />
@@ -258,28 +258,7 @@
         </div>
 
         <!-- Dev-only demo for Loading Overlay (enabled with ?demo=loading) -->
-        <script>
-            (function () {
-                try {
-                    const params = new URLSearchParams(window.location.search);
-                    if (params.get('demo') !== 'loading') return;
-                    // Lazy import to avoid breaking prod bundling
-                    import('./js/core/EventBus.js').then(({ getEventBus }) => {
-                        const bus = getEventBus();
-                        bus.emit('ui:loading-show', { message: 'Preparando datos...', options: { showProgress: true, cancellable: true, timeoutMs: 0 } });
-                        let p = 0;
-                        const id = setInterval(() => {
-                            p += 7;
-                            bus.emit('ui:loading-progress', { progress: p });
-                            if (p >= 100) {
-                                clearInterval(id);
-                                setTimeout(() => bus.emit('ui:loading-hide'), 400);
-                            }
-                        }, 200);
-                    }).catch(() => {});
-                } catch (e) {}
-            })();
-        </script>
+        <script type="module" src="js/demo-loading.js"></script>
 
         <div class="player-section" id="playerSection" style="display: none">
             <div class="video-container">
@@ -956,10 +935,9 @@
         </div>
     </div>
 
-        <!-- External Dependencies -->
-    <!-- Mover a local si es posible para CSP, o permitir solo https CDN en CSP si necesario -->
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.5/dist/hls.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/i18next@22.5.1/i18next.min.js"></script>
+        <!-- External Dependencies (local package paths) -->
+    <script src="../node_modules/hls.js/dist/hls.min.js"></script>
+        <script src="../node_modules/i18next/dist/umd/i18next.min.js"></script>
     
     <!-- UI Performance components -->
     <script type="module" src="ui/VirtualScroller.global.js"></script>
@@ -972,6 +950,7 @@
     <!-- i18n setup (i18next + locales) -->
     <script src="i18n/index.js"></script>
     <script src="js/script.js?v=1.2.0"></script>
+    <script type="module" src="js/core/hybrid-bootstrap.js"></script>
 
     <!-- Diagnostics (fetch tracing, modal wiring) -->
     <script src="js/core/Diagnostics.js"></script>
