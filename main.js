@@ -131,10 +131,32 @@ function isExternalHttpUrl(rawUrl) {
   }
 }
 
+function getSenderUrl(event) {
+  const senderFrameUrl = event?.senderFrame?.url;
+  if (typeof senderFrameUrl === 'string' && senderFrameUrl) {
+    return senderFrameUrl;
+  }
+  const senderUrl = event?.sender?.getURL?.();
+  if (typeof senderUrl === 'string' && senderUrl) {
+    return senderUrl;
+  }
+  return '';
+}
+
+function assertTrustedIpcSender(event, channel) {
+  const senderUrl = getSenderUrl(event);
+  if (senderUrl && isInternalAppUrl(senderUrl)) {
+    return true;
+  }
+  console.warn(`Blocked IPC "${channel}" from untrusted sender: ${senderUrl || 'unknown'}`);
+  return false;
+}
+
 function isDisallowedProxyTarget(hostname) {
   const host = String(hostname || '').toLowerCase();
   if (!host) return true;
   if (host === 'localhost') return true;
+  if (host.endsWith('.localhost')) return true;
 
   const ipVersion = net.isIP(host);
   if (ipVersion === 4) {
@@ -698,16 +720,19 @@ ipcMain.handle('load-config', () => {
 });
 
 ipcMain.handle('save-config', (event, config) => {
+  if (!assertTrustedIpcSender(event, 'save-config')) return false;
   saveConfig(config);
   return true;
 });
 
 ipcMain.handle('settings-get', (event, key) => {
+  if (!assertTrustedIpcSender(event, 'settings-get')) return undefined;
   const config = loadConfig();
   return getConfigValue(config, key);
 });
 
 ipcMain.handle('settings-put', (event, key, value) => {
+  if (!assertTrustedIpcSender(event, 'settings-put')) return false;
   const config = loadConfig();
   const updated = setConfigValue(config, key, value);
   if (!updated) return false;
@@ -716,6 +741,9 @@ ipcMain.handle('settings-put', (event, key, value) => {
 });
 
 ipcMain.handle('fetch-url', async (event, url, options = {}) => {
+  if (!assertTrustedIpcSender(event, 'fetch-url')) {
+    return { success: false, error: 'Untrusted IPC sender' };
+  }
   try {
     if (!isAllowedHttpUrl(url)) {
       throw new Error('Only HTTP/HTTPS URLs are allowed');
@@ -736,11 +764,15 @@ ipcMain.handle('fetch-url', async (event, url, options = {}) => {
   }
 });
 
-ipcMain.handle('open-file-dialog', async () => {
+ipcMain.handle('open-file-dialog', async (event) => {
+  if (!assertTrustedIpcSender(event, 'open-file-dialog')) return;
   await openFileDialog();
 });
 
 ipcMain.handle('playlists-import-url', async (event, playlistUrl) => {
+  if (!assertTrustedIpcSender(event, 'playlists-import-url')) {
+    return { success: false, error: 'Untrusted IPC sender' };
+  }
   try {
     if (!isAllowedHttpUrl(playlistUrl)) {
       return { success: false, error: 'Only HTTP/HTTPS URLs are allowed' };
@@ -759,6 +791,9 @@ ipcMain.handle('playlists-import-url', async (event, playlistUrl) => {
 });
 
 ipcMain.handle('playlists-import-file', async (event, file) => {
+  if (!assertTrustedIpcSender(event, 'playlists-import-file')) {
+    return { success: false, error: 'Untrusted IPC sender' };
+  }
   try {
     const candidatePath = typeof file === 'string' ? file : file?.path;
     if (!candidatePath) {
@@ -790,6 +825,7 @@ ipcMain.handle('playlists-import-file', async (event, file) => {
 });
 
 ipcMain.handle('streams-test', async (event, streamUrl, headers = {}) => {
+  if (!assertTrustedIpcSender(event, 'streams-test')) return false;
   try {
     if (!isAllowedHttpUrl(streamUrl)) return false;
 
@@ -809,6 +845,9 @@ ipcMain.handle('library:get', () => {
 });
 
 ipcMain.handle('library:set', (event, nextState) => {
+  if (!assertTrustedIpcSender(event, 'library:set')) {
+    return { success: false, error: 'Untrusted IPC sender' };
+  }
   try {
     const ok = setLibraryState(nextState);
     return { success: ok };
@@ -818,6 +857,9 @@ ipcMain.handle('library:set', (event, nextState) => {
 });
 
 ipcMain.handle('library:import-json', (event, importedState) => {
+  if (!assertTrustedIpcSender(event, 'library:import-json')) {
+    return { success: false, error: 'Untrusted IPC sender' };
+  }
   try {
     if (!importedState || typeof importedState !== 'object') throw new Error('Invalid import data');
     const current = getLibraryState();
@@ -847,6 +889,9 @@ ipcMain.handle('library:export-json', () => {
 });
 
 ipcMain.handle('library:merge-recents', (event, selector) => {
+  if (!assertTrustedIpcSender(event, 'library:merge-recents')) {
+    return { success: false, error: 'Untrusted IPC sender' };
+  }
   try {
     const state = getLibraryState();
     if (!selector || typeof selector !== 'object') return { success: false, error: 'Invalid selector' };
@@ -1036,6 +1081,9 @@ function stopProxyServer() {
 
 // IPC handler for proxy URLs
 ipcMain.handle('get-proxy-url', async (event, originalUrl) => {
+  if (!assertTrustedIpcSender(event, 'get-proxy-url')) {
+    return { success: false, error: 'Untrusted IPC sender' };
+  }
   try {
     if (!isExternalHttpUrl(originalUrl)) {
       throw new Error('Only HTTP/HTTPS URLs are allowed');
@@ -1058,6 +1106,9 @@ ipcMain.handle('get-proxy-url', async (event, originalUrl) => {
 });
 
 ipcMain.handle('show-save-dialog', async (event, options) => {
+  if (!assertTrustedIpcSender(event, 'show-save-dialog')) {
+    return { canceled: true, filePath: undefined };
+  }
   const result = await dialog.showSaveDialog(mainWindow, options);
   if (!result.canceled && result.filePath) {
     approvedWritePaths.add(path.resolve(result.filePath));
@@ -1066,6 +1117,9 @@ ipcMain.handle('show-save-dialog', async (event, options) => {
 });
 
 ipcMain.handle('write-file', async (event, filePath, content) => {
+  if (!assertTrustedIpcSender(event, 'write-file')) {
+    return { success: false, error: 'Untrusted IPC sender' };
+  }
   try {
     if (typeof filePath !== 'string' || !path.isAbsolute(filePath)) {
       return { success: false, error: 'write-file only accepts absolute paths' };
@@ -1083,6 +1137,9 @@ ipcMain.handle('write-file', async (event, filePath, content) => {
 });
 
 ipcMain.handle('read-file', async (event, filePath) => {
+  if (!assertTrustedIpcSender(event, 'read-file')) {
+    return { success: false, error: 'Untrusted IPC sender' };
+  }
   try {
     if (typeof filePath !== 'string' || !filePath.trim()) {
       return { success: false, error: 'Invalid file path' };
@@ -1105,6 +1162,9 @@ ipcMain.handle('get-app-version', () => {
 });
 
 ipcMain.handle('save-file', async (event, relativePath, content) => {
+  if (!assertTrustedIpcSender(event, 'save-file')) {
+    return { success: false, error: 'Untrusted IPC sender' };
+  }
   try {
     if (typeof relativePath !== 'string' || !relativePath.trim()) {
       throw new Error('Invalid relative path');

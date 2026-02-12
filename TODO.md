@@ -45,3 +45,8 @@ Fecha de revisión: 2026-02-11
 - [x] Limpiar archivos vacíos/artefactos de debug y documentos placeholder para evitar confusión de mantenimiento. Referencias: `debug-script.js`, `debug-channels.html`, `docs/development/IMPLEMENTATION-SUMMARY.md`.
 - [x] Eliminar configuración ESLint duplicada para evitar drift (`eslint.config.js` + `.eslintrc.json`). Referencias: `eslint.config.js`, `.eslintrc.json`.
 - [x] Actualizar prerequisitos documentados de Node (README indica Node 16+, workflows usan Node 18/20). Referencias: `README.md:250`, `.github/workflows/build-test.yml:24`.
+
+## Segunda pasada (2026-02-12)
+- [x] Endurecer IPC en `main` validando el origen del sender en canales sensibles (`save-config`, `settings-*`, `fetch-url`, `playlists-*`, `streams-test`, `library:set/import/merge`, `get-proxy-url`, `show-save-dialog`, `write-file`, `read-file`, `save-file`). Referencias: `main.js`.
+- [x] Ampliar bloqueo de targets locales en proxy para incluir `*.localhost` y reducir superficie SSRF en nombres de host reservados. Referencias: `main.js`.
+- [x] Dejar visibles advertencias de seguridad de Electron en arranque estándar (manteniendo supresión sólo en scripts de desarrollo). Referencias: `package.json`.
