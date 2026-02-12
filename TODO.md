@@ -40,7 +40,7 @@ Fecha de revisión: 2026-02-11
   - Refresh de playlists desde URL sin implementar.
   Referencias: `src/js/modules/ConfigManager.js:834`, `src/js/modules/ConfigManager.js:1038`, `src/js/modules/PlaylistManager.js:841`.
 - [x] Añadir `typecheck` real y ampliar `tsconfig.include` para cubrir todos los TS del proyecto (`src/player`, `src/store` actualmente fuera). Referencias: `package.json:27`, `tsconfig.json:17`.
-- [ ] Alinear versiones de toolchain de tests (Jest 30 con `babel-jest` 29) para evitar incompatibilidades futuras. Referencias: `package.json:56`, `package.json:61`.
+- [x] Alinear versiones de toolchain de tests (Jest 30 con `babel-jest` 29) para evitar incompatibilidades futuras. Se eliminó la dependencia directa desalineada de `babel-jest` y se usa el transform por defecto de Jest 30. Referencias: `package.json`, `jest.config.js`, `jest.m3u.config.js`.
 - [x] Reducir ruido de logs (`console.*`) en producción y centralizar logger por niveles/debug flag. Referencias: `src/js/script.js:4`, `main.js:22`.
 - [x] Limpiar archivos vacíos/artefactos de debug y documentos placeholder para evitar confusión de mantenimiento. Referencias: `debug-script.js`, `debug-channels.html`, `docs/development/IMPLEMENTATION-SUMMARY.md`.
 - [x] Eliminar configuración ESLint duplicada para evitar drift (`eslint.config.js` + `.eslintrc.json`). Referencias: `eslint.config.js`, `.eslintrc.json`.

@@ -64,11 +64,6 @@ module.exports = {
     '^@epg/(.*)$': '<rootDir>/src/js/epg/$1'
   },
   
-  // Transform configuration
-  transform: {
-    '^.+\\.(ts|tsx|js|mjs)$': 'babel-jest'
-  },
-  
   // Module file extensions
   moduleFileExtensions: ['js', 'mjs', 'json', 'ts', 'tsx'],
   

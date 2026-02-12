@@ -54,7 +54,6 @@
     "@babel/preset-typescript": "^7.24.7",
     "@playwright/test": "^1.54.2",
     "@types/jest": "^29.5.12",
-    "babel-jest": "^29.7.0",
     "electron": "^27.0.0",
     "electron-builder": "^24.6.4",
     "eslint": "^9.32.0",
